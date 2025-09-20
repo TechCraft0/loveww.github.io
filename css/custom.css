@@ -1,0 +1,5 @@
+/* 设置顶部区域的背景图片 */
+.header {
+    background: url('/images/4.png') no-repeat center center fixed;
+    background-size: cover;
+}
