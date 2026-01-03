@@ -1,5 +1,21 @@
-/* 设置顶部区域的背景图片 */
+/* 1. 给首页 Banner 增加一个优雅的渐变遮罩，防止纯黑压抑 */
 #page-header.full_page {
-    background: url('https://www.lovewww.top/images/4.png') no-repeat center center fixed;
-    background-size: cover;
+    background-image: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7)), url('/images/4.png') !important;
+    background-attachment: scroll; /* 移动端建议用 scroll 替代 fixed，兼容性更好 */
+}
+
+/* 2. 让文章卡片带一点点透明和毛玻璃感，非常高级 */
+#aside-content .card-widget, 
+#recent-posts > .recent-post-item, 
+.layout > div:first-child:not(.recent-posts) {
+    background: rgba(255, 255, 255, 0.85) !important; /* 浅色模式透明 */
+    backdrop-filter: blur(10px); /* 毛玻璃特效 */
+    border-radius: 12px;
+}
+
+/* 3. 如果是深色模式下的卡片 */
+[data-theme='dark'] #aside-content .card-widget, 
+[data-theme='dark'] #recent-posts > .recent-post-item, 
+[data-theme='dark'] .layout > div:first-child:not(.recent-posts) {
+    background: rgba(25, 25, 25, 0.7) !important; /* 深色模式半透明 */
 }
