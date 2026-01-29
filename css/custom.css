@@ -32,3 +32,74 @@ body {
     color: #49b1f5 !important;
     font-weight: bold;
 }
+
+/* 6. 滚动条美化 */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+::-webkit-scrollbar-thumb {
+    background: #49b1f5;
+    border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #3399cc;
+}
+
+/* 7. 按钮美化 */
+.button--animated {
+    transition: all 0.3s ease;
+}
+.button--animated:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(73, 177, 245, 0.4);
+}
+
+/* 8. 链接悬停效果 */
+a:hover {
+    color: #49b1f5;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+/* 9. 代码块美化优化 */
+.highlight {
+    border-radius: 8px;
+    overflow: hidden;
+}
+.code-toolbar {
+    position: relative;
+}
+
+/* 10. 侧边栏卡片标题美化 */
+.card-widget .card-info .card-info-social-icons {
+    margin-top: 10px;
+}
+.card-widget .card-info .card-info-social-icons .social-icon {
+    font-size: 1.2rem;
+    margin: 0 5px;
+}
+
+/* 11. 页脚渐变背景 */
+#footer {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* 12. 标签云美化 */
+.card-tag-cloud a {
+    display: inline-block;
+    padding: 4px 12px;
+    margin: 5px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.3s ease;
+}
+.card-tag-cloud a:hover {
+    background: #49b1f5;
+    color: white;
+    transform: translateY(-2px);
+}
