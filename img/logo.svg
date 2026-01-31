@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 背景圆形 -->
+  <circle cx="50" cy="50" r="48" fill="#5FB878"/>
+
+  <!-- 代码符号 </> -->
+  <path d="M 30 35 L 70 35 L 70 65 L 30 65 Z" fill="none" stroke="#fff" stroke-width="3"/>
+  <circle cx="25" cy="35" r="3" fill="#fff"/>
+  <circle cx="75" cy="35" r="3" fill="#fff"/>
+  <circle cx="25" cy="65" r="3" fill="#fff"/>
+  <circle cx="75" cy="65" r="3" fill="#fff"/>
+
+  <!-- 中间的文字 L -->
+  <text x="50" y="62" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="#fff" text-anchor="middle">L</text>
+</svg>
