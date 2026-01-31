@@ -133,6 +133,20 @@ a:hover {
     margin: 0 5px;
 }
 
+/* 侧边栏个人描述多行显示 */
+.card-info .card-info-data {
+    flex-wrap: wrap;
+}
+.card-widget .card-info .author-info__description {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 3 !important; /* 最多显示3行 */
+    overflow: hidden !important;
+    line-height: 1.6 !important;
+    max-height: none !important;
+    white-space: normal !important;
+}
+
 /* 11. 页脚渐变背景 */
 #footer {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
