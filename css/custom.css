@@ -1,7 +1,35 @@
-/* 1. 全局背景优化：增加淡雅的纹理 */
+/* 1. 全局背景优化：动漫风格渐变背景 */
 body {
-    background: #fdfdfd; 
-    background-image: url("https://www.transparenttextures.com/patterns/white-diamond.png"); /* 微弱纹理 */
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    position: relative;
+}
+
+/* 添加动态背景动画 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(circle at 20% 50%, rgba(95, 184, 120, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(73, 177, 245, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(255, 114, 66, 0.05) 0%, transparent 50%);
+    z-index: -2;
+    animation: bgAnimation 15s ease-in-out infinite alternate;
+}
+
+@keyframes bgAnimation {
+    0% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
 }
 
 /* 2. 顶部大图半透明处理，让背景图更自然 */
@@ -13,12 +41,34 @@ body {
 #recent-posts > .recent-post-item,
 #aside-content .card-widget,
 .layout > div:first-child:not(.recent-posts) {
-    background: rgba(255, 255, 255, 0.8) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-radius: 15px !important;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.3s ease;
+}
+
+/* 卡片光影效果 */
+#recent-posts > .recent-post-item::before,
+#aside-content .card-widget::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 15px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#recent-posts > .recent-post-item:hover::before,
+#aside-content .card-widget:hover::before {
+    opacity: 1;
 }
 
 /* 4. 鼠标悬停卡片上浮效果 */
@@ -102,4 +152,38 @@ a:hover {
     background: #49b1f5;
     color: white;
     transform: translateY(-2px);
+}
+
+/* 13. Live2D 看板娘样式优化 */
+#live2d-widget {
+    cursor: pointer;
+}
+#live2d-widget:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+}
+
+/* 看板娘对话框样式 */
+.live2d-widget-dialog {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    color: #333 !important;
+    font-size: 14px !important;
+    padding: 10px 15px !important;
+    margin-bottom: 10px !important;
+}
+
+/* 看板娘容器样式 */
+#live2d-widget-container {
+    z-index: 999 !important;
+}
+
+/* 在移动设备上隐藏看板娘 */
+@media (max-width: 768px) {
+    #live2d-widget-container {
+        display: none;
+    }
 }
