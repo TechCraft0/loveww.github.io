@@ -8,7 +8,7 @@
 
     // 配置：选择特效类型
     // 可选值: 'matrix' (数字雨), 'sakura' (樱花), 'heart' (爱心), 'star' (星星)
-    const EFFECT_TYPE = 'sakura'; // 在这里修改特效类型
+    const EFFECT_TYPE = 'star'; // 在这里修改特效类型
 
     // Canvas 设置
     const canvas = document.createElement('canvas');
