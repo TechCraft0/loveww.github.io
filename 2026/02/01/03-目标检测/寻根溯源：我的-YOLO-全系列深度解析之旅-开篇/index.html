@@ -1,0 +1,330 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇) | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)0. 前言：为什么要写这个系列？在计算机视觉（CV）的江湖里，YOLO (You Only Look Once) 是一个绕不开的名字。从 2015 年 Redmon 提出 v1 版本至今，YOLO 系列已经走过了近十个年头，演进到了如今的 v11。 作为一名算法从业者，我几乎每天都在和各种版本的 YOLO 打交道：调参、部署、优化。但在高强度的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)">
+<meta property="og:url" content="https://www.loveww.top/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)0. 前言：为什么要写这个系列？在计算机视觉（CV）的江湖里，YOLO (You Only Look Once) 是一个绕不开的名字。从 2015 年 Redmon 提出 v1 版本至今，YOLO 系列已经走过了近十个年头，演进到了如今的 v11。 作为一名算法从业者，我几乎每天都在和各种版本的 YOLO 打交道：调参、部署、优化。但在高强度的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.loveww.top/images/4.png">
+<meta property="article:published_time" content="2026-02-01T11:02:58.762Z">
+<meta property="article:modified_time" content="2026-02-01T11:02:58.762Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="YOLO系列">
+<meta property="article:tag" content="YOLO">
+<meta property="article:tag" content="目标检测">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.loveww.top/images/4.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)",
+  "url": "https://www.loveww.top/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/",
+  "image": "https://www.loveww.top/images/4.png",
+  "datePublished": "2026-02-01T11:02:58.762Z",
+  "dateModified": "2026-02-01T11:02:58.762Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">10</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">17</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/images/4.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-02-01T11:02:58.762Z" title="发表于 2026-02-01 19:02:58">2026-02-01</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-02-01T11:02:58.762Z" title="更新于 2026-02-01 19:02:58">2026-02-01</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/">目标检测</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">844</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>2分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="寻根溯源：我的-YOLO-全系列深度解析之旅-开篇"><a href="#寻根溯源：我的-YOLO-全系列深度解析之旅-开篇" class="headerlink" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"></a>寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</h1><h2 id="0-前言：为什么要写这个系列？"><a href="#0-前言：为什么要写这个系列？" class="headerlink" title="0. 前言：为什么要写这个系列？"></a>0. 前言：为什么要写这个系列？</h2><p>在计算机视觉（CV）的江湖里，<strong>YOLO (You Only Look Once)</strong> 是一个绕不开的名字。从 2015 年 Redmon 提出 v1 版本至今，YOLO 系列已经走过了近十个年头，演进到了如今的 v11。</p>
+<p>作为一名算法从业者，我几乎每天都在和各种版本的 YOLO 打交道：调参、部署、优化。但在高强度的工作节奏下，我发现自己陷入了一个**“熟练的陌生人”**误区：</p>
+<ul>
+<li><strong>对抗遗忘：</strong> 算法的演进非常细碎。从 Anchor-based 到 Anchor-free，从简单的 IoU 到复杂的 $CIoU$、$DIoU$ 损失函数，如果不系统整理，很多细节（如正负样本匹配策略的改变）很容易在脑海中变得模糊。</li>
+<li><strong>构建底层逻辑：</strong> 仅仅跑通 <code>train.py</code> 是远远不够的。为了在面试中对答如流，也为了在实际业务中能根据场景选择最合适的版本，我需要从底层原理出发，理解每一代 YOLO “为什么要这么改”。</li>
+<li><strong>职业背书：</strong> 博客是最好的技术名片。通过深度解析，我希望向同行和面试官展示：我不仅能通过工具解决问题，更能洞察算法背后的设计哲学。</li>
+</ul>
+<hr>
+<h2 id="1-核心目标：整理、理解、内化"><a href="#1-核心目标：整理、理解、内化" class="headerlink" title="1. 核心目标：整理、理解、内化"></a>1. 核心目标：整理、理解、内化</h2><p>这个系列不仅仅是论文的翻译，更是我个人的<strong>复习笔记</strong>和<strong>实战心得</strong>。我将重点攻克以下“硬骨头”：</p>
+<h3 id="🔍-深度拆解每一代演进"><a href="#🔍-深度拆解每一代演进" class="headerlink" title="🔍 深度拆解每一代演进"></a>🔍 深度拆解每一代演进</h3><p>我会详细说明每个版本的改进原理，包括但不限于：</p>
+<ul>
+<li><strong>网络架构 (Backbone, Neck, Head)：</strong> 每一代在特征提取和融合上做了哪些“加减法”？</li>
+<li><strong>损失函数 (Loss Function)：</strong> 为什么分类损失和回归损失在不断迭代？</li>
+<li><strong>匹配策略 (Label Assignment)：</strong> 详解从 Max IoU 到 SimOTA，再到 Task-Aligned Assigner 的逻辑跃迁。</li>
+<li><strong>工程 Trick：</strong> 数据增强 (Mosaic)、重参数化 (RepVGG)、解耦头等技术的实际意义。</li>
+</ul>
+<h3 id="📊-建立纵向知识地图"><a href="#📊-建立纵向知识地图" class="headerlink" title="📊 建立纵向知识地图"></a>📊 建立纵向知识地图</h3><p>我会复现并横向对比不同版本的性能指标，分析它们在 <strong>精度 ($mAP$)</strong> 与 <strong>速度 ($FPS$)</strong> 之间的权衡方案。</p>
+<hr>
+<h2 id="2-学习路线图-Roadmap"><a href="#2-学习路线图-Roadmap" class="headerlink" title="2. 学习路线图 (Roadmap)"></a>2. 学习路线图 (Roadmap)</h2><p>为了方便复习，我将按以下节奏进行更新：</p>
+<table>
+<thead>
+<tr>
+<th align="left">阶段</th>
+<th align="left">涵盖版本</th>
+<th align="left">核心复习点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>第一阶段：奠基</strong></td>
+<td align="left">YOLOv1 - v3</td>
+<td align="left">单阶段检测框架、Grid Cell 概念、Anchor 与 Darknet 架构</td>
+</tr>
+<tr>
+<td align="left"><strong>第二阶段：巅峰工程</strong></td>
+<td align="left">YOLOv4 - v5</td>
+<td align="left">数据增强 (Mosaic)、SPP&#x2F;PAN 结构、工程化的极致优化</td>
+</tr>
+<tr>
+<td align="left"><strong>第三阶段：现代变革</strong></td>
+<td align="left">YOLOv6 - v8</td>
+<td align="left">Anchor-free 时代、解耦头 (Decoupled Head)、动态匹配策略</td>
+</tr>
+<tr>
+<td align="left"><strong>第四阶段：前沿探索</strong></td>
+<td align="left">YOLOv9 - v11</td>
+<td align="left">可编程梯度信息 (PGI)、无 NMS 设计、效率与精度的极限</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="3-写在最后"><a href="#3-写在最后" class="headerlink" title="3. 写在最后"></a>3. 写在最后</h2><blockquote>
+<p><strong>“Paper is cheap, show me the logic.”</strong></p>
+</blockquote>
+<p>这个系列是我个人对目标检测领域的一次深度致敬。如果你也和我一样，经常在各个 YOLO 版本间“反复横跳”却抓不住重点，希望我的这些记录能陪你一起理清思路。</p>
+<p>这不仅是一份应聘时的展示作品，更是一份属于我自己的<strong>技术资产</strong>。</p>
+<hr>
+<p><strong>下一篇预告：</strong><br><em>《YOLOv1：将检测视为回归的极简美学》—— 聊聊那个一切开始的地方。</em></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/">https://www.loveww.top/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/YOLO%E7%B3%BB%E5%88%97/">YOLO系列</a><a class="post-meta__tags" href="/tags/YOLO/">YOLO</a><a class="post-meta__tags" href="/tags/%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/">目标检测</a><a class="post-meta__tags" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/">深度学习</a></div><div class="post-share"><div class="social-share" data-image="/images/4.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/02/01/01-%E4%B8%AA%E4%BA%BA%E6%80%9D%E8%80%83/hello-world/" title="Hello World"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">Hello World</div></div><div class="info-2"><div class="info-item-1">Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub. Quick StartCreate a new post1$ hexo new &quot;My New Post&quot;  More info: Writing Run server1$ hexo server  More info: Server Generate static files1$ hexo generate  More info: Generating Deploy to remote sites1$ hexo deploy  More info: Deployment </div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/01/03/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/YOLO%E7%B3%BB%E5%88%97-YOLOv1%EF%BC%9A%E5%B0%86%E6%A3%80%E6%B5%8B%E8%A7%86%E4%B8%BA%E5%9B%9E%E5%BD%92%E7%9A%84%E6%9E%81%E7%AE%80%E7%BE%8E%E5%AD%A6/" title="YOLO系列-《YOLOv1：将检测视为回归的极简美学》"><img class="cover" src="/images/5.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-01-03</div><div class="info-item-2">YOLO系列-《YOLOv1：将检测视为回归的极简美学》</div></div><div class="info-2"><div class="info-item-1">前言</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">10</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">17</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87"><span class="toc-number">1.</span> <span class="toc-text">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#0-%E5%89%8D%E8%A8%80%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%86%99%E8%BF%99%E4%B8%AA%E7%B3%BB%E5%88%97%EF%BC%9F"><span class="toc-number">1.1.</span> <span class="toc-text">0. 前言：为什么要写这个系列？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E6%A0%B8%E5%BF%83%E7%9B%AE%E6%A0%87%EF%BC%9A%E6%95%B4%E7%90%86%E3%80%81%E7%90%86%E8%A7%A3%E3%80%81%E5%86%85%E5%8C%96"><span class="toc-number">1.2.</span> <span class="toc-text">1. 核心目标：整理、理解、内化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%F0%9F%94%8D-%E6%B7%B1%E5%BA%A6%E6%8B%86%E8%A7%A3%E6%AF%8F%E4%B8%80%E4%BB%A3%E6%BC%94%E8%BF%9B"><span class="toc-number">1.2.1.</span> <span class="toc-text">🔍 深度拆解每一代演进</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%F0%9F%93%8A-%E5%BB%BA%E7%AB%8B%E7%BA%B5%E5%90%91%E7%9F%A5%E8%AF%86%E5%9C%B0%E5%9B%BE"><span class="toc-number">1.2.2.</span> <span class="toc-text">📊 建立纵向知识地图</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E5%AD%A6%E4%B9%A0%E8%B7%AF%E7%BA%BF%E5%9B%BE-Roadmap"><span class="toc-number">1.3.</span> <span class="toc-text">2. 学习路线图 (Roadmap)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%86%99%E5%9C%A8%E6%9C%80%E5%90%8E"><span class="toc-number">1.4.</span> <span class="toc-text">3. 写在最后</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"><img src="/images/4.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"/></a><div class="content"><a class="title" href="/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</a><time datetime="2026-02-01T11:02:58.762Z" title="发表于 2026-02-01 19:02:58">2026-02-01</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/01/01-%E4%B8%AA%E4%BA%BA%E6%80%9D%E8%80%83/hello-world/" title="Hello World">Hello World</a><time datetime="2026-02-01T11:02:58.750Z" title="发表于 2026-02-01 19:02:58">2026-02-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/01/03/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/YOLO%E7%B3%BB%E5%88%97-YOLOv1%EF%BC%9A%E5%B0%86%E6%A3%80%E6%B5%8B%E8%A7%86%E4%B8%BA%E5%9B%9E%E5%BD%92%E7%9A%84%E6%9E%81%E7%AE%80%E7%BE%8E%E5%AD%A6/" title="YOLO系列-《YOLOv1：将检测视为回归的极简美学》"><img src="/images/5.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="YOLO系列-《YOLOv1：将检测视为回归的极简美学》"/></a><div class="content"><a class="title" href="/2026/01/03/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/YOLO%E7%B3%BB%E5%88%97-YOLOv1%EF%BC%9A%E5%B0%86%E6%A3%80%E6%B5%8B%E8%A7%86%E4%B8%BA%E5%9B%9E%E5%BD%92%E7%9A%84%E6%9E%81%E7%AE%80%E7%BE%8E%E5%AD%A6/" title="YOLO系列-《YOLOv1：将检测视为回归的极简美学》">YOLO系列-《YOLOv1：将检测视为回归的极简美学》</a><time datetime="2026-01-03T07:20:15.000Z" title="发表于 2026-01-03 15:20:15">2026-01-03</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/09/22/04-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/transformer-%E6%89%8B%E6%90%93%E8%BF%87%E7%A8%8B%E5%8F%8A%E6%80%9D%E8%80%83/" title="transformer 手搓过程及思考"><img src="/images/6.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="transformer 手搓过程及思考"/></a><div class="content"><a class="title" href="/2025/09/22/04-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/transformer-%E6%89%8B%E6%90%93%E8%BF%87%E7%A8%8B%E5%8F%8A%E6%80%9D%E8%80%83/" title="transformer 手搓过程及思考">transformer 手搓过程及思考</a><time datetime="2025-09-22T14:29:43.000Z" title="发表于 2025-09-22 22:29:43">2025-09-22</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2025/09/22/02-%E4%BC%A0%E6%84%9F%E5%99%A8%E6%8A%80%E6%9C%AF/Lidar-%E5%9C%B0%E9%9D%A2%E5%88%86%E5%89%B2%E7%AE%97%E6%B3%95%E5%AF%B9%E6%AF%94%E5%8F%8A%E5%AE%9E%E7%8E%B0/" title="Lidar 地面分割算法对比及实现">Lidar 地面分割算法对比及实现</a><time datetime="2025-09-22T14:28:54.000Z" title="发表于 2025-09-22 22:28:54">2025-09-22</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>
