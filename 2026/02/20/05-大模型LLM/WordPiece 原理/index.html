@@ -1,0 +1,727 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>WordPiece 分词算法原理 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="WordPiece 分词算法 Google BERT 的核心分词技术   简介既然你已经对 BPE 的”频次合并”逻辑很熟悉了，那么理解 WordPiece 就会有一种”更进一步”的感觉。 如果说 BPE 是单纯的统计学家，那么 WordPiece 就像是一个概率学家。 它是 Google 在 2016 年为了解决神经机器翻译问题提出的，后来因为成为了 BERT 的默认分词方案而彻底走红。自此之后">
+<meta property="og:type" content="article">
+<meta property="og:title" content="WordPiece 分词算法原理">
+<meta property="og:url" content="https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/WordPiece%20%E5%8E%9F%E7%90%86/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="WordPiece 分词算法 Google BERT 的核心分词技术   简介既然你已经对 BPE 的”频次合并”逻辑很熟悉了，那么理解 WordPiece 就会有一种”更进一步”的感觉。 如果说 BPE 是单纯的统计学家，那么 WordPiece 就像是一个概率学家。 它是 Google 在 2016 年为了解决神经机器翻译问题提出的，后来因为成为了 BERT 的默认分词方案而彻底走红。自此之后">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-02-20T02:58:00.000Z">
+<meta property="article:modified_time" content="2026-02-20T04:35:37.544Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="大模型LLM">
+<meta property="article:tag" content="分词算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "WordPiece 分词算法原理",
+  "url": "https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/WordPiece%20%E5%8E%9F%E7%90%86/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-02-20T02:58:00.000Z",
+  "dateModified": "2026-02-20T04:35:37.544Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/WordPiece%20%E5%8E%9F%E7%90%86/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'WordPiece 分词算法原理',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">13</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">WordPiece 分词算法原理</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">WordPiece 分词算法原理</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-02-20T02:58:00.000Z" title="发表于 2026-02-20 10:58:00">2026-02-20</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-02-20T04:35:37.544Z" title="更新于 2026-02-20 12:35:37">2026-02-20</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/">大模型LLM</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">2.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>9分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="WordPiece-分词算法"><a href="#WordPiece-分词算法" class="headerlink" title="WordPiece 分词算法"></a>WordPiece 分词算法</h1><blockquote>
+<p>Google BERT 的核心分词技术</p>
+</blockquote>
+<hr>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>既然你已经对 BPE 的”频次合并”逻辑很熟悉了，那么理解 <strong>WordPiece</strong> 就会有一种”更进一步”的感觉。</p>
+<p>如果说 BPE 是单纯的<strong>统计学家</strong>，那么 WordPiece 就像是一个<strong>概率学家</strong>。</p>
+<p>它是 Google 在 2016 年为了解决神经机器翻译问题提出的，后来因为成为了 <strong>BERT</strong> 的默认分词方案而彻底走红。自此之后，很多基于 BERT 的 Transformer 模型都复用了这种方法，比如 DistilBERT、MobileBERT、Funnel Transformers 和 MPNET。</p>
+<hr>
+<h2 id="核心思想：似然增量"><a href="#核心思想：似然增量" class="headerlink" title="核心思想：似然增量"></a>核心思想：似然增量</h2><p>WordPiece 和 BPE 的最大区别在于<strong>合并的标准</strong>。</p>
+<table>
+<thead>
+<tr>
+<th align="center">算法</th>
+<th align="left">核心逻辑</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"><strong>BPE</strong></td>
+<td align="left">看<strong>数量</strong>。哪两个字符凑在一起的次数最多，我就合并谁。</td>
+</tr>
+<tr>
+<td align="center"><strong>WordPiece</strong></td>
+<td align="left">看<strong>概率</strong>。合并这两个字符，能不能让整个语料库出现的概率（似然值）提升得最多？</td>
+</tr>
+</tbody></table>
+<h3 id="💡-核心公式"><a href="#💡-核心公式" class="headerlink" title="💡 核心公式"></a>💡 核心公式</h3><p>在选择合并 <code>c₁</code> 和 <code>c₂</code> 生成 <code>c₁c₂</code> 时，WordPiece 衡量的是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">score(c₁, c₂) = log P(c₁c₂) - [log P(c₁) + log P(c₂)]</span><br></pre></td></tr></table></figure>
+
+<p><em>(注：在实际操作中，这等同于点互信息 PMI)</em></p>
+<h3 id="公式背后的逻辑"><a href="#公式背后的逻辑" class="headerlink" title="公式背后的逻辑"></a>公式背后的逻辑</h3><p><strong>如果 <code>c₁</code> 和 <code>c₂</code> 经常在一起出现（分子大），且它们很少单独出现（分母小），分数就会很高。</strong></p>
+<h4 id="直观例子"><a href="#直观例子" class="headerlink" title="直观例子"></a>直观例子</h4><p>假设语料库里有这些词：</p>
+<table>
+<thead>
+<tr>
+<th align="left">词汇</th>
+<th align="left">关系</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">“深度” + “学习”</td>
+<td align="left">经常成对出现</td>
+</tr>
+<tr>
+<td align="left">“的” + “学”</td>
+<td align="left">虽然单独出现很多，但不是有意义的组合</td>
+</tr>
+</tbody></table>
+<p>虽然 “的” 这个字出现次数极多，但 “的” 和 “学” 组合在一起的概率并不比它们随机碰上的概率高多少。而 “深度” 和 “学习” 一旦出现，往往是成对的，所以算法会优先合并 “深度学习”。</p>
+<hr>
+<h1 id="WordPiece-vs-BPE：核心区别"><a href="#WordPiece-vs-BPE：核心区别" class="headerlink" title="WordPiece vs BPE：核心区别"></a>WordPiece vs BPE：核心区别</h1><h2 id="全面对比表"><a href="#全面对比表" class="headerlink" title="全面对比表"></a>全面对比表</h2><table>
+<thead>
+<tr>
+<th align="left">维度</th>
+<th align="left">BPE (字节对编码)</th>
+<th align="left">WordPiece (词片)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>代表模型</strong></td>
+<td align="left">GPT 系列, Llama, RoBERTa</td>
+<td align="left">BERT, DistilBERT, Electra</td>
+</tr>
+<tr>
+<td align="left"><strong>合并逻辑</strong></td>
+<td align="left"><strong>最高频</strong> (Count)</td>
+<td align="left"><strong>最高概率提升</strong> (Likelihood)</td>
+</tr>
+<tr>
+<td align="left"><strong>选择标准</strong></td>
+<td align="left">频率最高</td>
+<td align="left">最大化似然增量</td>
+</tr>
+<tr>
+<td align="left"><strong>子词标记</strong></td>
+<td align="left">通常在词首加 <code>Ġ</code> (GPT)</td>
+<td align="left"><strong>非词首加 <code>##</code></strong></td>
+</tr>
+<tr>
+<td align="left"><strong>分词算法</strong></td>
+<td align="left">贪心匹配</td>
+<td align="left">概率最大化</td>
+</tr>
+<tr>
+<td align="left"><strong>算法本质</strong></td>
+<td align="left">纯粹的数据压缩</td>
+<td align="left">统计语言建模</td>
+</tr>
+<tr>
+<td align="left"><strong>计算复杂度</strong></td>
+<td align="left">低</td>
+<td align="left">中</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="💡-为什么-BERT-选择了-WordPiece？"><a href="#💡-为什么-BERT-选择了-WordPiece？" class="headerlink" title="💡 为什么 BERT 选择了 WordPiece？"></a>💡 为什么 BERT 选择了 WordPiece？</h2><p>WordPiece 这种”互信息”式的合并方式，能够更有效地把<strong>有意义的词根和前缀</strong>提取出来。</p>
+<p><strong>示例：</strong> 对于 <code>unhappy</code>，WordPiece 能更敏锐地察觉到 <code>un</code> 和 <code>happy</code> 之间的独立性，而不仅仅是因为它们凑巧在一起出现得多。</p>
+<blockquote>
+<p><strong>对比视角：</strong></p>
+<ul>
+<li><strong>BPE</strong>：可能只因为 “un” 后面经常跟 “h” 就合并</li>
+<li><strong>WordPiece</strong>：会判断 “un” 作为一个否定前缀的独立性，更合理地分词为 <code>un + ##happy</code></li>
+</ul>
+</blockquote>
+<hr>
+<h1 id="WordPiece-算法实战演示"><a href="#WordPiece-算法实战演示" class="headerlink" title="WordPiece 算法实战演示"></a>WordPiece 算法实战演示</h1><blockquote>
+<p>“光听不练永远无法掌握精髓”，让我们通过一个实际的案例来拆解 WordPiece 的核心逻辑。</p>
+</blockquote>
+<hr>
+<h2 id="第一步：初始化"><a href="#第一步：初始化" class="headerlink" title="第一步：初始化"></a>第一步：初始化</h2><p>假设我们有一组单词及其频次：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&quot;hug&quot;</span>: <span class="number">10</span>, <span class="string">&quot;pug&quot;</span>: <span class="number">5</span>, <span class="string">&quot;pun&quot;</span>: <span class="number">12</span>, <span class="string">&quot;bun&quot;</span>: <span class="number">4</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="基础词表"><a href="#基础词表" class="headerlink" title="基础词表"></a>基础词表</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">h, u, g, p, n, b</span><br></pre></td></tr></table></figure>
+
+<h3 id="添加-标记"><a href="#添加-标记" class="headerlink" title="添加 ## 标记"></a>添加 <code>##</code> 标记</h3><p>WordPiece 有个特殊规则：<strong>非词首</strong>的子词要加 <code>##</code>。</p>
+<p><strong>拆解结果：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">原词</th>
+<th align="left">拆解后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>hug</code></td>
+<td align="left"><code>h, ##u, ##g</code></td>
+</tr>
+<tr>
+<td align="left"><code>pug</code></td>
+<td align="left"><code>p, ##u, ##g</code></td>
+</tr>
+<tr>
+<td align="left"><code>pun</code></td>
+<td align="left"><code>p, ##u, ##n</code></td>
+</tr>
+<tr>
+<td align="left"><code>bun</code></td>
+<td align="left"><code>b, ##u, ##n</code></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>💡 <strong><code>##</code> 的作用：</strong> 标记子词是否为单词的延续部分</p>
+<ul>
+<li>无 <code>##</code> 前缀：单词开头</li>
+<li>有 <code>##</code> 前缀：单词中间或结尾</li>
+</ul>
+</blockquote>
+<hr>
+<h2 id="第二步：计算-Score-并合并"><a href="#第二步：计算-Score-并合并" class="headerlink" title="第二步：计算 Score 并合并"></a>第二步：计算 Score 并合并</h2><p>我们要决定合并哪一对。让我们比较两个候选对。</p>
+<h3 id="候选对-1：-u-g"><a href="#候选对-1：-u-g" class="headerlink" title="候选对 1：##u + ##g"></a>候选对 1：<code>##u</code> + <code>##g</code></h3><p><strong>统计数据：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">数据项</th>
+<th align="center">值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>Count(##u, ##g)</code></td>
+<td align="center">10 (hug) + 5 (pug) &#x3D; <strong>15</strong></td>
+</tr>
+<tr>
+<td align="left"><code>Count(##u)</code></td>
+<td align="center">10 + 5 + 12 + 4 &#x3D; <strong>31</strong></td>
+</tr>
+<tr>
+<td align="left"><code>Count(##g)</code></td>
+<td align="center">10 + 5 &#x3D; <strong>15</strong></td>
+</tr>
+</tbody></table>
+<h3 id="候选对-2：-u-n"><a href="#候选对-2：-u-n" class="headerlink" title="候选对 2：##u + ##n"></a>候选对 2：<code>##u</code> + <code>##n</code></h3><p><strong>统计数据：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">数据项</th>
+<th align="center">值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>Count(##u, ##n)</code></td>
+<td align="center">12 (pun) + 4 (bun) &#x3D; <strong>16</strong></td>
+</tr>
+<tr>
+<td align="left"><code>Count(##n)</code></td>
+<td align="center">12 + 4 &#x3D; <strong>16</strong></td>
+</tr>
+</tbody></table>
+<h3 id="计算得分"><a href="#计算得分" class="headerlink" title="计算得分"></a>计算得分</h3><p>通过不断比较这些得分，WordPiece 会选择得分最高的一对进行合并。</p>
+<hr>
+<h2 id="迭代过程"><a href="#迭代过程" class="headerlink" title="迭代过程"></a>迭代过程</h2><p>WordPiece 会持续迭代，每一轮都：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│                  WordPiece 迭代流程                      │</span><br><span class="line">├─────────────────────────────────────────────────────────┤</span><br><span class="line">│  1. 统计 (Count)                                        │</span><br><span class="line">│     统计所有相邻 token 对的出现频率                      │</span><br><span class="line">│                                                          │</span><br><span class="line">│  2. 计算得分 (Score)                                    │</span><br><span class="line">│     score = log P(pair) - log P(c₁) - log P(c₂)         │</span><br><span class="line">│     选择得分最高的对子                                   │</span><br><span class="line">│                                                          │</span><br><span class="line">│  3. 合并 (Merge)                                        │</span><br><span class="line">│     将选定的对子合并为新的 token                         │</span><br><span class="line">│     例如：##u + ##g → ##ug                              │</span><br><span class="line">│                                                          │</span><br><span class="line">│  4. 更新 (Update)                                       │</span><br><span class="line">│     • 将新 token 加入词表                                │</span><br><span class="line">│     • 更新语料库中的 token 表示                          │</span><br><span class="line">└─────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="停止条件"><a href="#停止条件" class="headerlink" title="停止条件"></a>停止条件</h2><p>迭代持续进行，直到满足以下任一条件：</p>
+<table>
+<thead>
+<tr>
+<th align="left">条件</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>达到词表大小限制</strong></td>
+<td align="left">例如 <code>vocab_size = 30,000</code></td>
+</tr>
+<tr>
+<td align="left"><strong>得分低于阈值</strong></td>
+<td align="left">当最高得分低于某个阈值时（如 <code>1e-5</code>）</td>
+</tr>
+<tr>
+<td align="left"><strong>达到迭代次数</strong></td>
+<td align="left">手动指定合并操作执行 N 次</td>
+</tr>
+</tbody></table>
+<hr>
+<h1 id="分词算法：Longest-Word-First"><a href="#分词算法：Longest-Word-First" class="headerlink" title="分词算法：Longest Word First"></a>分词算法：Longest Word First</h1><p>与编码过程不同，WordPiece 在对新句子进行分词时，采用的是<strong>从左到右的最长匹配策略</strong>。</p>
+<h2 id="算法步骤"><a href="#算法步骤" class="headerlink" title="算法步骤"></a>算法步骤</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">输入：单词 &quot;unaffable&quot;</span><br><span class="line"></span><br><span class="line">1. 先看最长能匹配到什么？匹配到 `un`</span><br><span class="line">2. 剩下的部分是 `affable`</span><br><span class="line">3. 在词表里找以 `##` 开头的最长匹配，匹配到 `##affable`</span><br><span class="line">4. 最终结果：[&quot;un&quot;, &quot;##affable&quot;]</span><br></pre></td></tr></table></figure>
+
+<h2 id="举例说明"><a href="#举例说明" class="headerlink" title="举例说明"></a>举例说明</h2><p>假设词表里有 <code>[&quot;un&quot;, &quot;##affable&quot;, &quot;##able&quot;]</code></p>
+<h3 id="输入：unaffable"><a href="#输入：unaffable" class="headerlink" title="输入：unaffable"></a>输入：<code>unaffable</code></h3><table>
+<thead>
+<tr>
+<th align="center">步骤</th>
+<th align="left">匹配</th>
+<th align="left">剩余</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="left"><code>un</code></td>
+<td align="left"><code>affable</code></td>
+<td align="left">最长前缀匹配</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><code>##affable</code></td>
+<td align="left"><code>&quot;&quot;</code></td>
+<td align="left">最长 <code>##</code> 前缀匹配</td>
+</tr>
+<tr>
+<td align="center"><strong>结果</strong></td>
+<td align="left"><code>[&quot;un&quot;, &quot;##affable&quot;]</code></td>
+<td align="left"></td>
+<td align="left">✅ 成功</td>
+</tr>
+</tbody></table>
+<h3 id="处理未知词"><a href="#处理未知词" class="headerlink" title="处理未知词"></a>处理未知词</h3><p>如果中间有一段在词表中找不到，整个词就会被标记为 <code>[UNK]</code>。</p>
+<blockquote>
+<p>⚠️ <strong>注意：</strong> 与 BPE 不同，WordPiece 使用的是<strong>最长匹配</strong>而非<strong>概率最大化</strong>的分词策略（这是 BERT 的实际实现方式）。</p>
+</blockquote>
+<hr>
+<h1 id="WordPiece-与-BPE-分词对比"><a href="#WordPiece-与-BPE-分词对比" class="headerlink" title="WordPiece 与 BPE 分词对比"></a>WordPiece 与 BPE 分词对比</h1><h2 id="相同输入，不同输出"><a href="#相同输入，不同输出" class="headerlink" title="相同输入，不同输出"></a>相同输入，不同输出</h2><h3 id="输入单词：unhappily"><a href="#输入单词：unhappily" class="headerlink" title="输入单词：unhappily"></a>输入单词：<code>unhappily</code></h3><h4 id="BPE-分词（贪心匹配）"><a href="#BPE-分词（贪心匹配）" class="headerlink" title="BPE 分词（贪心匹配）"></a>BPE 分词（贪心匹配）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">词表：[u, un, unh, h, ha, hap, happ, happi, happily, ##ly, ##y]</span><br><span class="line"></span><br><span class="line">过程：</span><br><span class="line">1. 最长匹配前缀：unh</span><br><span class="line">2. 剩余：appily</span><br><span class="line">3. 最长匹配前缀：happ</span><br><span class="line">4. 剩余：ily</span><br><span class="line">5. 匹配：##ily</span><br><span class="line"></span><br><span class="line">结果：unh happ ##ily</span><br></pre></td></tr></table></figure>
+
+<h4 id="WordPiece-分词（最长匹配）"><a href="#WordPiece-分词（最长匹配）" class="headerlink" title="WordPiece 分词（最长匹配）"></a>WordPiece 分词（最长匹配）</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">词表：[un, unh, happily, happy, ##h, ##app, ##ily, ##ly]</span><br><span class="line"></span><br><span class="line">过程：</span><br><span class="line">1. 最长匹配前缀：un</span><br><span class="line">2. 剩余：happily</span><br><span class="line">3. 匹配：##happily</span><br><span class="line"></span><br><span class="line">结果：un ##happily</span><br></pre></td></tr></table></figure>
+
+<h3 id="关键区别"><a href="#关键区别" class="headerlink" title="关键区别"></a>关键区别</h3><table>
+<thead>
+<tr>
+<th align="left">算法</th>
+<th align="left">策略</th>
+<th align="left">特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>BPE</strong></td>
+<td align="left">局部贪心</td>
+<td align="left">每次选择最长的可能匹配，不考虑整体概率</td>
+</tr>
+<tr>
+<td align="left"><strong>WordPiece</strong></td>
+<td align="left">训练时用概率，分词时用最长匹配</td>
+<td align="left">训练时考虑统计依赖，分词时追求效率</td>
+</tr>
+</tbody></table>
+<hr>
+<h1 id="WordPiece-的数学本质"><a href="#WordPiece-的数学本质" class="headerlink" title="WordPiece 的数学本质"></a>WordPiece 的数学本质</h1><h2 id="信息论视角"><a href="#信息论视角" class="headerlink" title="信息论视角"></a>信息论视角</h2><p>合并得分公式可以重写为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">score(c₁, c₂) = log [P(c₁c₂) / (P(c₁) × P(c₂))]</span><br></pre></td></tr></table></figure>
+
+<p>这正是 <strong>点互信息（Pointwise Mutual Information, PMI）</strong>：</p>
+<blockquote>
+<p><strong>PMI 越高，说明 c₁ 和 c₂ 越倾向于一起出现，而不是偶然相遇。</strong></p>
+</blockquote>
+<h3 id="PMI-的直观理解"><a href="#PMI-的直观理解" class="headerlink" title="PMI 的直观理解"></a>PMI 的直观理解</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">PMI(x, y) = log [联合概率 / (边际概率之积)]</span><br><span class="line"></span><br><span class="line">高 PMI → x 和 y 有强烈的关联</span><br><span class="line">低 PMI → x 和 y 几乎独立</span><br><span class="line">负 PMI → x 和 y 互斥</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="WordPiece-的优缺点"><a href="#WordPiece-的优缺点" class="headerlink" title="WordPiece 的优缺点"></a>WordPiece 的优缺点</h1><h2 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h2><table>
+<thead>
+<tr>
+<th align="left">✅ 优势</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>语义感知</strong></td>
+<td align="left">基于 PMI 的合并能保留有意义的词根和前缀</td>
+</tr>
+<tr>
+<td align="left"><strong>稳定性好</strong></td>
+<td align="left">在 BERT 等模型上表现优异</td>
+</tr>
+<tr>
+<td align="left"><strong>处理 OOV</strong></td>
+<td align="left">通过子词组合解决未知词问题</td>
+</tr>
+<tr>
+<td align="left"><strong>减少无效合并</strong></td>
+<td align="left">不会因为高频但无意义的字符对而合并</td>
+</tr>
+</tbody></table>
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><table>
+<thead>
+<tr>
+<th align="left">❌ 劣势</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>计算复杂</strong></td>
+<td align="left">每次合并需要计算所有候选对的得分</td>
+</tr>
+<tr>
+<td align="left"><strong>训练成本高</strong></td>
+<td align="left">需要多轮迭代统计</td>
+</tr>
+<tr>
+<td align="left"><strong>依赖预训练</strong></td>
+<td align="left">需要大规模语料库训练词表</td>
+</tr>
+<tr>
+<td align="left"><strong>不透明</strong></td>
+<td align="left">相比 BPE 的直观频率统计，概率模型更难理解</td>
+</tr>
+</tbody></table>
+<hr>
+<h1 id="实际应用：BERT-分词示例"><a href="#实际应用：BERT-分词示例" class="headerlink" title="实际应用：BERT 分词示例"></a>实际应用：BERT 分词示例</h1><h2 id="BERT-Base-词表配置"><a href="#BERT-Base-词表配置" class="headerlink" title="BERT Base 词表配置"></a>BERT Base 词表配置</h2><table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>词表大小</strong></td>
+<td align="left">30,000</td>
+</tr>
+<tr>
+<td align="left"><strong>特殊标记</strong></td>
+<td align="left"><code>[PAD]</code>, <code>[UNK]</code>, <code>[CLS]</code>, <code>[SEP]</code>, <code>[MASK]</code></td>
+</tr>
+<tr>
+<td align="left"><strong>最大序列长度</strong></td>
+<td align="left">512</td>
+</tr>
+</tbody></table>
+<h2 id="分词示例"><a href="#分词示例" class="headerlink" title="分词示例"></a>分词示例</h2><h3 id="输入文本"><a href="#输入文本" class="headerlink" title="输入文本"></a>输入文本</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">text = <span class="string">&quot;WordPiece is a tokenization algorithm&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="BERT-分词结果"><a href="#BERT-分词结果" class="headerlink" title="BERT 分词结果"></a>BERT 分词结果</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[<span class="string">&quot;Word&quot;</span>, <span class="string">&quot;##Piece&quot;</span>, <span class="string">&quot;is&quot;</span>, <span class="string">&quot;a&quot;</span>, <span class="string">&quot;token&quot;</span>, <span class="string">&quot;##ization&quot;</span>, <span class="string">&quot;algorithm&quot;</span>]</span><br></pre></td></tr></table></figure>
+
+<h3 id="Token-ID-序列"><a href="#Token-ID-序列" class="headerlink" title="Token ID 序列"></a>Token ID 序列</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[<span class="number">10234</span>, <span class="number">15968</span>, <span class="number">2003</span>, <span class="number">1037</span>, <span class="number">19204</span>, <span class="number">10631</span>, <span class="number">14213</span>, <span class="number">17953</span>]</span><br></pre></td></tr></table></figure>
+
+<h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><blockquote>
+<p>⚠️ <strong>WordPiece 倾向于：</strong></p>
+<ul>
+<li>将罕见词拆分为更小的子词</li>
+<li>保留常见完整词</li>
+<li>使用 <code>##</code> 标记子词延续</li>
+</ul>
+</blockquote>
+<hr>
+<h1 id="三种分词算法全对比"><a href="#三种分词算法全对比" class="headerlink" title="三种分词算法全对比"></a>三种分词算法全对比</h1><table>
+<thead>
+<tr>
+<th align="left">特性</th>
+<th align="left">BPE</th>
+<th align="left">WordPiece</th>
+<th align="left">Unigram</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>训练方向</strong></td>
+<td align="left">自底向上（字符→词）</td>
+<td align="left">自底向上</td>
+<td align="left">自顶向下（词→字符）</td>
+</tr>
+<tr>
+<td align="left"><strong>选择标准</strong></td>
+<td align="left">频率</td>
+<td align="left">似然概率 (PMI)</td>
+<td align="left">损失降低</td>
+</tr>
+<tr>
+<td align="left"><strong>分词策略</strong></td>
+<td align="left">贪心匹配</td>
+<td align="left">最长匹配</td>
+<td align="left">最短路径 (Viterbi)</td>
+</tr>
+<tr>
+<td align="left"><strong>典型应用</strong></td>
+<td align="left">GPT 系列, Llama</td>
+<td align="left">BERT 系列</td>
+<td align="left">T5, ALBERT</td>
+</tr>
+<tr>
+<td align="left"><strong>计算复杂度</strong></td>
+<td align="left">低</td>
+<td align="left">中</td>
+<td align="left">高</td>
+</tr>
+</tbody></table>
+<hr>
+<h1 id="实战：从零实现-WordPiece"><a href="#实战：从零实现-WordPiece" class="headerlink" title="实战：从零实现 WordPiece"></a>实战：从零实现 WordPiece</h1><h2 id="训练算法伪代码"><a href="#训练算法伪代码" class="headerlink" title="训练算法伪代码"></a>训练算法伪代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> Counter</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">train_wordpiece</span>(<span class="params">corpus, vocab_size, threshold=<span class="number">1e-5</span></span>):</span><br><span class="line">    <span class="comment"># 初始化：将所有词拆分为字符</span></span><br><span class="line">    vocab = <span class="built_in">set</span>(char <span class="keyword">for</span> word <span class="keyword">in</span> corpus <span class="keyword">for</span> char <span class="keyword">in</span> word)</span><br><span class="line">    vocab.add(<span class="string">&#x27;##&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 初始频率统计</span></span><br><span class="line">    word_freqs = Counter(corpus)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> <span class="built_in">len</span>(vocab) &lt; vocab_size:</span><br><span class="line">        <span class="comment"># 计算所有可能合并的得分</span></span><br><span class="line">        best_pair = <span class="literal">None</span></span><br><span class="line">        best_score = -<span class="built_in">float</span>(<span class="string">&#x27;inf&#x27;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> pair <span class="keyword">in</span> get_all_pairs(corpus):</span><br><span class="line">            score = compute_score(pair, word_freqs)</span><br><span class="line">            <span class="keyword">if</span> score &gt; best_score:</span><br><span class="line">                best_score = score</span><br><span class="line">                best_pair = pair</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 停止条件</span></span><br><span class="line">        <span class="keyword">if</span> best_score &lt; threshold:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 合并最优对</span></span><br><span class="line">        merge_pair(best_pair, corpus)</span><br><span class="line">        vocab.add(best_pair[<span class="number">0</span>] + best_pair[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> vocab</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">compute_score</span>(<span class="params">pair, word_freqs</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;计算合并得分：log P(ab) - log P(a) - log P(b)&quot;&quot;&quot;</span></span><br><span class="line">    total = <span class="built_in">sum</span>(word_freqs.values())</span><br><span class="line"></span><br><span class="line">    pair_count = count_pair(pair, word_freqs)</span><br><span class="line">    c1_count = word_freqs.get(pair[<span class="number">0</span>], <span class="number">0</span>)</span><br><span class="line">    c2_count = word_freqs.get(pair[<span class="number">1</span>], <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> pair_count == <span class="number">0</span> <span class="keyword">or</span> c1_count == <span class="number">0</span> <span class="keyword">or</span> c2_count == <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">return</span> -<span class="built_in">float</span>(<span class="string">&#x27;inf&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    score = (math.log(pair_count / total) -</span><br><span class="line">             math.log(c1_count / total) -</span><br><span class="line">             math.log(c2_count / total))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> score</span><br></pre></td></tr></table></figure>
+
+<h2 id="分词算法伪代码"><a href="#分词算法伪代码" class="headerlink" title="分词算法伪代码"></a>分词算法伪代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">tokenize_word</span>(<span class="params">word, vocab</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;WordPiece 分词：最长匹配策略&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> word <span class="keyword">in</span> vocab:</span><br><span class="line">        <span class="keyword">return</span> [word]</span><br><span class="line"></span><br><span class="line">    tokens = []</span><br><span class="line">    remaining = word</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> remaining:</span><br><span class="line">        <span class="comment"># 尝试最长的可能匹配</span></span><br><span class="line">        longest_match = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">for</span> length <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(remaining), <span class="number">0</span>, -<span class="number">1</span>):</span><br><span class="line">            prefix = remaining[:length]</span><br><span class="line">            candidate = prefix <span class="keyword">if</span> <span class="keyword">not</span> tokens <span class="keyword">else</span> <span class="string">&#x27;##&#x27;</span> + prefix</span><br><span class="line">            <span class="keyword">if</span> candidate <span class="keyword">in</span> vocab:</span><br><span class="line">                longest_match = candidate</span><br><span class="line">                remaining = remaining[length:]</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> longest_match <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="comment"># 未找到匹配，返回 [UNK]</span></span><br><span class="line">            <span class="keyword">return</span> [<span class="string">&#x27;[UNK]&#x27;</span>]</span><br><span class="line"></span><br><span class="line">        tokens.append(longest_match)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> tokens</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="当前趋势"><a href="#当前趋势" class="headerlink" title="当前趋势"></a>当前趋势</h1><h2 id="主流大模型的选择"><a href="#主流大模型的选择" class="headerlink" title="主流大模型的选择"></a>主流大模型的选择</h2><blockquote>
+<p>💡 <strong>现状：</strong> 目前主流的大模型（如 <strong>Llama 3</strong>、<strong>Mistral</strong>）多回归到了 <strong>BPE</strong>（尤其是 Byte-level BPE）。</p>
+</blockquote>
+<h3 id="为什么回归-BPE？"><a href="#为什么回归-BPE？" class="headerlink" title="为什么回归 BPE？"></a>为什么回归 BPE？</h3><table>
+<thead>
+<tr>
+<th align="left">原因</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>多语言支持</strong></td>
+<td align="left">Byte-level BPE 能处理任何语言的字符</td>
+</tr>
+<tr>
+<td align="left"><strong>鲁棒性</strong></td>
+<td align="left">处理特殊符号、emoji 等更加稳定</td>
+</tr>
+<tr>
+<td align="left"><strong>简洁高效</strong></td>
+<td align="left">实现简单，训练和推理速度快</td>
+</tr>
+<tr>
+<td align="left"><strong>社区生态</strong></td>
+<td align="left">HuggingFace 等工具链对 BPE 支持更好</td>
+</tr>
+</tbody></table>
+<h3 id="WordPiece-的定位"><a href="#WordPiece-的定位" class="headerlink" title="WordPiece 的定位"></a>WordPiece 的定位</h3><p>虽然 BPE 更流行，但 <strong>WordPiece 仍然是 BERT 系列（及其变体）的核心技术</strong>，在理解语义和保持词根完整性方面仍有独特优势。</p>
+<hr>
+<h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h1><ol>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1609.08144">https://arxiv.org/abs/1609.08144</a> - Japanese and Korean Voice Search (WordPiece 原始论文)</li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1810.04805">https://arxiv.org/abs/1810.04805</a> - BERT: Pre-training of Deep Bidirectional Transformers</li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/tokenizers">https://huggingface.co/docs/tokenizers</a> - HuggingFace Tokenizers 文档</li>
+</ol>
+<hr>
+<div align="center">
+
+<p><strong>WordPiece 的本质</strong></p>
+<p>它不只是分词算法，更是连接统计语言模型与深度神经网络的桥梁。</p>
+<p>用概率的眼光看语言，让模型真正理解”词”的意义。</p>
+</div></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/WordPiece%20%E5%8E%9F%E7%90%86/">https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/WordPiece%20%E5%8E%9F%E7%90%86/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/">大模型LLM</a><a class="post-meta__tags" href="/tags/%E5%88%86%E8%AF%8D%E7%AE%97%E6%B3%95/">分词算法</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related  no-desc" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Unigram-Language-Model/" title="Unigram Language Model (ULM)"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">Unigram Language Model (ULM)</div></div></div></a><a class="pagination-related" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/" title="分词算法BPE"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">分词算法BPE</div></div><div class="info-2"><div class="info-item-1">Byte Pair Encoding (BPE) 概念及其原理   简介Byte Pair Encoding (BPE) 是 NLP 中最重要的编码方式之一，它的有效性已被 GPT-2、RoBERTa、XLM、FlauBERT 等强大的语言模型所证实。  初识 BPEBPE 是一种简单的数据压缩算法，它在 1994 年发表的文章”A New Algorithm for Data Compression”中被首次提出。 核心思想 BPE 每一步都将最常见的一对相邻数据单位替换为该数据中没有出现过的一个新单位，反复迭代直到满足停止条件。   压缩示例假设我们有需要编码（压缩）的数据 aaabdaaabac。  相邻字节对 aa 最常出现，用新字节 Z 替换  结果：ZabdZabac，其中 Z = aa   下一个常见字节对是 ab，用 Y 替换  结果：ZYdZYac，其中 Z = aa，Y = ab   继续递归编码 ZY 为 X  最终结果：XdXac，其中 X = ZY，Y = ab，Z = aa   无法进一步压缩，因为没有重复出现的字节对   解码：反向执行以上过程即可还...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related no-desc" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Unigram-Language-Model/" title="Unigram Language Model (ULM)"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-02-20</div><div class="info-item-2">Unigram Language Model (ULM)</div></div></div></a><a class="pagination-related" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/" title="分词算法BPE"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-02-20</div><div class="info-item-2">分词算法BPE</div></div><div class="info-2"><div class="info-item-1">Byte Pair Encoding (BPE) 概念及其原理   简介Byte Pair Encoding (BPE) 是 NLP 中最重要的编码方式之一，它的有效性已被 GPT-2、RoBERTa、XLM、FlauBERT 等强大的语言模型所证实。  初识 BPEBPE 是一种简单的数据压缩算法，它在 1994 年发表的文章”A New Algorithm for Data Compression”中被首次提出。 核心思想 BPE 每一步都将最常见的一对相邻数据单位替换为该数据中没有出现过的一个新单位，反复迭代直到满足停止条件。   压缩示例假设我们有需要编码（压缩）的数据 aaabdaaabac。  相邻字节对 aa 最常出现，用新字节 Z 替换  结果：ZabdZabac，其中 Z = aa   下一个常见字节对是 ab，用 Y 替换  结果：ZYdZYac，其中 Z = aa，Y = ab   继续递归编码 ZY 为 X  最终结果：XdXac，其中 X = ZY，Y = ab，Z = aa   无法进一步压缩，因为没有重复出现的字节对   解码：反向执行以上过程即可还...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">13</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#WordPiece-%E5%88%86%E8%AF%8D%E7%AE%97%E6%B3%95"><span class="toc-number">1.</span> <span class="toc-text">WordPiece 分词算法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3%EF%BC%9A%E4%BC%BC%E7%84%B6%E5%A2%9E%E9%87%8F"><span class="toc-number">1.2.</span> <span class="toc-text">核心思想：似然增量</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%F0%9F%92%A1-%E6%A0%B8%E5%BF%83%E5%85%AC%E5%BC%8F"><span class="toc-number">1.2.1.</span> <span class="toc-text">💡 核心公式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%AC%E5%BC%8F%E8%83%8C%E5%90%8E%E7%9A%84%E9%80%BB%E8%BE%91"><span class="toc-number">1.2.2.</span> <span class="toc-text">公式背后的逻辑</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B4%E8%A7%82%E4%BE%8B%E5%AD%90"><span class="toc-number">1.2.2.1.</span> <span class="toc-text">直观例子</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#WordPiece-vs-BPE%EF%BC%9A%E6%A0%B8%E5%BF%83%E5%8C%BA%E5%88%AB"><span class="toc-number">2.</span> <span class="toc-text">WordPiece vs BPE：核心区别</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%A8%E9%9D%A2%E5%AF%B9%E6%AF%94%E8%A1%A8"><span class="toc-number">2.1.</span> <span class="toc-text">全面对比表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%F0%9F%92%A1-%E4%B8%BA%E4%BB%80%E4%B9%88-BERT-%E9%80%89%E6%8B%A9%E4%BA%86-WordPiece%EF%BC%9F"><span class="toc-number">2.2.</span> <span class="toc-text">💡 为什么 BERT 选择了 WordPiece？</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#WordPiece-%E7%AE%97%E6%B3%95%E5%AE%9E%E6%88%98%E6%BC%94%E7%A4%BA"><span class="toc-number">3.</span> <span class="toc-text">WordPiece 算法实战演示</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%9A%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">3.1.</span> <span class="toc-text">第一步：初始化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80%E8%AF%8D%E8%A1%A8"><span class="toc-number">3.1.1.</span> <span class="toc-text">基础词表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0-%E6%A0%87%E8%AE%B0"><span class="toc-number">3.1.2.</span> <span class="toc-text">添加 ## 标记</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%9A%E8%AE%A1%E7%AE%97-Score-%E5%B9%B6%E5%90%88%E5%B9%B6"><span class="toc-number">3.2.</span> <span class="toc-text">第二步：计算 Score 并合并</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%80%99%E9%80%89%E5%AF%B9-1%EF%BC%9A-u-g"><span class="toc-number">3.2.1.</span> <span class="toc-text">候选对 1：##u + ##g</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%80%99%E9%80%89%E5%AF%B9-2%EF%BC%9A-u-n"><span class="toc-number">3.2.2.</span> <span class="toc-text">候选对 2：##u + ##n</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%A1%E7%AE%97%E5%BE%97%E5%88%86"><span class="toc-number">3.2.3.</span> <span class="toc-text">计算得分</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%AD%E4%BB%A3%E8%BF%87%E7%A8%8B"><span class="toc-number">3.3.</span> <span class="toc-text">迭代过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%81%9C%E6%AD%A2%E6%9D%A1%E4%BB%B6"><span class="toc-number">3.4.</span> <span class="toc-text">停止条件</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E8%AF%8D%E7%AE%97%E6%B3%95%EF%BC%9ALongest-Word-First"><span class="toc-number">4.</span> <span class="toc-text">分词算法：Longest Word First</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%97%E6%B3%95%E6%AD%A5%E9%AA%A4"><span class="toc-number">4.1.</span> <span class="toc-text">算法步骤</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BE%E4%BE%8B%E8%AF%B4%E6%98%8E"><span class="toc-number">4.2.</span> <span class="toc-text">举例说明</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%EF%BC%9Aunaffable"><span class="toc-number">4.2.1.</span> <span class="toc-text">输入：unaffable</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%84%E7%90%86%E6%9C%AA%E7%9F%A5%E8%AF%8D"><span class="toc-number">4.2.2.</span> <span class="toc-text">处理未知词</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#WordPiece-%E4%B8%8E-BPE-%E5%88%86%E8%AF%8D%E5%AF%B9%E6%AF%94"><span class="toc-number">5.</span> <span class="toc-text">WordPiece 与 BPE 分词对比</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%90%8C%E8%BE%93%E5%85%A5%EF%BC%8C%E4%B8%8D%E5%90%8C%E8%BE%93%E5%87%BA"><span class="toc-number">5.1.</span> <span class="toc-text">相同输入，不同输出</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%E5%8D%95%E8%AF%8D%EF%BC%9Aunhappily"><span class="toc-number">5.1.1.</span> <span class="toc-text">输入单词：unhappily</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#BPE-%E5%88%86%E8%AF%8D%EF%BC%88%E8%B4%AA%E5%BF%83%E5%8C%B9%E9%85%8D%EF%BC%89"><span class="toc-number">5.1.1.1.</span> <span class="toc-text">BPE 分词（贪心匹配）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#WordPiece-%E5%88%86%E8%AF%8D%EF%BC%88%E6%9C%80%E9%95%BF%E5%8C%B9%E9%85%8D%EF%BC%89"><span class="toc-number">5.1.1.2.</span> <span class="toc-text">WordPiece 分词（最长匹配）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E5%8C%BA%E5%88%AB"><span class="toc-number">5.1.2.</span> <span class="toc-text">关键区别</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#WordPiece-%E7%9A%84%E6%95%B0%E5%AD%A6%E6%9C%AC%E8%B4%A8"><span class="toc-number">6.</span> <span class="toc-text">WordPiece 的数学本质</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%A1%E6%81%AF%E8%AE%BA%E8%A7%86%E8%A7%92"><span class="toc-number">6.1.</span> <span class="toc-text">信息论视角</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#PMI-%E7%9A%84%E7%9B%B4%E8%A7%82%E7%90%86%E8%A7%A3"><span class="toc-number">6.1.1.</span> <span class="toc-text">PMI 的直观理解</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#WordPiece-%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9"><span class="toc-number">7.</span> <span class="toc-text">WordPiece 的优缺点</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BC%98%E7%82%B9"><span class="toc-number">7.1.</span> <span class="toc-text">优点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%BA%E7%82%B9"><span class="toc-number">7.2.</span> <span class="toc-text">缺点</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E9%99%85%E5%BA%94%E7%94%A8%EF%BC%9ABERT-%E5%88%86%E8%AF%8D%E7%A4%BA%E4%BE%8B"><span class="toc-number">8.</span> <span class="toc-text">实际应用：BERT 分词示例</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#BERT-Base-%E8%AF%8D%E8%A1%A8%E9%85%8D%E7%BD%AE"><span class="toc-number">8.1.</span> <span class="toc-text">BERT Base 词表配置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E8%AF%8D%E7%A4%BA%E4%BE%8B"><span class="toc-number">8.2.</span> <span class="toc-text">分词示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%E6%96%87%E6%9C%AC"><span class="toc-number">8.2.1.</span> <span class="toc-text">输入文本</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#BERT-%E5%88%86%E8%AF%8D%E7%BB%93%E6%9E%9C"><span class="toc-number">8.2.2.</span> <span class="toc-text">BERT 分词结果</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Token-ID-%E5%BA%8F%E5%88%97"><span class="toc-number">8.2.3.</span> <span class="toc-text">Token ID 序列</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">8.2.4.</span> <span class="toc-text">注意事项</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E7%A7%8D%E5%88%86%E8%AF%8D%E7%AE%97%E6%B3%95%E5%85%A8%E5%AF%B9%E6%AF%94"><span class="toc-number">9.</span> <span class="toc-text">三种分词算法全对比</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E6%88%98%EF%BC%9A%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-WordPiece"><span class="toc-number">10.</span> <span class="toc-text">实战：从零实现 WordPiece</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%AD%E7%BB%83%E7%AE%97%E6%B3%95%E4%BC%AA%E4%BB%A3%E7%A0%81"><span class="toc-number">10.1.</span> <span class="toc-text">训练算法伪代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E8%AF%8D%E7%AE%97%E6%B3%95%E4%BC%AA%E4%BB%A3%E7%A0%81"><span class="toc-number">10.2.</span> <span class="toc-text">分词算法伪代码</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BD%93%E5%89%8D%E8%B6%8B%E5%8A%BF"><span class="toc-number">11.</span> <span class="toc-text">当前趋势</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BB%E6%B5%81%E5%A4%A7%E6%A8%A1%E5%9E%8B%E7%9A%84%E9%80%89%E6%8B%A9"><span class="toc-number">11.1.</span> <span class="toc-text">主流大模型的选择</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%9B%9E%E5%BD%92-BPE%EF%BC%9F"><span class="toc-number">11.1.1.</span> <span class="toc-text">为什么回归 BPE？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#WordPiece-%E7%9A%84%E5%AE%9A%E4%BD%8D"><span class="toc-number">11.1.2.</span> <span class="toc-text">WordPiece 的定位</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">12.</span> <span class="toc-text">参考链接</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Unigram-Language-Model/" title="Unigram Language Model (ULM)">Unigram Language Model (ULM)</a><time datetime="2026-02-20T03:58:00.000Z" title="发表于 2026-02-20 11:58:00">2026-02-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/WordPiece%20%E5%8E%9F%E7%90%86/" title="WordPiece 分词算法原理">WordPiece 分词算法原理</a><time datetime="2026-02-20T02:58:00.000Z" title="发表于 2026-02-20 10:58:00">2026-02-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/" title="分词算法BPE">分词算法BPE</a><time datetime="2026-02-20T01:58:00.000Z" title="发表于 2026-02-20 09:58:00">2026-02-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"><img src="/images/4.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"/></a><div class="content"><a class="title" href="/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</a><time datetime="2026-02-01T11:02:58.762Z" title="发表于 2026-02-01 19:02:58">2026-02-01</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/01/01-%E4%B8%AA%E4%BA%BA%E6%80%9D%E8%80%83/hello-world/" title="Hello World">Hello World</a><time datetime="2026-02-01T11:02:58.750Z" title="发表于 2026-02-01 19:02:58">2026-02-01</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>
