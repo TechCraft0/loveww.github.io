@@ -1,0 +1,1061 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>分词算法BPE | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="Byte Pair Encoding (BPE) 概念及其原理   简介Byte Pair Encoding (BPE) 是 NLP 中最重要的编码方式之一，它的有效性已被 GPT-2、RoBERTa、XLM、FlauBERT 等强大的语言模型所证实。  初识 BPEBPE 是一种简单的数据压缩算法，它在 1994 年发表的文章”A New Algorithm for Data Compressi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分词算法BPE">
+<meta property="og:url" content="https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="Byte Pair Encoding (BPE) 概念及其原理   简介Byte Pair Encoding (BPE) 是 NLP 中最重要的编码方式之一，它的有效性已被 GPT-2、RoBERTa、XLM、FlauBERT 等强大的语言模型所证实。  初识 BPEBPE 是一种简单的数据压缩算法，它在 1994 年发表的文章”A New Algorithm for Data Compressi">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-02-20T01:58:00.000Z">
+<meta property="article:modified_time" content="2026-02-20T01:58:20.598Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="大模型LLM">
+<meta property="article:tag" content="分词算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "分词算法BPE",
+  "url": "https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-02-20T01:58:00.000Z",
+  "dateModified": "2026-02-20T01:58:20.598Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '分词算法BPE',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">分词算法BPE</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">分词算法BPE</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-02-20T01:58:00.000Z" title="发表于 2026-02-20 09:58:00">2026-02-20</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-02-20T01:58:20.598Z" title="更新于 2026-02-20 09:58:20">2026-02-20</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/">大模型LLM</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">2.8k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>10分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="Byte-Pair-Encoding-BPE"><a href="#Byte-Pair-Encoding-BPE" class="headerlink" title="Byte Pair Encoding (BPE)"></a>Byte Pair Encoding (BPE)</h1><blockquote>
+<p>概念及其原理</p>
+</blockquote>
+<hr>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>Byte Pair Encoding (BPE) 是 NLP 中最重要的编码方式之一，它的有效性已被 GPT-2、RoBERTa、XLM、FlauBERT 等强大的语言模型所证实。</p>
+<hr>
+<h1 id="初识-BPE"><a href="#初识-BPE" class="headerlink" title="初识 BPE"></a>初识 BPE</h1><p>BPE 是一种简单的数据压缩算法，它在 1994 年发表的文章”A New Algorithm for Data Compression”中被首次提出。</p>
+<h2 id="核心思想"><a href="#核心思想" class="headerlink" title="核心思想"></a>核心思想</h2><blockquote>
+<p><strong>BPE 每一步都将最常见的一对相邻数据单位替换为该数据中没有出现过的一个新单位，反复迭代直到满足停止条件。</strong></p>
+</blockquote>
+<hr>
+<h2 id="压缩示例"><a href="#压缩示例" class="headerlink" title="压缩示例"></a>压缩示例</h2><p>假设我们有需要编码（压缩）的数据 <code>aaabdaaabac</code>。</p>
+<ol>
+<li><p>相邻字节对 <code>aa</code> 最常出现，用新字节 <code>Z</code> 替换</p>
+<ul>
+<li>结果：<code>ZabdZabac</code>，其中 <code>Z = aa</code></li>
+</ul>
+</li>
+<li><p>下一个常见字节对是 <code>ab</code>，用 <code>Y</code> 替换</p>
+<ul>
+<li>结果：<code>ZYdZYac</code>，其中 <code>Z = aa</code>，<code>Y = ab</code></li>
+</ul>
+</li>
+<li><p>继续递归编码 <code>ZY</code> 为 <code>X</code></p>
+<ul>
+<li>最终结果：<code>XdXac</code>，其中 <code>X = ZY</code>，<code>Y = ab</code>，<code>Z = aa</code></li>
+</ul>
+</li>
+<li><p>无法进一步压缩，因为没有重复出现的字节对</p>
+</li>
+</ol>
+<p><strong>解码</strong>：反向执行以上过程即可还原原始数据。</p>
+<hr>
+<h1 id="BPE-在-NLP-中的应用"><a href="#BPE-在-NLP-中的应用" class="headerlink" title="BPE 在 NLP 中的应用"></a>BPE 在 NLP 中的应用</h1><h2 id="核心逻辑：子词分词-Subword-Tokenization"><a href="#核心逻辑：子词分词-Subword-Tokenization" class="headerlink" title="核心逻辑：子词分词 (Subword Tokenization)"></a>核心逻辑：子词分词 (Subword Tokenization)</h2><p>在自然语言处理中，BPE 不再仅仅是为了压缩体积，而是为了在<strong>词表大小</strong>与<strong>语义表示</strong>之间寻找完美的平衡。</p>
+<h3 id="词表是什么？"><a href="#词表是什么？" class="headerlink" title="词表是什么？"></a>词表是什么？</h3><p>词表越大会怎样？越小会怎样？</p>
+<hr>
+<h2 id="核心术语"><a href="#核心术语" class="headerlink" title="核心术语"></a>核心术语</h2><table>
+<thead>
+<tr>
+<th align="left">术语</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Token (符号&#x2F;令牌)</strong></td>
+<td align="left">模型处理的最小单元。可以是完整单词（如 <code>Only</code>），也可以是一个字母或字符</td>
+</tr>
+<tr>
+<td align="left"><strong>Tokenize (分词)</strong></td>
+<td align="left">将连续句子拆解为一个个 Token 的过程</td>
+</tr>
+<tr>
+<td align="left"><strong>Subword (子词)</strong></td>
+<td align="left">介于单词和字符之间的单位。例如 <code>learning</code> 会被拆分为 <code>learn</code>（主语素）和 <code>##ing</code>（后缀）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="BPE-的”NLP-变体”工作原理"><a href="#BPE-的”NLP-变体”工作原理" class="headerlink" title="BPE 的”NLP 变体”工作原理"></a>BPE 的”NLP 变体”工作原理</h2><p>与单纯的字符串压缩不同，NLP 中的 BPE 遵循以下原则：</p>
+<h3 id="高频词一体化"><a href="#高频词一体化" class="headerlink" title="高频词一体化"></a>高频词一体化</h3><p>确保最常见的词（如 <code>the</code>、<code>of</code>、<code>我</code>、<code>你好</code>）在词表中表现为单个 Token。</p>
+<h3 id="低频词子词化"><a href="#低频词子词化" class="headerlink" title="低频词子词化"></a>低频词子词化</h3><p>罕见的词会被分解为两个或多个子词单元（Subword tokens）。</p>
+<blockquote>
+<p><strong>示例</strong>：假设词表里有 <code>happily</code>，但没有 <code>unhappily</code>。BPE 会将其拆解为 <code>un + happily</code>。这样模型即使没见过完整单词，也能通过 <code>un</code> 猜出它是”不快乐”的意思。</p>
+</blockquote>
+<hr>
+<h2 id="为什么它是-Transformer-的标配？"><a href="#为什么它是-Transformer-的标配？" class="headerlink" title="为什么它是 Transformer 的标配？"></a>为什么它是 Transformer 的标配？</h2><table>
+<thead>
+<tr>
+<th align="left">优势</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>解决 OOV (词汇溢出)</strong></td>
+<td align="left">理论上，只要词表包含所有基础字符，模型就能通过组合子词拼凑出任何生僻词</td>
+</tr>
+<tr>
+<td align="left"><strong>语义对齐</strong></td>
+<td align="left">子词往往携带语义（如词根、前缀），有助于模型理解词义</td>
+</tr>
+<tr>
+<td align="left"><strong>效率最优</strong></td>
+<td align="left">相比于纯字符序列（太长）或纯单词序列（词表太大），子词序列长度适中</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="两个版本对比"><a href="#两个版本对比" class="headerlink" title="两个版本对比"></a>两个版本对比</h2><table>
+<thead>
+<tr>
+<th align="center">维度</th>
+<th align="left">1994 压缩算法版</th>
+<th align="left">NLP 变体版 (Transformer)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"><strong>处理对象</strong></td>
+<td align="left">任意字节流 (Bytes)</td>
+<td align="left">语言序列 (Text&#x2F;UTF-8)</td>
+</tr>
+<tr>
+<td align="center"><strong>最终目标</strong></td>
+<td align="left">最小化存储空间</td>
+<td align="left">优化模型理解与生成的概率</td>
+</tr>
+<tr>
+<td align="center"><strong>停止条件</strong></td>
+<td align="left">无法进一步压缩</td>
+<td align="left">达到预设词表大小 (Vocab Size)</td>
+</tr>
+<tr>
+<td align="center"><strong>典型单位</strong></td>
+<td align="left">字节对 (Byte Pair)</td>
+<td align="left">子词单元 (Subword Unit)</td>
+</tr>
+</tbody></table>
+<hr>
+<h1 id="BPE-算法实战演示"><a href="#BPE-算法实战演示" class="headerlink" title="BPE 算法实战演示"></a>BPE 算法实战演示</h1><blockquote>
+<p>“光听不练永远无法掌握精髓”，让我们通过一个实际的 NLP 案例来拆解 BPE 的核心逻辑。</p>
+</blockquote>
+<hr>
+<h2 id="1-初始化：预分词与频次统计"><a href="#1-初始化：预分词与频次统计" class="headerlink" title="1. 初始化：预分词与频次统计"></a>1. 初始化：预分词与频次统计</h2><p>假设我们的语料库在经过初步分词（Pre-tokenization）后，得到以下四个单词及其出现频率：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&quot;old&quot;</span>: <span class="number">7</span>, <span class="string">&quot;older&quot;</span>: <span class="number">3</span>, <span class="string">&quot;finest&quot;</span>: <span class="number">9</span>, <span class="string">&quot;lowest&quot;</span>: <span class="number">4</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-标记边界：引入结束符"><a href="#2-标记边界：引入结束符" class="headerlink" title="2. 标记边界：引入结束符 &lt;/w&gt;"></a>2. 标记边界：引入结束符 <code>&lt;/w&gt;</code></h2><p>为了让算法能够精准识别单词边界，我们在每个单词末尾添加特殊的结束标记 <code>&lt;/w&gt;</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&quot;old&lt;/w&gt;&quot;</span>: <span class="number">7</span>, <span class="string">&quot;older&lt;/w&gt;&quot;</span>: <span class="number">3</span>, <span class="string">&quot;finest&lt;/w&gt;&quot;</span>: <span class="number">9</span>, <span class="string">&quot;lowest&lt;/w&gt;&quot;</span>: <span class="number">4</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>为什么要加 <code>&lt;/w&gt;</code>？</strong></p>
+<ol>
+<li><strong>防止跨词合并</strong>：在统计相邻字符对（Pair）时，如果不加标记，算法可能会错误地将 A 单词的词尾和 B 单词的词头当成一对</li>
+<li><strong>学习位置特征</strong>：<code>&lt;/w&gt;</code> 会被视为字符对的一部分，帮助算法学习哪些子词（如 <code>est</code>）更倾向于出现在词尾</li>
+</ol>
+</blockquote>
+<hr>
+<h2 id="3-拆解：建立初始基础词表"><a href="#3-拆解：建立初始基础词表" class="headerlink" title="3. 拆解：建立初始基础词表"></a>3. 拆解：建立初始基础词表</h2><p>我们将单词进一步拆分为最小的字符单位。此时的”初始 Token 集合”由语料中所有出现的独立字符及 <code>&lt;/w&gt;</code> 组成。</p>
+<h3 id="初始词表及频率统计表"><a href="#初始词表及频率统计表" class="headerlink" title="初始词表及频率统计表"></a>初始词表及频率统计表</h3><table>
+<thead>
+<tr>
+<th align="center">序号</th>
+<th align="left">Token</th>
+<th align="right">出现频次</th>
+<th align="left">来源逻辑举例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="left"><code>&lt;/w&gt;</code></td>
+<td align="right">23</td>
+<td align="left">7(old) + 3(older) + 9(finest) + 4(lowest)</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><code>o</code></td>
+<td align="right">14</td>
+<td align="left">7(old) + 3(older) + 4(lowest)</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><code>l</code></td>
+<td align="right">14</td>
+<td align="left">7(old) + 3(older) + 4(lowest)</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left"><code>d</code></td>
+<td align="right">10</td>
+<td align="left">7(old) + 3(older)</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="left"><code>e</code></td>
+<td align="right">16</td>
+<td align="left">3(older) + 9(finest) + 4(lowest)</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="left"><code>r</code></td>
+<td align="right">3</td>
+<td align="left">3(older)</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="left"><code>f</code></td>
+<td align="right">9</td>
+<td align="left">9(finest)</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="left"><code>i</code></td>
+<td align="right">9</td>
+<td align="left">9(finest)</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="left"><code>n</code></td>
+<td align="right">9</td>
+<td align="left">9(finest)</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="left"><code>s</code></td>
+<td align="right">13</td>
+<td align="left">9(finest) + 4(lowest)</td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="left"><code>t</code></td>
+<td align="right">13</td>
+<td align="left">9(finest) + 4(lowest)</td>
+</tr>
+<tr>
+<td align="center">12</td>
+<td align="left"><code>w</code></td>
+<td align="right">4</td>
+<td align="left">4(lowest)</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>此时的状态</strong>：词表大小（Vocab Size）为 <strong>12</strong>。下一步，BPE 将开始扫描这些 Token，寻找出现频率最高的相邻”对子”进行合并，并一次又一次地执行相同的迭代，直到达到预设的 token 数限制或迭代限制。</p>
+</blockquote>
+<hr>
+<h2 id="迭代机制"><a href="#迭代机制" class="headerlink" title="迭代机制"></a>迭代机制</h2><p>接下来的每一轮循环中，BPE 算法都会执行以下三个标准化步骤：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────┐</span><br><span class="line">│                    BPE 迭代流程                          │</span><br><span class="line">├─────────────────────────────────────────────────────────┤</span><br><span class="line">│  1. 统计 (Count)                                        │</span><br><span class="line">│     扫描当前语料库，统计所有相邻 Token 对出现的频率       │</span><br><span class="line">│                                                          │</span><br><span class="line">│  2. 合并 (Merge)                                        │</span><br><span class="line">│     寻找出现频次最高的一组对子，合并为新的 Token          │</span><br><span class="line">│     例如：e + s → es                                     │</span><br><span class="line">│                                                          │</span><br><span class="line">│  3. 更新 (Update)                                       │</span><br><span class="line">│     • 将新 Token 加入词表索引                            │</span><br><span class="line">│     • 将语料库中对应的字符对替换为新 Token               │</span><br><span class="line">└─────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="停止条件-Termination-Criteria"><a href="#停止条件-Termination-Criteria" class="headerlink" title="停止条件 (Termination Criteria)"></a>停止条件 (Termination Criteria)</h2><p>算法会反复执行上述迭代过程，直到触发以下任一条件：</p>
+<table>
+<thead>
+<tr>
+<th align="left">条件</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>达到预设词表上限</strong></td>
+<td align="left">例如设置 <code>vocab_size = 30000</code>，当合并出的新词加上原始字符达到这个数字时停止</td>
+</tr>
+<tr>
+<td align="left"><strong>达到迭代次数限制</strong></td>
+<td align="left">手动指定合并操作执行 N 次</td>
+</tr>
+<tr>
+<td align="left"><strong>收益递减</strong></td>
+<td align="left">当最高频对子的出现次数低于某个阈值（如 1 次），代表无法进一步压缩语义</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>最终结果</strong>：原本零散的字符（如 <code>o</code>、<code>l</code>、<code>d</code>）会逐渐演变成完整的子词（如 <code>old</code>）。这种方式让模型既能认识常见的完整词汇，也能通过拼凑子词来理解从未见过的生僻词。</p>
+</blockquote>
+<hr>
+<h2 id="完整迭代过程"><a href="#完整迭代过程" class="headerlink" title="完整迭代过程"></a>完整迭代过程</h2><hr>
+<h3 id="迭代-1"><a href="#迭代-1" class="headerlink" title="迭代 1"></a>迭代 1</h3><p>最常见的字节对是 <code>e</code> 和 <code>s</code>（在 <code>finest</code> 和 <code>lowest</code> 中），出现 9 + 4 &#x3D; <strong>13 次</strong>。合并为新的 token <code>es</code>。</p>
+<table>
+<thead>
+<tr>
+<th align="center">Number</th>
+<th align="left">Token</th>
+<th align="right">Frequency</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="left"><code>&lt;/w&gt;</code></td>
+<td align="right">23</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><code>o</code></td>
+<td align="right">14</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><code>l</code></td>
+<td align="right">14</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left"><code>d</code></td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="left"><code>e</code></td>
+<td align="right">16 − 13 &#x3D; <strong>3</strong></td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="left"><code>r</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="left"><code>f</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="left"><code>i</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="left"><code>n</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="left"><code>s</code></td>
+<td align="right">13 − 13 &#x3D; <strong>0</strong></td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="left"><code>t</code></td>
+<td align="right">13</td>
+</tr>
+<tr>
+<td align="center">12</td>
+<td align="left"><code>w</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">13</td>
+<td align="left"><code>es</code></td>
+<td align="right"><strong>13</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="迭代-2"><a href="#迭代-2" class="headerlink" title="迭代 2"></a>迭代 2</h3><p>合并 token <code>es</code> 和 <code>t</code>，出现 <strong>13 次</strong>。形成新 token <code>est</code>。</p>
+<table>
+<thead>
+<tr>
+<th align="center">Number</th>
+<th align="left">Token</th>
+<th align="right">Frequency</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="left"><code>&lt;/w&gt;</code></td>
+<td align="right">23</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><code>o</code></td>
+<td align="right">14</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><code>l</code></td>
+<td align="right">14</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left"><code>d</code></td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="left"><code>e</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="left"><code>r</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="left"><code>f</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="left"><code>i</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="left"><code>n</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="left"><code>s</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="left"><code>t</code></td>
+<td align="right">13 − 13 &#x3D; <strong>0</strong></td>
+</tr>
+<tr>
+<td align="center">12</td>
+<td align="left"><code>w</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">13</td>
+<td align="left"><code>es</code></td>
+<td align="right">13 − 13 &#x3D; <strong>0</strong></td>
+</tr>
+<tr>
+<td align="center">14</td>
+<td align="left"><code>est</code></td>
+<td align="right"><strong>13</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="迭代-3"><a href="#迭代-3" class="headerlink" title="迭代 3"></a>迭代 3</h3><p>字节对 <code>est</code> 和 <code>&lt;/w&gt;</code> 出现 <strong>13 次</strong>。合并为 <code>est&lt;/w&gt;</code>。</p>
+<blockquote>
+<p><strong>注意</strong>：合并停止 token <code>&lt;/w&gt;</code> 非常重要。这有助于算法理解 “estimate” 和 “highest” 等词之间的区别。这两个词都有一个共同的 “est”，但一个词在结尾有 “est” token，一个在开头。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="center">Number</th>
+<th align="left">Token</th>
+<th align="right">Frequency</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="left"><code>&lt;/w&gt;</code></td>
+<td align="right">23 − 13 &#x3D; <strong>10</strong></td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><code>o</code></td>
+<td align="right">14</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><code>l</code></td>
+<td align="right">14</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left"><code>d</code></td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="left"><code>e</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="left"><code>r</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="left"><code>f</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="left"><code>i</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="left"><code>n</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="left"><code>s</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="left"><code>t</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">12</td>
+<td align="left"><code>w</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">13</td>
+<td align="left"><code>es</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">14</td>
+<td align="left"><code>est</code></td>
+<td align="right">13 − 13 &#x3D; <strong>0</strong></td>
+</tr>
+<tr>
+<td align="center">15</td>
+<td align="left"><code>est&lt;/w&gt;</code></td>
+<td align="right"><strong>13</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="迭代-4"><a href="#迭代-4" class="headerlink" title="迭代 4"></a>迭代 4</h3><p>字节对 <code>o</code> 和 <code>l</code> 出现 7 + 3 &#x3D; <strong>10 次</strong>。合并为 <code>ol</code>。</p>
+<table>
+<thead>
+<tr>
+<th align="center">Number</th>
+<th align="left">Token</th>
+<th align="right">Frequency</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="left"><code>&lt;/w&gt;</code></td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><code>o</code></td>
+<td align="right">14 − 10 &#x3D; <strong>4</strong></td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><code>l</code></td>
+<td align="right">14 − 10 &#x3D; <strong>4</strong></td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left"><code>d</code></td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="left"><code>e</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="left"><code>r</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="left"><code>f</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="left"><code>i</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="left"><code>n</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="left"><code>s</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="left"><code>t</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">12</td>
+<td align="left"><code>w</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">13</td>
+<td align="left"><code>es</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">14</td>
+<td align="left"><code>est</code></td>
+<td align="right">13</td>
+</tr>
+<tr>
+<td align="center">15</td>
+<td align="left"><code>ol</code></td>
+<td align="right"><strong>10</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="迭代-5"><a href="#迭代-5" class="headerlink" title="迭代 5"></a>迭代 5</h3><p>字节对 <code>ol</code> 和 <code>d</code> 出现 <strong>10 次</strong>。合并为 <code>old</code>。</p>
+<table>
+<thead>
+<tr>
+<th align="center">Number</th>
+<th align="left">Token</th>
+<th align="right">Frequency</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="left"><code>&lt;/w&gt;</code></td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><code>o</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><code>l</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left"><code>d</code></td>
+<td align="right">10 − 10 &#x3D; <strong>0</strong></td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="left"><code>e</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="left"><code>r</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="left"><code>f</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="left"><code>i</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="left"><code>n</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="left"><code>s</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="left"><code>t</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">12</td>
+<td align="left"><code>w</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">13</td>
+<td align="left"><code>es</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">14</td>
+<td align="left"><code>est</code></td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="center">15</td>
+<td align="left"><code>est&lt;/w&gt;</code></td>
+<td align="right">13</td>
+</tr>
+<tr>
+<td align="center">16</td>
+<td align="left"><code>ol</code></td>
+<td align="right">10 − 10 &#x3D; <strong>0</strong></td>
+</tr>
+<tr>
+<td align="center">17</td>
+<td align="left"><code>old</code></td>
+<td align="right"><strong>10</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="最终-Token-列表"><a href="#最终-Token-列表" class="headerlink" title="最终 Token 列表"></a>最终 Token 列表</h2><p>现在 <code>f</code>、<code>i</code> 和 <code>n</code> 的频率为 9，但只有一个单词包含这些字符，因此不再合并。</p>
+<table>
+<thead>
+<tr>
+<th align="center">Number</th>
+<th align="left">Token</th>
+<th align="right">Frequency</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="left"><code>&lt;/w&gt;</code></td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="left"><code>o</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="left"><code>l</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="left"><code>e</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="left"><code>r</code></td>
+<td align="right">3</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="left"><code>f</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">7</td>
+<td align="left"><code>i</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">8</td>
+<td align="left"><code>n</code></td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td align="center">9</td>
+<td align="left"><code>w</code></td>
+<td align="right">4</td>
+</tr>
+<tr>
+<td align="center">10</td>
+<td align="left"><code>est&lt;/w&gt;</code></td>
+<td align="right">13</td>
+</tr>
+<tr>
+<td align="center">11</td>
+<td align="left"><code>old</code></td>
+<td align="right">10</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Token 列表从 12 减少到 11</strong>，说明 token 列表被有效压缩了。</p>
+</blockquote>
+<hr>
+<h2 id="为什么频率要相减？"><a href="#为什么频率要相减？" class="headerlink" title="为什么频率要相减？"></a>为什么频率要相减？</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">┌──────────────────────────────────────────────────────────┐</span><br><span class="line">│                                                          │</span><br><span class="line">│   Token 的频率代表了它在语料库中&quot;独立存在&quot;的次数。        │</span><br><span class="line">│                                                          │</span><br><span class="line">│   当你把 e 和 s 合并为 es 时，                            │</span><br><span class="line">│   这部分 e 和 s 就已经不再是&quot;独立的个体&quot;了，               │</span><br><span class="line">│   它们变成了 es 的组成部分。                              │</span><br><span class="line">│                                                          │</span><br><span class="line">│   如果不减去，系统会认为语料库中既有 13 个新 Token es，    │</span><br><span class="line">│   又有原先的 13 个 e 和 s，                               │</span><br><span class="line">│   这会导致统计数据双重计算（Double Counting）。           │</span><br><span class="line">│                                                          │</span><br><span class="line">└──────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="算法特点"><a href="#算法特点" class="headerlink" title="算法特点"></a>算法特点</h2><p>在实际的大规模语料库中，BPE 能够通过更多迭代次数将 token 列表缩小更多的比例。</p>
+<blockquote>
+<p><strong>注意</strong>：token 计数既能增加也能减少，也能保持不变。在实际应用中，token 计数通常先增加然后减少。我们选择一个最合适的停止标准，以便数据集可以以最有效的方式分解为 token。</p>
+</blockquote>
+<hr>
+<h1 id="编码和解码"><a href="#编码和解码" class="headerlink" title="编码和解码"></a>编码和解码</h1><h2 id="解码-Decoding"><a href="#解码-Decoding" class="headerlink" title="解码 (Decoding)"></a>解码 (Decoding)</h2><p>解码很简单：将所有 token 连接在一起获得整个单词。</p>
+<blockquote>
+<p><strong>示例</strong>：编码序列 <code>[&quot;the&lt;/w&gt;&quot;, &quot;high&quot;, &quot;est&lt;/w&gt;&quot;, &quot;range&lt;/w&gt;&quot;, &quot;in&lt;/w&gt;&quot;, &quot;Seattle&lt;/w&gt;&quot;]</code></p>
+<p>解码为：<code>[&quot;the&quot;, &quot;highest&quot;, &quot;range&quot;, &quot;in&quot;, &quot;Seattle&quot;]</code></p>
+<p><strong>而不是</strong>：<code>[&quot;the&quot;, &quot;high&quot;, &quot;estrange&quot;, &quot;in&quot;, &quot;Seattle&quot;]</code></p>
+<p>因为 <code>est</code> 中存在 <code>&lt;/w&gt;</code> token。</p>
+</blockquote>
+<hr>
+<h2 id="编码-Encoding"><a href="#编码-Encoding" class="headerlink" title="编码 (Encoding)"></a>编码 (Encoding)</h2><p>编码计算复杂度比较高。算法步骤如下：</p>
+<ol>
+<li>遍历语料库中的所有 token —— <strong>从最长到最短</strong></li>
+<li>尝试用这些 token 替换给定单词序列中的子字符串</li>
+<li>最终所有子字符串将被替换为 token 列表中已存在的 token 组合</li>
+<li>如果有剩余未知子串，用 <code>unknown token</code> 替换</li>
+</ol>
+<blockquote>
+<p>在实践中，我们将 tokenized 好的单词保存在字典中。对于未知（新）词，我们应用上述编码方法进行 tokenization，并将新词的 token 添加到字典中以备将来使用。</p>
+</blockquote>
+<hr>
+<h1 id="算法性质"><a href="#算法性质" class="headerlink" title="算法性质"></a>算法性质</h1><h2 id="BPE-是贪心算法吗？"><a href="#BPE-是贪心算法吗？" class="headerlink" title="BPE 是贪心算法吗？"></a>BPE 是贪心算法吗？</h2><blockquote>
+<p><strong>是的</strong>。为了以最有效的方式构建语料库，BPE 在迭代时通过比较 token 的频率大小来穷尽每一种可能，遵循一种贪婪的策略来尽可能取得最优的解决方案。</p>
+</blockquote>
+<p>尽管贪婪，但 BPE 具有良好的性能，并已成为机器翻译等主流 NLP 任务的首选 tokenize 方法之一。</p>
+<hr>
+<h1 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h1><ol>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/424631681">https://zhuanlan.zhihu.com/p/424631681</a></li>
+</ol>
+<hr>
+<div align="center">
+
+<p><strong>BPE 的动态本质</strong></p>
+<p>它不是静态的切分，而是一个根据统计结果不断进化的压缩过程。</p>
+</div>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/">https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/">大模型LLM</a><a class="post-meta__tags" href="/tags/%E5%88%86%E8%AF%8D%E7%AE%97%E6%B3%95/">分词算法</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"><img class="cover" src="/images/4.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</div></div><div class="info-2"><div class="info-item-1">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)0. 前言：为什么要写这个系列？在计算机视觉（CV）的江湖里，YOLO (You Only Look Once) 是一个绕不开的名字。从 2015 年 Redmon 提出 v1 版本至今，YOLO 系列已经走过了近十个年头，演进到了如今的 v11。 作为一名算法从业者，我几乎每天都在和各种版本的 YOLO 打交道：调参、部署、优化。但在高强度的工作节奏下，我发现自己陷入了一个**“熟练的陌生人”**误区：  对抗遗忘： 算法的演进非常细碎。从 Anchor-based 到 Anchor-free，从简单的 IoU 到复杂的 $CIoU$、$DIoU$ 损失函数，如果不系统整理，很多细节（如正负样本匹配策略的改变）很容易在脑海中变得模糊。 构建底层逻辑： 仅仅跑通 train.py 是远远不够的。为了在面试中对答如流，也为了在实际业务中能根据场景选择最合适的版本，我需要从底层原理出发，理解每一代 YOLO “为什么要这么改”。 职业背书： 博客是最好的技术名片。通过深度解析，我希望向同行和面试官展示：我不仅能通过工具解决问题，更...</div></div></div></a></nav><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Byte-Pair-Encoding-BPE"><span class="toc-number">1.</span> <span class="toc-text">Byte Pair Encoding (BPE)</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.1.</span> <span class="toc-text">简介</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%9D%E8%AF%86-BPE"><span class="toc-number">2.</span> <span class="toc-text">初识 BPE</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3"><span class="toc-number">2.1.</span> <span class="toc-text">核心思想</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%8B%E7%BC%A9%E7%A4%BA%E4%BE%8B"><span class="toc-number">2.2.</span> <span class="toc-text">压缩示例</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#BPE-%E5%9C%A8-NLP-%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8"><span class="toc-number">3.</span> <span class="toc-text">BPE 在 NLP 中的应用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E9%80%BB%E8%BE%91%EF%BC%9A%E5%AD%90%E8%AF%8D%E5%88%86%E8%AF%8D-Subword-Tokenization"><span class="toc-number">3.1.</span> <span class="toc-text">核心逻辑：子词分词 (Subword Tokenization)</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%8D%E8%A1%A8%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-number">3.1.1.</span> <span class="toc-text">词表是什么？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%9C%AF%E8%AF%AD"><span class="toc-number">3.2.</span> <span class="toc-text">核心术语</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#BPE-%E7%9A%84%E2%80%9DNLP-%E5%8F%98%E4%BD%93%E2%80%9D%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="toc-number">3.3.</span> <span class="toc-text">BPE 的”NLP 变体”工作原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%AB%98%E9%A2%91%E8%AF%8D%E4%B8%80%E4%BD%93%E5%8C%96"><span class="toc-number">3.3.1.</span> <span class="toc-text">高频词一体化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%8E%E9%A2%91%E8%AF%8D%E5%AD%90%E8%AF%8D%E5%8C%96"><span class="toc-number">3.3.2.</span> <span class="toc-text">低频词子词化</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%AE%83%E6%98%AF-Transformer-%E7%9A%84%E6%A0%87%E9%85%8D%EF%BC%9F"><span class="toc-number">3.4.</span> <span class="toc-text">为什么它是 Transformer 的标配？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%A4%E4%B8%AA%E7%89%88%E6%9C%AC%E5%AF%B9%E6%AF%94"><span class="toc-number">3.5.</span> <span class="toc-text">两个版本对比</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#BPE-%E7%AE%97%E6%B3%95%E5%AE%9E%E6%88%98%E6%BC%94%E7%A4%BA"><span class="toc-number">4.</span> <span class="toc-text">BPE 算法实战演示</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E5%88%9D%E5%A7%8B%E5%8C%96%EF%BC%9A%E9%A2%84%E5%88%86%E8%AF%8D%E4%B8%8E%E9%A2%91%E6%AC%A1%E7%BB%9F%E8%AE%A1"><span class="toc-number">4.1.</span> <span class="toc-text">1. 初始化：预分词与频次统计</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E6%A0%87%E8%AE%B0%E8%BE%B9%E7%95%8C%EF%BC%9A%E5%BC%95%E5%85%A5%E7%BB%93%E6%9D%9F%E7%AC%A6"><span class="toc-number">4.2.</span> <span class="toc-text">2. 标记边界：引入结束符 &lt;&#x2F;w&gt;</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E6%8B%86%E8%A7%A3%EF%BC%9A%E5%BB%BA%E7%AB%8B%E5%88%9D%E5%A7%8B%E5%9F%BA%E7%A1%80%E8%AF%8D%E8%A1%A8"><span class="toc-number">4.3.</span> <span class="toc-text">3. 拆解：建立初始基础词表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E8%AF%8D%E8%A1%A8%E5%8F%8A%E9%A2%91%E7%8E%87%E7%BB%9F%E8%AE%A1%E8%A1%A8"><span class="toc-number">4.3.1.</span> <span class="toc-text">初始词表及频率统计表</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%AD%E4%BB%A3%E6%9C%BA%E5%88%B6"><span class="toc-number">4.4.</span> <span class="toc-text">迭代机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%81%9C%E6%AD%A2%E6%9D%A1%E4%BB%B6-Termination-Criteria"><span class="toc-number">4.5.</span> <span class="toc-text">停止条件 (Termination Criteria)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E8%BF%AD%E4%BB%A3%E8%BF%87%E7%A8%8B"><span class="toc-number">4.6.</span> <span class="toc-text">完整迭代过程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%AD%E4%BB%A3-1"><span class="toc-number">4.6.1.</span> <span class="toc-text">迭代 1</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%AD%E4%BB%A3-2"><span class="toc-number">4.6.2.</span> <span class="toc-text">迭代 2</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%AD%E4%BB%A3-3"><span class="toc-number">4.6.3.</span> <span class="toc-text">迭代 3</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%AD%E4%BB%A3-4"><span class="toc-number">4.6.4.</span> <span class="toc-text">迭代 4</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%AD%E4%BB%A3-5"><span class="toc-number">4.6.5.</span> <span class="toc-text">迭代 5</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E7%BB%88-Token-%E5%88%97%E8%A1%A8"><span class="toc-number">4.7.</span> <span class="toc-text">最终 Token 列表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%A2%91%E7%8E%87%E8%A6%81%E7%9B%B8%E5%87%8F%EF%BC%9F"><span class="toc-number">4.8.</span> <span class="toc-text">为什么频率要相减？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%97%E6%B3%95%E7%89%B9%E7%82%B9"><span class="toc-number">4.9.</span> <span class="toc-text">算法特点</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%96%E7%A0%81%E5%92%8C%E8%A7%A3%E7%A0%81"><span class="toc-number">5.</span> <span class="toc-text">编码和解码</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E7%A0%81-Decoding"><span class="toc-number">5.1.</span> <span class="toc-text">解码 (Decoding)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E7%A0%81-Encoding"><span class="toc-number">5.2.</span> <span class="toc-text">编码 (Encoding)</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AE%97%E6%B3%95%E6%80%A7%E8%B4%A8"><span class="toc-number">6.</span> <span class="toc-text">算法性质</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#BPE-%E6%98%AF%E8%B4%AA%E5%BF%83%E7%AE%97%E6%B3%95%E5%90%97%EF%BC%9F"><span class="toc-number">6.1.</span> <span class="toc-text">BPE 是贪心算法吗？</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">7.</span> <span class="toc-text">参考链接</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/" title="分词算法BPE">分词算法BPE</a><time datetime="2026-02-20T01:58:00.000Z" title="发表于 2026-02-20 09:58:00">2026-02-20</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"><img src="/images/4.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"/></a><div class="content"><a class="title" href="/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</a><time datetime="2026-02-01T11:02:58.762Z" title="发表于 2026-02-01 19:02:58">2026-02-01</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/01/01-%E4%B8%AA%E4%BA%BA%E6%80%9D%E8%80%83/hello-world/" title="Hello World">Hello World</a><time datetime="2026-02-01T11:02:58.750Z" title="发表于 2026-02-01 19:02:58">2026-02-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/01/03/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/YOLO%E7%B3%BB%E5%88%97-YOLOv1%EF%BC%9A%E5%B0%86%E6%A3%80%E6%B5%8B%E8%A7%86%E4%B8%BA%E5%9B%9E%E5%BD%92%E7%9A%84%E6%9E%81%E7%AE%80%E7%BE%8E%E5%AD%A6/" title="YOLO系列-《YOLOv1：将检测视为回归的极简美学》"><img src="/images/5.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="YOLO系列-《YOLOv1：将检测视为回归的极简美学》"/></a><div class="content"><a class="title" href="/2026/01/03/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/YOLO%E7%B3%BB%E5%88%97-YOLOv1%EF%BC%9A%E5%B0%86%E6%A3%80%E6%B5%8B%E8%A7%86%E4%B8%BA%E5%9B%9E%E5%BD%92%E7%9A%84%E6%9E%81%E7%AE%80%E7%BE%8E%E5%AD%A6/" title="YOLO系列-《YOLOv1：将检测视为回归的极简美学》">YOLO系列-《YOLOv1：将检测视为回归的极简美学》</a><time datetime="2026-01-03T07:20:15.000Z" title="发表于 2026-01-03 15:20:15">2026-01-03</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/09/22/04-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/transformer-%E6%89%8B%E6%90%93%E8%BF%87%E7%A8%8B%E5%8F%8A%E6%80%9D%E8%80%83/" title="transformer 手搓过程及思考"><img src="/images/6.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="transformer 手搓过程及思考"/></a><div class="content"><a class="title" href="/2025/09/22/04-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/transformer-%E6%89%8B%E6%90%93%E8%BF%87%E7%A8%8B%E5%8F%8A%E6%80%9D%E8%80%83/" title="transformer 手搓过程及思考">transformer 手搓过程及思考</a><time datetime="2025-09-22T14:29:43.000Z" title="发表于 2025-09-22 22:29:43">2025-09-22</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>
