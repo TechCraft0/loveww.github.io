@@ -1,0 +1,277 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>transformer 模型随笔 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="随便记录自己想到的问题，自问自答，后续会整理整个transformer 模型的原理及其复现  问题： 在transformer中每个功能层添加add &amp; norm 层的原因 batch norm, layer norm 原理及其区别，以及使用场景">
+<meta property="og:type" content="article">
+<meta property="og:title" content="transformer 模型随笔">
+<meta property="og:url" content="https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/transformer_summary/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="随便记录自己想到的问题，自问自答，后续会整理整个transformer 模型的原理及其复现  问题： 在transformer中每个功能层添加add &amp; norm 层的原因 batch norm, layer norm 原理及其区别，以及使用场景">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-02-20T02:58:00.000Z">
+<meta property="article:modified_time" content="2026-02-25T14:45:57.121Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="大模型LLM">
+<meta property="article:tag" content="transformer">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "transformer 模型随笔",
+  "url": "https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/transformer_summary/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-02-20T02:58:00.000Z",
+  "dateModified": "2026-02-25T14:45:57.121Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/transformer_summary/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'transformer 模型随笔',
+  isHighlightShrink: false,
+  isToc: false,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">20</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">transformer 模型随笔</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">transformer 模型随笔</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-02-20T02:58:00.000Z" title="发表于 2026-02-20 10:58:00">2026-02-20</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-02-25T14:45:57.121Z" title="更新于 2026-02-25 22:45:57">2026-02-25</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/">大模型LLM</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">66</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>1分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p>随便记录自己想到的问题，自问自答，后续会整理整个transformer 模型的原理及其复现</p>
+<ol>
+<li>问题： 在transformer中每个功能层添加add &amp; norm 层的原因</li>
+<li>batch norm, layer norm 原理及其区别，以及使用场景</li>
+</ol>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/transformer_summary/">https://www.loveww.top/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/transformer_summary/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/">大模型LLM</a><a class="post-meta__tags" href="/tags/transformer/">transformer</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Unigram-Language-Model/" title="Unigram Language Model (ULM)"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">Unigram Language Model (ULM)</div></div><div class="info-2"><div class="info-item-1">Ulm 分词算法（通常指 ULM, Unsupervised Language Modeling 分词，或与 SentencePiece 中的 Unigram 语言模型算法高度相关）是一种基于统计概率的子词（Subword）分词算法。 与传统的结巴分词（基于词典）或简单的 BPE（基于频次合并）不同，ULM 的核心逻辑是：从一个巨大的候选词表出发，通过概率模型不断“剔除”对整体语言模型贡献度低的词，直到达到目标词表大小。  1. 原理详解ULM 算法建立在假设：一个句子 $S$ 的分词序列 $x &#x3D; (x_1, x_2, …, x_n)$ 的概率等于各子词概率的乘积： $$ P(x) &#x3D; \prod_{i&#x3D;1}^{n} P(x_i)$$ 核心步骤： 初始化：生成一个非常大的初始词表（例如：所有出现的字符 + 频繁出现的子串）。 期望最大化 (EM 训练)： E-Step：在当前词表下，利用维特比算法 (Viterbi) 找到语料库中最优的分词路径。 M-Step：根据分词结果更新词表中每个词的出现概率 $P(x_i)$。   计算损失 (Loss)：...</div></div></div></a><a class="pagination-related" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/WordPiece%20%E5%8E%9F%E7%90%86/" title="WordPiece 分词算法原理"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">WordPiece 分词算法原理</div></div><div class="info-2"><div class="info-item-1">WordPiece 分词算法 Google BERT 的核心分词技术   简介WordPiece 是 Google 在 2016 年为了解决神经机器翻译问题提出的分词算法，后来因为成为了 BERT 的默认分词方案而彻底走红。自此之后，很多基于 BERT 的 Transformer 模型都复用了这种方法，比如 DistilBERT、MobileBERT、Funnel Transformers 和 MPNET。  初识 WordPiece如果说 BPE 是单纯的统计学家（看数量），那么 WordPiece 就像是一个概率学家（看概率）。 核心思想 WordPiece 的核心目标：最大化训练数据的似然概率  与 BPE 的贪心合并策略不同，WordPiece 采用概率模型来选择如何合并子词。  WordPiece vs BPE：核心区别   维度 BPE WordPiece    合并逻辑 统计最频繁的字节对 最大化训练数据似然概率   选择标准 频率最高 最大化似然增量（PMI）   子词标记 词首加 Ġ (GPT 风格) 非词首加 ##   分词策略 贪心匹配 最长匹配   应用模...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related no-desc" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/BPE%20&%20BBPE%20&%20wordpiece%20&%20ULM/" title="BPE &amp; BBPE &amp; wordpiece &amp; ULM"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-02-20</div><div class="info-item-2">BPE &amp; BBPE &amp; wordpiece &amp; ULM</div></div></div></a><a class="pagination-related" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/" title="分词算法BPE"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-02-20</div><div class="info-item-2">分词算法BPE</div></div><div class="info-2"><div class="info-item-1">Byte Pair Encoding (BPE) 概念及其原理   简介Byte Pair Encoding (BPE) 是 NLP 中最重要的编码方式之一，它的有效性已被 GPT-2、RoBERTa、XLM、FlauBERT 等强大的语言模型所证实。  初识 BPEBPE 是一种简单的数据压缩算法，它在 1994 年发表的文章”A New Algorithm for Data Compression”中被首次提出。 核心思想 BPE 每一步都将最常见的一对相邻数据单位替换为该数据中没有出现过的一个新单位，反复迭代直到满足停止条件。   压缩示例假设我们有需要编码（压缩）的数据 aaabdaaabac。  相邻字节对 aa 最常出现，用新字节 Z 替换  结果：ZabdZabac，其中 Z = aa   下一个常见字节对是 ab，用 Y 替换  结果：ZYdZYac，其中 Z = aa，Y = ab   继续递归编码 ZY 为 X  最终结果：XdXac，其中 X = ZY，Y = ab，Z = aa   无法进一步压缩，因为没有重复出现的字节对   解码：反向执行以上过程即可还...</div></div></div></a><a class="pagination-related" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Unigram-Language-Model/" title="Unigram Language Model (ULM)"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-02-20</div><div class="info-item-2">Unigram Language Model (ULM)</div></div><div class="info-2"><div class="info-item-1">Ulm 分词算法（通常指 ULM, Unsupervised Language Modeling 分词，或与 SentencePiece 中的 Unigram 语言模型算法高度相关）是一种基于统计概率的子词（Subword）分词算法。 与传统的结巴分词（基于词典）或简单的 BPE（基于频次合并）不同，ULM 的核心逻辑是：从一个巨大的候选词表出发，通过概率模型不断“剔除”对整体语言模型贡献度低的词，直到达到目标词表大小。  1. 原理详解ULM 算法建立在假设：一个句子 $S$ 的分词序列 $x &#x3D; (x_1, x_2, …, x_n)$ 的概率等于各子词概率的乘积： $$ P(x) &#x3D; \prod_{i&#x3D;1}^{n} P(x_i)$$ 核心步骤： 初始化：生成一个非常大的初始词表（例如：所有出现的字符 + 频繁出现的子串）。 期望最大化 (EM 训练)： E-Step：在当前词表下，利用维特比算法 (Viterbi) 找到语料库中最优的分词路径。 M-Step：根据分词结果更新词表中每个词的出现概率 $P(x_i)$。   计算损失 (Loss)：...</div></div></div></a><a class="pagination-related" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/WordPiece%20%E5%8E%9F%E7%90%86/" title="WordPiece 分词算法原理"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-02-20</div><div class="info-item-2">WordPiece 分词算法原理</div></div><div class="info-2"><div class="info-item-1">WordPiece 分词算法 Google BERT 的核心分词技术   简介WordPiece 是 Google 在 2016 年为了解决神经机器翻译问题提出的分词算法，后来因为成为了 BERT 的默认分词方案而彻底走红。自此之后，很多基于 BERT 的 Transformer 模型都复用了这种方法，比如 DistilBERT、MobileBERT、Funnel Transformers 和 MPNET。  初识 WordPiece如果说 BPE 是单纯的统计学家（看数量），那么 WordPiece 就像是一个概率学家（看概率）。 核心思想 WordPiece 的核心目标：最大化训练数据的似然概率  与 BPE 的贪心合并策略不同，WordPiece 采用概率模型来选择如何合并子词。  WordPiece vs BPE：核心区别   维度 BPE WordPiece    合并逻辑 统计最频繁的字节对 最大化训练数据似然概率   选择标准 频率最高 最大化似然增量（PMI）   子词标记 词首加 Ġ (GPT 风格) 非词首加 ##   分词策略 贪心匹配 最长匹配   应用模...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">20</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/BPE%20&amp;%20BBPE%20&amp;%20wordpiece%20&amp;%20ULM/" title="BPE &amp; BBPE &amp; wordpiece &amp; ULM">BPE &amp; BBPE &amp; wordpiece &amp; ULM</a><time datetime="2026-02-20T04:58:00.000Z" title="发表于 2026-02-20 12:58:00">2026-02-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Unigram-Language-Model/" title="Unigram Language Model (ULM)">Unigram Language Model (ULM)</a><time datetime="2026-02-20T03:58:00.000Z" title="发表于 2026-02-20 11:58:00">2026-02-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/WordPiece%20%E5%8E%9F%E7%90%86/" title="WordPiece 分词算法原理">WordPiece 分词算法原理</a><time datetime="2026-02-20T02:58:00.000Z" title="发表于 2026-02-20 10:58:00">2026-02-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/transformer_summary/" title="transformer 模型随笔">transformer 模型随笔</a><time datetime="2026-02-20T02:58:00.000Z" title="发表于 2026-02-20 10:58:00">2026-02-20</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/02/20/05-%E5%A4%A7%E6%A8%A1%E5%9E%8BLLM/Byte-Pair-Encoding%E5%8E%9F%E7%90%86/" title="分词算法BPE">分词算法BPE</a><time datetime="2026-02-20T01:58:00.000Z" title="发表于 2026-02-20 09:58:00">2026-02-20</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>
