@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" font-family="ui-monospace,monospace" font-size="12">
+  <rect width="760" height="460" fill="#2d333b"/>
+  <text x="380" y="28" text-anchor="middle" fill="#adbac7" font-size="16">Transformer 一篇论文衍生出的研究宇宙</text>
+  <g>
+    <ellipse cx="380" cy="230" rx="75" ry="40" fill="none" stroke="#f0883e" stroke-width="2"/>
+    <text x="380" y="225" text-anchor="middle" fill="#f0883e">Attention Is</text>
+    <text x="380" y="245" text-anchor="middle" fill="#f0883e">All You Need</text>
+    <text x="380" y="262" text-anchor="middle" fill="#768390" font-size="10">2017.06</text>
+  </g>
+  <g font-size="11" fill="#adbac7">
+    <line x1="380" y1="190" x2="200" y2="100" stroke="#3fb950"/>
+    <rect x="120" y="80" width="160" height="40" fill="none" stroke="#3fb950" rx="5"/>
+    <text x="200" y="98" text-anchor="middle" fill="#3fb950">编码器路线</text>
+    <text x="200" y="114" text-anchor="middle">BERT, RoBERTa, ELECTRA</text>
+
+    <line x1="380" y1="190" x2="560" y2="100" stroke="#388bfd"/>
+    <rect x="480" y="80" width="160" height="40" fill="none" stroke="#388bfd" rx="5"/>
+    <text x="560" y="98" text-anchor="middle" fill="#388bfd">解码器路线</text>
+    <text x="560" y="114" text-anchor="middle">GPT 系列, LLaMA</text>
+
+    <line x1="455" y1="230" x2="640" y2="230" stroke="#a371f7"/>
+    <rect x="560" y="210" width="160" height="40" fill="none" stroke="#a371f7" rx="5"/>
+    <text x="640" y="228" text-anchor="middle" fill="#a371f7">编码-解码路线</text>
+    <text x="640" y="244" text-anchor="middle">T5, BART, Marian</text>
+
+    <line x1="305" y1="230" x2="120" y2="230" stroke="#f85149"/>
+    <rect x="40" y="210" width="160" height="40" fill="none" stroke="#f85149" rx="5"/>
+    <text x="120" y="228" text-anchor="middle" fill="#f85149">视觉路线</text>
+    <text x="120" y="244" text-anchor="middle">ViT, Swin, DeiT, DINO</text>
+
+    <line x1="380" y1="270" x2="200" y2="370" stroke="#f0883e"/>
+    <rect x="120" y="350" width="160" height="40" fill="none" stroke="#f0883e" rx="5"/>
+    <text x="200" y="368" text-anchor="middle" fill="#f0883e">多模态路线</text>
+    <text x="200" y="384" text-anchor="middle">CLIP, Flamingo, GPT-4V</text>
+
+    <line x1="380" y1="270" x2="560" y2="370" stroke="#3fb950"/>
+    <rect x="480" y="350" width="180" height="40" fill="none" stroke="#3fb950" rx="5"/>
+    <text x="570" y="368" text-anchor="middle" fill="#3fb950">效率优化路线</text>
+    <text x="570" y="384" text-anchor="middle">FlashAttn, Mamba, MoE</text>
+  </g>
+  <text x="380" y="430" text-anchor="middle" fill="#768390" font-size="11">截至 2024 年 Google Scholar 引用数 13 万+，几乎所有现代生成模型的祖先</text>
+</svg>

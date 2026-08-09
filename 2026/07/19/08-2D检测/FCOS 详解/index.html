@@ -1,0 +1,578 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>FCOS 详解 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="FCOS: Fully Convolutional One-Stage Object Detection 论文: FCOS: Fully Convolutional One-Stage Object Detection (ICCV 2019)作者: Zhi Tian, Chunhua Shen, Hao Chen, Tong He ( Adelaide &#x2F; 商汤 )代码: tianzhi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FCOS 详解">
+<meta property="og:url" content="https://www.loveww.top/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/FCOS%20%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="FCOS: Fully Convolutional One-Stage Object Detection 论文: FCOS: Fully Convolutional One-Stage Object Detection (ICCV 2019)作者: Zhi Tian, Chunhua Shen, Hao Chen, Tong He ( Adelaide &#x2F; 商汤 )代码: tianzhi">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-07-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-09T15:28:30.809Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="目标检测">
+<meta property="article:tag" content="FCOS">
+<meta property="article:tag" content="计算机视觉">
+<meta property="article:tag" content="AnchorFree">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "FCOS 详解",
+  "url": "https://www.loveww.top/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/FCOS%20%E8%AF%A6%E8%A7%A3/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-07-18T16:00:00.000Z",
+  "dateModified": "2026-08-09T15:28:30.809Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/FCOS%20%E8%AF%A6%E8%A7%A3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'FCOS 详解',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">FCOS 详解</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">FCOS 详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-07-18T16:00:00.000Z" title="发表于 2026-07-19 00:00:00">2026-07-19</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-08-09T15:28:30.809Z" title="更新于 2026-08-09 23:28:30">2026-08-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/2D%E6%A3%80%E6%B5%8B/">2D检测</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">4.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>18分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="FCOS-Fully-Convolutional-One-Stage-Object-Detection"><a href="#FCOS-Fully-Convolutional-One-Stage-Object-Detection" class="headerlink" title="FCOS: Fully Convolutional One-Stage Object Detection"></a>FCOS: Fully Convolutional One-Stage Object Detection</h1><blockquote>
+<p><strong>论文</strong>: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1904.01355">FCOS: Fully Convolutional One-Stage Object Detection</a> (ICCV 2019)<br><strong>作者</strong>: Zhi Tian, Chunhua Shen, Hao Chen, Tong He ( Adelaide &#x2F; 商汤 )<br><strong>代码</strong>: <a target="_blank" rel="noopener" href="https://github.com/tianzhi0549/FCOS">tianzhi0549&#x2F;FCOS</a> &#x2F; <a target="_blank" rel="noopener" href="https://github.com/aim-uofa/AdelaiDet">AdelaiDet</a></p>
+</blockquote>
+<blockquote>
+<p>一句话总结：<strong>FCOS 抛弃 anchor，把目标检测变成”逐像素预测”–特征图上每个位置直接回归到所在 GT 框四条边的距离 (l, t, r, b)。</strong> 它证明了只要配合 FPN 多级预测 + center-ness，anchor-free 检测器就能追平甚至超过 anchor-based。</p>
+</blockquote>
+<hr>
+<h2 id="一、概述：为什么要有-anchor-free"><a href="#一、概述：为什么要有-anchor-free" class="headerlink" title="一、概述：为什么要有 anchor-free"></a>一、概述：为什么要有 anchor-free</h2><p>主流检测器（RetinaNet &#x2F; SSD &#x2F; YOLOv2+ &#x2F; Faster R-CNN）都依赖预设 anchor。anchor 的问题：</p>
+<ol>
+<li><strong>超参敏感</strong>：anchor 的尺寸、宽高比、数量对性能影响大（RetinaNet 在 COCO 上仅调这些就能差 4% mAP）；</li>
+<li><strong>泛化差</strong>：固定宽高比难以适应新任务的物体形状（尤其小目标）；</li>
+<li><strong>负样本爆炸</strong>：为高召回需密集放 anchor（短边 800 输入下 FPN 产生 &gt;180K 个），加剧正负不平衡；</li>
+<li><strong>计算复杂</strong>：训练时要算所有 anchor 与 GT 的 IoU 匹配，占内存。</li>
+</ol>
+<p><strong>FCOS 的思路</strong>：像语义分割一样，把特征图上<strong>每个位置（像素）当作训练样本</strong>，直接回归它到所属物体框四条边的距离。无需 anchor、无需 proposal，只需 NMS 后处理。</p>
+<blockquote>
+<p>与 YOLOv1 的区别：YOLOv1 也是 anchor-free，但<strong>只用中心区域的点</strong>预测，召回低；FCOS <strong>用框内所有点</strong>预测，召回与 anchor-based 持平。与 CornerNet&#x2F;CenterNet 的区别：它们基于关键点（角点&#x2F;中心点），FCOS 是逐像素回归，更像实例分割。</p>
+</blockquote>
+<hr>
+<h2 id="二、核心思想：逐像素回归-l-t-r-b"><a href="#二、核心思想：逐像素回归-l-t-r-b" class="headerlink" title="二、核心思想：逐像素回归 (l, t, r, b)"></a>二、核心思想：逐像素回归 (l, t, r, b)</h2><p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/pixel_regression_concept.png"></p>
+<p>设某层特征图 $F_i$ 的 stride 为 $s$，GT 框 $B_i &#x3D; (x_0, y_0, x_1, y_1, c)$（左上、右下、类别）。</p>
+<p>对特征图上每个位置 $(x,y)$，先映射回原图坐标：</p>
+<p>$$<br>(x_{img}, y_{img}) &#x3D; \left(\left\lfloor \tfrac{s}{2}\right\rfloor + x\cdot s,\ \left\lfloor \tfrac{s}{2}\right\rfloor + y\cdot s\right)<br>$$</p>
+<blockquote>
+<p>这个映射点近似落在该位置的感受野中心。</p>
+</blockquote>
+<p><strong>如果该位置落在某个 GT 框内部</strong>，则它是正样本，负责预测该 GT。它的回归目标是到框四条边的距离：</p>
+<p>$$<br>l^* &#x3D; x_{img} - x_0,\quad t^* &#x3D; y_{img} - y_0,\quad r^* &#x3D; x_1 - x_{img},\quad b^* &#x3D; y_1 - y_{img}<br>$$</p>
+<blockquote>
+<p>四个值都 &gt; 0；网络最后一层用 <code>exp(x)</code>（或 ReLU + norm）把输出映射到 $(0, +\infty)$。</p>
+</blockquote>
+<p><strong>歧义问题</strong>：如果一个位置落在多个 GT 框内（重叠物体），它该回归哪个？FCOS 的策略：<strong>选面积最小的 GT</strong> 作为目标。但这只是兜底，真正的解法是 FPN 多级预测（第六节）。</p>
+<blockquote>
+<p>💡 <strong>FCOS 能用尽可能多的前景样本训练回归器</strong>（框内每个像素都是正样本），而 anchor-based 只把高 IoU 的 anchor 当正样本–这是 FCOS 优于 anchor-based 的重要原因之一。</p>
+</blockquote>
+<hr>
+<h2 id="三、网络架构"><a href="#三、网络架构" class="headerlink" title="三、网络架构"></a>三、网络架构</h2><p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/architecture.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">输入 (3×H×W)</span><br><span class="line">   ↓</span><br><span class="line">Backbone: ResNet-50/101 + FPN</span><br><span class="line">   ↓ 输出 5 级特征图 P3,P4,P5,P6,P7 (stride 8,16,32,64,128)</span><br><span class="line">   ↓↓↓↓↓</span><br><span class="line">每个特征图接一个共享权重的 Head (FCOSHead), 分 3 个分支:</span><br><span class="line">   ├─ cls_tower (4×Conv+GN+ReLU)  ─→ cls_logits  : C×H×W   (C 个二分类, 不含背景)</span><br><span class="line">   ├─ bbox_tower(4×Conv+GN+ReLU)  ─→ bbox_pred   : 4×H×W   (l,t,r,b)</span><br><span class="line">   └─ (centerness 共享 cls_tower)  ─→ centerness  : 1×H×W   (中心度)</span><br></pre></td></tr></table></figure>
+
+<p><strong>要点</strong>：</p>
+<ul>
+<li>Backbone 取 $C_3, C_4, C_5$，FPN 横向连接得 $P_3, P_4, P_5$；$P_6, P_7$ 由 $P_5$ 经 stride&#x3D;2 卷积得到（注意：来自 $P_5$ 而非 $C_5$，参数更少、语义更强）。</li>
+<li>Head 用 <strong>GroupNorm</strong>（不是 BN），因为 head 通道少、用 GN 训练更稳。</li>
+<li><strong>5 个特征图共享同一组 Head 权重</strong>（参数高效 + 提性能）。</li>
+<li>网络每位置输出 &#x3D; <code>C(分类) + 4(回归) + 1(center-ness)</code>，比 RetinaNet（每位置 9 anchor）少约 9 倍。</li>
+</ul>
+<hr>
+<h2 id="四、🔥-数据与目标构造：YOLO-格式如何转-FCOS"><a href="#四、🔥-数据与目标构造：YOLO-格式如何转-FCOS" class="headerlink" title="四、🔥 数据与目标构造：YOLO 格式如何转 FCOS"></a>四、🔥 数据与目标构造：YOLO 格式如何转 FCOS</h2><blockquote>
+<p>这是理解 FCOS 最容易卡住的点。结论先说：<strong>FCOS 不需要你在磁盘上准备”特殊的 per-pixel 标注”。l, t, r, b 这些目标是训练时从 GT 框实时算出来的，不存盘。</strong> 所以”YOLO 格式转 FCOS”本质上只是把 YOLO 标注转成框架能读的格式（通常是 COCO JSON），剩下的 FCOS 自动处理。</p>
+</blockquote>
+<h3 id="4-1-先理清两个层次"><a href="#4-1-先理清两个层次" class="headerlink" title="4.1 先理清两个层次"></a>4.1 先理清两个层次</h3><table>
+<thead>
+<tr>
+<th align="left">层次</th>
+<th align="left">内容</th>
+<th align="left">谁来做</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>磁盘标注格式</strong></td>
+<td align="left">每张图的框 + 类别</td>
+<td align="left">你准备（YOLO &#x2F; COCO &#x2F; VOC 等）</td>
+</tr>
+<tr>
+<td align="left"><strong>训练目标 (l,t,r,b + class + centerness)</strong></td>
+<td align="left">每个特征图位置的目标值</td>
+<td align="left"><strong>框架训练时实时计算</strong>，不存盘</td>
+</tr>
+</tbody></table>
+<ul>
+<li>FCOS 官方代码 &#x2F; mmdetection 的 FCOS，<strong>输入端和 RetinaNet 完全一样</strong>：吃 COCO 格式标注（<code>image</code> + <code>annotations&#123;bbox:[x,y,w,h], category_id&#125;</code>）。</li>
+<li>你看到的 l, t, r, b、center-ness target，都是在 <code>loss</code> &#x2F; <code>target assignment</code> 代码里，每个 batch 从 GT 框现算的。</li>
+</ul>
+<blockquote>
+<p>所以别去找”FCOS 格式数据集生成工具”——不存在那种东西。你要做的只有一件事：<strong>把 YOLO 标注转成 COCO JSON</strong>。</p>
+</blockquote>
+<h3 id="4-2-YOLO-格式-vs-COCO-格式"><a href="#4-2-YOLO-格式-vs-COCO-格式" class="headerlink" title="4.2 YOLO 格式 vs COCO 格式"></a>4.2 YOLO 格式 vs COCO 格式</h3><table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">YOLO 格式</th>
+<th align="left">COCO 格式（FCOS 框架输入）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">存储</td>
+<td align="left">每图一个 <code>.txt</code>（同名）</td>
+<td align="left">一个 JSON 汇总所有图</td>
+</tr>
+<tr>
+<td align="left">每条标注</td>
+<td align="left"><code>class cx cy w h</code></td>
+<td align="left"><code>category_id</code> + <code>bbox=[x,y,w,h]</code></td>
+</tr>
+<tr>
+<td align="left">坐标制</td>
+<td align="left"><strong>归一化 (0~1)</strong>, cxcywh</td>
+<td align="left"><strong>绝对像素</strong>, xywh（左上角 + 宽高）</td>
+</tr>
+<tr>
+<td align="left">类别</td>
+<td align="left">0~C-1 整数</td>
+<td align="left">需映射到 category_id（通常 1~C）</td>
+</tr>
+</tbody></table>
+<h3 id="4-3-坐标转换（核心一步）"><a href="#4-3-坐标转换（核心一步）" class="headerlink" title="4.3 坐标转换（核心一步）"></a>4.3 坐标转换（核心一步）</h3><p>YOLO 一行 <code>class cx cy w h</code>（归一化 cxcywh）→ 绝对 xyxy：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">设图像宽 W, 高 H</span><br><span class="line">cx_a = cx * W,  cy_a = cy * H,  w_a = w * W,  h_a = h * H</span><br><span class="line">x1 = cx_a - w_a/2,  y1 = cy_a - h_a/2</span><br><span class="line">x2 = cx_a + w_a/2,  y2 = cy_a + h_a/2</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">yolo_to_xyxy</span>(<span class="params">line, img_w, img_h</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;YOLO 一行 &#x27;class cx cy w h&#x27;(归一化) -&gt; (cls, x1,y1,x2,y2)(绝对像素)&quot;&quot;&quot;</span></span><br><span class="line">    c, cx, cy, w, h = <span class="built_in">map</span>(<span class="built_in">float</span>, line.split())</span><br><span class="line">    x1 = (cx - w/<span class="number">2</span>) * img_w</span><br><span class="line">    y1 = (cy - h/<span class="number">2</span>) * img_h</span><br><span class="line">    x2 = (cx + w/<span class="number">2</span>) * img_w</span><br><span class="line">    y2 = (cy + h/<span class="number">2</span>) * img_h</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">int</span>(c), x1, y1, x2, y2</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-4-YOLO-数据集-→-COCO-JSON-转换脚本"><a href="#4-4-YOLO-数据集-→-COCO-JSON-转换脚本" class="headerlink" title="4.4 YOLO 数据集 → COCO JSON 转换脚本"></a>4.4 YOLO 数据集 → COCO JSON 转换脚本</h3><p>下面这个脚本把一个 YOLO 数据集目录（<code>images/</code> + <code>labels/</code>，每图同名 <code>.txt</code>）转成 FCOS&#x2F;mmdetection 直接能用的 COCO JSON：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json, glob, os</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">yolo_to_coco</span>(<span class="params">images_dir, labels_dir, out_json, class_names</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    images_dir: 存放 *.jpg/.png 的目录</span></span><br><span class="line"><span class="string">    labels_dir: 存放同名 *.txt 的目录 (YOLO 格式)</span></span><br><span class="line"><span class="string">    out_json:   输出 COCO JSON 路径</span></span><br><span class="line"><span class="string">    class_names: 类别列表, 如 [&#x27;person&#x27;,&#x27;car&#x27;,...]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    coco = &#123;<span class="string">&quot;images&quot;</span>: [], <span class="string">&quot;annotations&quot;</span>: [], <span class="string">&quot;categories&quot;</span>: []&#125;</span><br><span class="line">    <span class="comment"># categories: category_id 从 1 开始 (COCO 惯例, 0 留给背景)</span></span><br><span class="line">    <span class="keyword">for</span> i, name <span class="keyword">in</span> <span class="built_in">enumerate</span>(class_names):</span><br><span class="line">        coco[<span class="string">&quot;categories&quot;</span>].append(&#123;<span class="string">&quot;id&quot;</span>: i+<span class="number">1</span>, <span class="string">&quot;name&quot;</span>: name&#125;)</span><br><span class="line"></span><br><span class="line">    ann_id = <span class="number">1</span></span><br><span class="line">    <span class="keyword">for</span> img_id, img_path <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="built_in">sorted</span>(glob.glob(os.path.join(images_dir, <span class="string">&quot;*.*&quot;</span>))), <span class="number">1</span>):</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> img_path.lower().endswith((<span class="string">&quot;.jpg&quot;</span>, <span class="string">&quot;.png&quot;</span>, <span class="string">&quot;.jpeg&quot;</span>)):</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        im = Image.<span class="built_in">open</span>(img_path)</span><br><span class="line">        W, H = im.size</span><br><span class="line">        coco[<span class="string">&quot;images&quot;</span>].append(&#123;<span class="string">&quot;id&quot;</span>: img_id, <span class="string">&quot;file_name&quot;</span>: os.path.basename(img_path),</span><br><span class="line">                               <span class="string">&quot;width&quot;</span>: W, <span class="string">&quot;height&quot;</span>: H&#125;)</span><br><span class="line"></span><br><span class="line">        label_path = os.path.join(labels_dir, os.path.splitext(os.path.basename(img_path))[<span class="number">0</span>] + <span class="string">&quot;.txt&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> os.path.exists(label_path):</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        <span class="keyword">for</span> line <span class="keyword">in</span> <span class="built_in">open</span>(label_path):</span><br><span class="line">            line = line.strip()</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> line:</span><br><span class="line">                <span class="keyword">continue</span></span><br><span class="line">            c, x1, y1, x2, y2 = yolo_to_xyxy(line, W, H)   <span class="comment"># 4.3 的函数</span></span><br><span class="line">            w, h = x2 - x1, y2 - y1</span><br><span class="line">            coco[<span class="string">&quot;annotations&quot;</span>].append(&#123;</span><br><span class="line">                <span class="string">&quot;id&quot;</span>: ann_id, <span class="string">&quot;image_id&quot;</span>: img_id,</span><br><span class="line">                <span class="string">&quot;category_id&quot;</span>: <span class="built_in">int</span>(c) + <span class="number">1</span>,                  <span class="comment"># YOLO cls 0~C-1 -&gt; COCO 1~C</span></span><br><span class="line">                <span class="string">&quot;bbox&quot;</span>: [x1, y1, w, h],                     <span class="comment"># COCO 用 xywh</span></span><br><span class="line">                <span class="string">&quot;area&quot;</span>: w * h, <span class="string">&quot;iscrowd&quot;</span>: <span class="number">0</span></span><br><span class="line">            &#125;)</span><br><span class="line">            ann_id += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    json.dump(coco, <span class="built_in">open</span>(out_json, <span class="string">&quot;w&quot;</span>), ensure_ascii=<span class="literal">False</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;done: <span class="subst">&#123;<span class="built_in">len</span>(coco[<span class="string">&#x27;images&#x27;</span>])&#125;</span> images, <span class="subst">&#123;<span class="built_in">len</span>(coco[<span class="string">&#x27;annotations&#x27;</span>])&#125;</span> anns -&gt; <span class="subst">&#123;out_json&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 用法</span></span><br><span class="line"><span class="comment"># yolo_to_coco(&quot;dataset/images/train&quot;, &quot;dataset/labels/train&quot;,</span></span><br><span class="line"><span class="comment">#              &quot;dataset/annotations/train.json&quot;, [&quot;cat&quot;,&quot;dog&quot;,&quot;person&quot;])</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>转完得到 <code>train.json</code> &#x2F; <code>val.json</code>，在 mmdetection 的 FCOS config 里把 <code>ann_file</code> 指过去即可–<strong>之后 l,t,r,b 全部自动算</strong>，你不用再管。</p>
+</blockquote>
+<h3 id="4-5-FCOS-的目标分配代码（l-t-r-b-是怎么算出来的）"><a href="#4-5-FCOS-的目标分配代码（l-t-r-b-是怎么算出来的）" class="headerlink" title="4.5 FCOS 的目标分配代码（l, t, r, b 是怎么算出来的）"></a>4.5 FCOS 的目标分配代码（l, t, r, b 是怎么算出来的）</h3><p>这是 FCOS 最核心的部分（来自 AdelaiDet 实现）。看懂这段，就彻底明白”FCOS 的数据怎么造”：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">compute_targets_for_locations</span>(<span class="params">self, locations, targets, size_ranges, num_loc_list</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    locations:  [N, 2]  所有 FPN 层 cat 后的位置(已映射回原图坐标)</span></span><br><span class="line"><span class="string">    targets:    GT (detectron2/mmdet 格式)</span></span><br><span class="line"><span class="string">    size_ranges:[N, 2]  每个位置所在 FPN 层的回归 size 限制 (min, max)</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    labels, reg_targets = [], []</span><br><span class="line">    xs, ys = locations[:, <span class="number">0</span>], locations[:, <span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> im_i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(targets)):</span><br><span class="line">        bboxes = targets[im_i].gt_boxes.tensor        <span class="comment"># [M, 4]  xyxy</span></span><br><span class="line">        labels_per_im = targets[im_i].gt_classes      <span class="comment"># [M]</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> bboxes.numel() == <span class="number">0</span>:                        <span class="comment"># 无 GT -&gt; 全负样本</span></span><br><span class="line">            labels.append(labels_per_im.new_zeros(locations.size(<span class="number">0</span>)) + <span class="variable language_">self</span>.num_classes)</span><br><span class="line">            reg_targets.append(locations.new_zeros((locations.size(<span class="number">0</span>), <span class="number">4</span>))); <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        area = targets[im_i].gt_boxes.area()           <span class="comment"># [M] 每个 GT 面积</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># ★ 关键：每个位置到每个 GT 四条边的距离 l,t,r,b</span></span><br><span class="line">        l = xs[:, <span class="literal">None</span>] - bboxes[:, <span class="number">0</span>][<span class="literal">None</span>]           <span class="comment"># [N, M]</span></span><br><span class="line">        t = ys[:, <span class="literal">None</span>] - bboxes[:, <span class="number">1</span>][<span class="literal">None</span>]</span><br><span class="line">        r = bboxes[:, <span class="number">2</span>][<span class="literal">None</span>] - xs[:, <span class="literal">None</span>]</span><br><span class="line">        b = bboxes[:, <span class="number">3</span>][<span class="literal">None</span>] - ys[:, <span class="literal">None</span>]</span><br><span class="line">        reg_targets_per_im = torch.stack([l, t, r, b], dim=<span class="number">2</span>)   <span class="comment"># [N, M, 4]</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 位置是否在 GT 中心区域内 (center sampling) 或框内</span></span><br><span class="line">        is_in_boxes = <span class="variable language_">self</span>.get_sample_region(...) <span class="keyword">if</span> <span class="variable language_">self</span>.center_sample \</span><br><span class="line">                      <span class="keyword">else</span> (reg_targets_per_im.<span class="built_in">min</span>(dim=<span class="number">2</span>)[<span class="number">0</span>] &gt; <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 位置是否落在该 FPN 层的 size 限制内: m_&#123;i-1&#125; &lt; max(l,t,r,b) &lt; m_i</span></span><br><span class="line">        max_reg = reg_targets_per_im.<span class="built_in">max</span>(dim=<span class="number">2</span>)[<span class="number">0</span>]     <span class="comment"># [N, M]</span></span><br><span class="line">        is_cared_in_level = (max_reg &gt;= size_ranges[:, [<span class="number">0</span>]]) &amp; (max_reg &lt;= size_ranges[:, [<span class="number">1</span>]])</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 把不满足条件的 GT 面积置 INF, 再取最小面积 GT -&gt; 每个位置匹配一个 GT(或无)</span></span><br><span class="line">        loc_area = area[<span class="literal">None</span>].repeat(<span class="built_in">len</span>(locations), <span class="number">1</span>)  <span class="comment"># [N, M]</span></span><br><span class="line">        loc_area[is_in_boxes == <span class="number">0</span>] = <span class="built_in">float</span>(<span class="string">&#x27;INF&#x27;</span>)</span><br><span class="line">        loc_area[is_cared_in_level == <span class="number">0</span>] = <span class="built_in">float</span>(<span class="string">&#x27;INF&#x27;</span>)</span><br><span class="line">        loc_min_area, loc_gt_inds = loc_area.<span class="built_in">min</span>(dim=<span class="number">1</span>)  <span class="comment"># [N]</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 取出每个位置的回归 target 和类别</span></span><br><span class="line">        reg_targets_per_im = reg_targets_per_im[<span class="built_in">range</span>(<span class="built_in">len</span>(locations)), loc_gt_inds]</span><br><span class="line">        labels_per_im = labels_per_im[loc_gt_inds]</span><br><span class="line">        labels_per_im[loc_min_area == <span class="built_in">float</span>(<span class="string">&#x27;INF&#x27;</span>)] = <span class="variable language_">self</span>.num_classes  <span class="comment"># 负样本</span></span><br><span class="line"></span><br><span class="line">        labels.append(labels_per_im)</span><br><span class="line">        reg_targets.append(reg_targets_per_im)</span><br></pre></td></tr></table></figure>
+
+<p><strong>center-ness target 由回归 target 直接算出</strong>（无需额外标注）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">compute_ctrness_targets</span>(<span class="params">reg_targets</span>):</span><br><span class="line">    lr = reg_targets[:, [<span class="number">0</span>, <span class="number">2</span>]]      <span class="comment"># left, right</span></span><br><span class="line">    tb = reg_targets[:, [<span class="number">1</span>, <span class="number">3</span>]]      <span class="comment"># top, bottom</span></span><br><span class="line">    ctrness = (lr.<span class="built_in">min</span>(-<span class="number">1</span>)[<span class="number">0</span>] / lr.<span class="built_in">max</span>(-<span class="number">1</span>)[<span class="number">0</span>]) * (tb.<span class="built_in">min</span>(-<span class="number">1</span>)[<span class="number">0</span>] / tb.<span class="built_in">max</span>(-<span class="number">1</span>)[<span class="number">0</span>])</span><br><span class="line">    <span class="keyword">return</span> torch.sqrt(ctrness)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>📌 <strong>总结这条链路</strong>：磁盘上只有 <code>bbox(xyxy) + class</code> → dataloader 取出 → <code>compute_targets_for_locations</code> 对每个特征图位置算 <code>l,t,r,b</code> + 分配类别 → <code>compute_ctrness_targets</code> 算 center-ness → 送入 loss。<strong>你只需要喂框，per-pixel 目标全是代码算的。</strong></p>
+</blockquote>
+<h3 id="4-6-位置生成-中心采样-FPN-分级"><a href="#4-6-位置生成-中心采样-FPN-分级" class="headerlink" title="4.6 位置生成 + 中心采样 + FPN 分级"></a>4.6 位置生成 + 中心采样 + FPN 分级</h3><p><strong>位置生成</strong>（<code>compute_locations</code>）：对每层特征图 (H×W, stride s)，生成所有位置坐标并映射回原图：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">compute_locations_per_level</span>(<span class="params">h, w, stride, device</span>):</span><br><span class="line">    shifts_x = torch.arange(<span class="number">0</span>, w * stride, step=stride, device=device)</span><br><span class="line">    shifts_y = torch.arange(<span class="number">0</span>, h * stride, step=stride, device=device)</span><br><span class="line">    sy, sx = torch.meshgrid(shifts_y, shifts_x)</span><br><span class="line">    locations = torch.stack((sx.reshape(-<span class="number">1</span>), sy.reshape(-<span class="number">1</span>)), dim=<span class="number">1</span>) + stride // <span class="number">2</span></span><br><span class="line">    <span class="keyword">return</span> locations          <span class="comment"># [H*W, 2], 即每位置映射回 (x*s + s/2, y*s + s/2)</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/center_sampling.png"></p>
+<p><strong>中心采样（center sampling）</strong>：并非”框内所有点”都算正样本，而是只取<strong>以 GT 中心为中心、半径 <code>r·s</code>（r&#x3D;1.5）的子区域</strong>内的位置为正。这能减少远离中心的低质量样本，进一步降低歧义（实现时保证子区域不超出 GT）。</p>
+<p><strong>FPN 分级</strong>：每个 GT 在哪一层预测，由 <code>max(l,t,r,b)</code> 落在哪个区间决定（详见第六节）。阈值 $m_2..m_7 &#x3D; 0, 64, 128, 256, 512, \infty$。</p>
+<hr>
+<h2 id="五、Center-ness-分支"><a href="#五、Center-ness-分支" class="headerlink" title="五、Center-ness 分支"></a>五、Center-ness 分支</h2><p><strong>问题</strong>：远离物体中心的位置（靠近框边缘）会预测出低质量框–这些位置感受野只看到物体一小部分，且 l,t,r,b 分布不均（如 l&#x3D;1, r&#x3D;100），预测不准。这些”高分类分但低 IoU”的框会拉低 precision。</p>
+<p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/cls_loc_inconsistency.png"></p>
+<p><strong>Center-ness</strong>：在回归分支末尾加一个分支，预测位置到物体中心的归一化距离，值域 [0,1]：</p>
+<p>$$<br>centerness^* &#x3D; \sqrt{\frac{\min(l^<em>, r^</em>)}{\max(l^<em>, r^</em>)} \times \frac{\min(t^<em>, b^</em>)}{\max(t^<em>, b^</em>)}}<br>$$</p>
+<p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/centerness_visual.png"></p>
+<ul>
+<li>位置在中心 → 左右&#x2F;上下接近 → center-ness → 1；</li>
+<li>位置靠边 → 一项很小 → center-ness → 0。</li>
+</ul>
+<p><strong>作用</strong>：</p>
+<ul>
+<li>训练用 <strong>BCE loss</strong>（只在正样本上算）；</li>
+<li>测试时，最终分数 &#x3D; $\sqrt{p_{x,y} \times centerness_{x,y}}$（分类分 × 中心度），用于排序。远离中心的框分数被压低，更易被 NMS 滤除。</li>
+</ul>
+<p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/centerness_effect.png"></p>
+<blockquote>
+<p>实验显示 center-ness 约提升 1 个点 AP。代价是不引入任何超参（是个软阈值，网络自己学）。</p>
+<p>⚠️ <strong>局限</strong>：center-ness 训练时和分类分开，测试时才相乘，存在训练-测试不一致。后续 <strong>Generalized Focal Loss</strong> 把质量估计和分类联合训练，且用 IoU 代替 center-ness 评估框质量更好（IoU label 通常比 center-ness 大，更易召回）：</p>
+</blockquote>
+<p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/iou_vs_centerness.png"></p>
+<hr>
+<h2 id="六、多级预测（FPN）解决歧义与低召回"><a href="#六、多级预测（FPN）解决歧义与低召回" class="headerlink" title="六、多级预测（FPN）解决歧义与低召回"></a>六、多级预测（FPN）解决歧义与低召回</h2><p>FCOS 不用 anchor 带来两个风险：① 大 stride 导致 BPR（最佳召回）低；② 重叠框导致歧义。FPN 多级预测同时解决两者。</p>
+<h3 id="6-1-按回归范围分级"><a href="#6-1-按回归范围分级" class="headerlink" title="6.1 按回归范围分级"></a>6.1 按回归范围分级</h3><p>不同大小的 GT 分配到不同 FPN 层：每个位置算 <code>max(l,t,r,b)</code>，落在哪个区间就由哪层负责：</p>
+<p>$$<br>m_{i-1} &lt; \max(l^<em>, t^</em>, r^<em>, b^</em>) &lt; m_i<br>$$</p>
+<table>
+<thead>
+<tr>
+<th align="left">FPN 层</th>
+<th align="left">stride</th>
+<th align="left">回归范围 max(l,t,r,b)</th>
+<th align="left">目标</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">P3</td>
+<td align="left">8</td>
+<td align="left">(0, 64)</td>
+<td align="left">小目标</td>
+</tr>
+<tr>
+<td align="left">P4</td>
+<td align="left">16</td>
+<td align="left">(64, 128)</td>
+<td align="left">中小</td>
+</tr>
+<tr>
+<td align="left">P5</td>
+<td align="left">32</td>
+<td align="left">(128, 256)</td>
+<td align="left">中</td>
+</tr>
+<tr>
+<td align="left">P6</td>
+<td align="left">64</td>
+<td align="left">(256, 512)</td>
+<td align="left">大</td>
+</tr>
+<tr>
+<td align="left">P7</td>
+<td align="left">128</td>
+<td align="left">(512, ∞)</td>
+<td align="left">超大</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>因为重叠物体<strong>大概率尺寸不同</strong>，会被分到不同层，歧义大幅减少。同级仍冲突时，仍按”面积最小 GT”兜底：</p>
+</blockquote>
+<p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/ambiguity_min_area.png"></p>
+<h3 id="6-2-回归范围差异的处理"><a href="#6-2-回归范围差异的处理" class="headerlink" title="6.2 回归范围差异的处理"></a>6.2 回归范围差异的处理</h3><p>不同层回归值范围差很大（P3 是 0~64，P7 是 512+），但 Head 权重共享。早期 FCOS 用可学习 scale $s_i$：输出 $&#x3D; \exp(s_i \cdot x)$ 调整指数基数。新版直接把回归 target <strong>除以 stride</strong> 归一化（<code>norm_reg_targets</code>），等价且更简洁。</p>
+<h3 id="6-3-BPR-与歧义统计"><a href="#6-3-BPR-与歧义统计" class="headerlink" title="6.3 BPR 与歧义统计"></a>6.3 BPR 与歧义统计</h3><p>FCOS 的 BPR（最佳可能召回）与 RetinaNet 基本持平：</p>
+<p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/bpr_table.png"></p>
+<p>歧义样本占比（采用中心采样 + FPN 后仅 2.66%）：</p>
+<p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/ambiguity_stats.png"></p>
+<blockquote>
+<p>结论：FCOS 的召回并不比 anchor-based 差，歧义也已压到很低。但<strong>对同尺度密集重叠物体</strong>（如低空行人、密集人群）仍不友好–FCOS 的分级只能解决不同尺寸间的重叠。</p>
+</blockquote>
+<hr>
+<h2 id="七、损失函数"><a href="#七、损失函数" class="headerlink" title="七、损失函数"></a>七、损失函数</h2><p>$$<br>L &#x3D; \frac{1}{N_{pos}}\sum_{x,y} L_{cls}(p_{x,y}, c^<em><em>{x,y}) + \frac{\lambda_1}{N</em>{pos}}\sum_{x,y} \mathbf{1}_{c^</em><em>{x,y}&gt;0} L</em>{reg}(t_{x,y}, t^<em><em>{x,y}) + \frac{\lambda_2}{N</em>{pos}}\sum_{x,y} \mathbf{1}_{c^</em><em>{x,y}&gt;0} L</em>{ctr}(centerness_{x,y}, centerness^*_{x,y})<br>$$</p>
+<table>
+<thead>
+<tr>
+<th align="left">分支</th>
+<th align="left">损失</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">分类 $L_{cls}$</td>
+<td align="left"><strong>Focal Loss</strong></td>
+<td align="left">C 个二分类，所有位置参与</td>
+</tr>
+<tr>
+<td align="left">回归 $L_{reg}$</td>
+<td align="left"><strong>IoU &#x2F; GIoU Loss</strong></td>
+<td align="left">仅正样本，把 l,t,r,b 当整体算 IoU</td>
+</tr>
+<tr>
+<td align="left">中心度 $L_{ctr}$</td>
+<td align="left"><strong>BCE Loss</strong></td>
+<td align="left">仅正样本</td>
+</tr>
+</tbody></table>
+<ul>
+<li>$\mathbf{1}_{c^*&gt;0}$：正样本指示函数，回归和中心度只在正样本上算；</li>
+<li>$N_{pos}$：正样本数归一化；$\lambda_1, \lambda_2$ 论文取 1；</li>
+<li>回归用 <strong>GIoU</strong>（优于 IoU）：IoU 在两框不相交时梯度为 0，GIoU 能反映不相交时的距离，$-1 \le GIoU \le 1$，loss &#x3D; 1 - GIoU。</li>
+</ul>
+<hr>
+<h2 id="八、训练与推理"><a href="#八、训练与推理" class="headerlink" title="八、训练与推理"></a>八、训练与推理</h2><p><strong>训练</strong>：</p>
+<ul>
+<li>ResNet-50 backbone，ImageNet 预训练；</li>
+<li>SGD，lr&#x3D;0.01，batch&#x3D;16，weight_decay&#x3D;1e-4，momentum&#x3D;0.9；</li>
+<li>输入短边 800、长边≤1333；数据增强：随机翻转 + 多尺度；</li>
+<li>head 用 GroupNorm。</li>
+</ul>
+<p><strong>推理</strong>：</p>
+<ol>
+<li>单次前向 → 每层每位置得到 (分类分, l,t,r,b, centerness)；</li>
+<li>分类分 &gt; 0 的位置为正，用 l,t,r,b 解码出框；</li>
+<li>最终分数 &#x3D; $\sqrt{cls \times centerness}$；</li>
+<li>跨 5 层汇总 → NMS(0.5)。</li>
+</ol>
+<blockquote>
+<p>center-ness <strong>只在推理打分&#x2F;NMS 时用</strong>，不参与框的坐标解码。</p>
+</blockquote>
+<hr>
+<h2 id="九、性能"><a href="#九、性能" class="headerlink" title="九、性能"></a>九、性能</h2><h3 id="9-1-FCOS-vs-RetinaNet"><a href="#9-1-FCOS-vs-RetinaNet" class="headerlink" title="9.1 FCOS vs RetinaNet"></a>9.1 FCOS vs RetinaNet</h3><p><img src="/images/FCOS%E8%AF%A6%E8%A7%A3/vs_retinanet.png"></p>
+<ul>
+<li>FCOS（38.9 AP）明显高于原生 RetinaNet（35.9）；</li>
+<li>但当 RetinaNet 也采用 FCOS 的策略（GN、GIoU、P6&#x2F;P7 从 P5 出），差距缩小到 ~1 点；</li>
+<li>去掉 center-ness 后两者基本持平。</li>
+<li><strong>ATSS 进一步证明</strong>：anchor-free 与 anchor-based 的差异，本质是<strong>正负样本定义策略</strong>的不同，而非架构。FCOS 的贡献在于把这件事讲清楚、并给出了扎实方案。</li>
+</ul>
+<h3 id="9-2-主要结果"><a href="#9-2-主要结果" class="headerlink" title="9.2 主要结果"></a>9.2 主要结果</h3><ul>
+<li>ResNet-101 + 多尺度训练：~40+ AP；</li>
+<li>ResNeXt-64x4d-101：44.7 AP，超越当时一阶段 SOTA。</li>
+</ul>
+<hr>
+<h2 id="十、优缺点与总结"><a href="#十、优缺点与总结" class="headerlink" title="十、优缺点与总结"></a>十、优缺点与总结</h2><h3 id="优点-✅"><a href="#优点-✅" class="headerlink" title="优点 ✅"></a>优点 ✅</h3><ol>
+<li><strong>彻底去 anchor</strong>：免去 anchor 超参设计、IoU 匹配计算，训练内存减半</li>
+<li><strong>结构简单灵活</strong>：易扩展到实例分割、关键点检测</li>
+<li><strong>召回不输 anchor-based</strong>：BPR ~98.95%，框内全像素当正样本，回归更充分</li>
+<li><strong>center-ness 优雅</strong>：无超参抑制低质量框</li>
+<li><strong>范式意义大</strong>：与 ATSS 一起，揭示了”样本定义策略”才是关键</li>
+</ol>
+<h3 id="局限-❌"><a href="#局限-❌" class="headerlink" title="局限 ❌"></a>局限 ❌</h3><ol>
+<li><strong>小网络难训练</strong>：易不收敛，依赖 GN 等技巧</li>
+<li><strong>center-ness 训测不一致</strong>：训练分开、测试相乘（GFL 改进）</li>
+<li><strong>同尺度密集重叠弱</strong>：分级只解决不同尺寸重叠，低空行人&#x2F;密集人群不友好</li>
+<li><strong>仍依赖 NMS</strong>：未摆脱后处理（DETR 才去除）</li>
+<li><strong>对数据集敏感</strong>：需视场景选用</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>FCOS 的精髓是<strong>把检测变成逐像素回归</strong>：每个特征图位置直接预测到框四条边的距离 (l,t,r,b)。它的数据准备其实<strong>比 anchor-based 更简单</strong>–磁盘上只需普通的框标注（COCO&#x2F;YOLO 都行），per-pixel 的 l,t,r,b + centerness target 全是训练时从框实时算的。理解了 <code>compute_targets_for_locations</code> 这段代码，就理解了 FCOS 的”数据”是怎么来的。</p>
+<blockquote>
+<p>📌 回到你的疑问：<strong>把 YOLO 标注转成 COCO JSON（第四节脚本），喂给 FCOS 框架即可。框架会在训练时自动把每个框展开成它覆盖的所有像素位置的 l,t,r,b 回归目标 + 类别 + center-ness。</strong> 你不需要、也不应该手工去生成 per-pixel 标签。</p>
+</blockquote>
+<hr>
+<h2 id="十一、相关链接"><a href="#十一、相关链接" class="headerlink" title="十一、相关链接"></a>十一、相关链接</h2><ul>
+<li>📝 [[RetinaNet 详解]] - FCOS 架构与 RetinaNet 几乎一致，可对照阅读；ATSS 的对照也在此</li>
+<li>📝 [[YOLOv3 详解]] - 另一类检测器，anchor-based</li>
+<li>📝 [[YOLO 系列总览]] - 检测器谱系</li>
+<li>📝 [[YOLO 核心概念]] - FPN &#x2F; IoU &#x2F; NMS 共享概念</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;FCOS&#x2F;FCOS算法的原理与实现]] - 知乎 (小小将, 含 compute_targets 核心代码)</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;FCOS&#x2F;FCOS算法详解]] - 知乎 (辣蜗, 含完整网络结构代码)</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;FCOS&#x2F;简单剖析FCOS原理及优势]] - 知乎 (李Nik, GT 编码讲解清晰)</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;FCOS&#x2F;论文阅读笔记10：FCOSFully Convolutional One-Stage Object Detection]] - 论文翻译笔记</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;FCOS&#x2F;详解FCOS《FCOS Fully Convolutional One-Stage Object Detection》]] - cnblogs (Head 解码详解)</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;FCOS&#x2F;FCOS算法详解-CSDN博客]] - CSDN</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;FCOS&#x2F;19.04 FCOS]] - docsaid</li>
+<li>📋 论文原文: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1904.01355">arxiv.org&#x2F;abs&#x2F;1904.01355</a></li>
+<li>📋 官方代码: <a target="_blank" rel="noopener" href="https://github.com/tianzhi0549/FCOS">tianzhi0549&#x2F;FCOS</a></li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/FCOS%20%E8%AF%A6%E8%A7%A3/">https://www.loveww.top/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/FCOS%20%E8%AF%A6%E8%A7%A3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/">目标检测</a><a class="post-meta__tags" href="/tags/FCOS/">FCOS</a><a class="post-meta__tags" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89/">计算机视觉</a><a class="post-meta__tags" href="/tags/AnchorFree/">AnchorFree</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/RetinaNet%20%E8%AF%A6%E8%A7%A3/" title="RetinaNet 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">RetinaNet 详解</div></div><div class="info-2"><div class="info-item-1">RetinaNet: Focal Loss for Dense Object Detection 论文: Focal Loss for Dense Object Detection (ICCV 2017, best paper)作者: Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, Piotr Dollár (FAIR)代码: facebookresearch&#x2F;Detectron   一句话总结：这篇论文找到了”一阶段检测器精度不如两阶段”的根因–类别极度不平衡导致训练被大量易分负样本主导–并用 Focal Loss 一举解决，使 RetinaNet 成为第一个精度超越两阶段的一阶段检测器。 ⚠️ 论文的主角其实是 Focal Loss，RetinaNet 网络本身只是”顺便”提出、用来验证损失函数有效性的载体–结构上并无颠覆性创新（ResNet + FPN + anchor 双头都是已有组件）。   一、背景与动机：一阶段为什么打不过两阶段？12345两阶段 (Faster R-CNN 等):  RPN 筛选...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv9%20%E8%AF%A6%E8%A7%A3/" title="YOLOv9 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">YOLOv9 详解</div></div><div class="info-2"><div class="info-item-1">YOLOv9: 用可编程梯度信息学习 论文: YOLOv9: Learning What You Want to Learn Using Programmable Gradient Information (2024)作者: Chien-Yao Wang, I-Hau Yeh, Hong-Yuan Mark Liao (同 v4&#x2F;v7 团队)   核心问题 深度神经网络逐层处理时，信息会不可逆地丢失。这导致最终用于计算损失的梯度不够可靠，影响模型学习。  YOLOv9 的回答: 用 PGI (Programmable Gradient Information，可编程梯度信息) 来确保梯度可靠。  两大核心技术1. PGI (Programmable Gradient Information)123456789101112PGI 由三部分组成:┌─────────────────────────────────────┐│  (1) 主分支 (Main Branch)           │ → 推理时使用│      标准前馈网络                    ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/YOLOX%20%E8%AF%A6%E8%A7%A3/" title="YOLOX 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-01</div><div class="info-item-2">YOLOX 详解</div></div><div class="info-2"><div class="info-item-1">YOLOX: Exceeding YOLO Series in 2021 论文: YOLOX: Exceeding YOLO Series in 2021 (2021)作者: Zheng Ge, Songtao Liu, Feng Wang, Zeming Li, Jian Sun (Megvii &#x2F; 旷视)代码: Megvii&#x2F;yolox   一句话总结：YOLOX &#x3D; YOLOv5 结构 + FCOS 检测头 + OTA 标签分配。 它把 YOLO 系列从 anchor-based 推进到 anchor-free，引入解耦头与 SimOTA 动态标签分配，在 COCO 上以同等推理速度超越 YOLOv5。   一、概述YOLOX（2021，旷视）是 YOLO 系列的一个重要转折点。它不是堆叠 trick，而是把检测范式从 anchor-based 切换到 anchor-free，并解决了随之而来的训练稳定性问题（靠解耦头 + SimOTA）。 核心改进三点：  Anchor-free：去掉所有预定义 anchor，每个网格点直接预测 1 个框（类...</div></div></div></a><a class="pagination-related" href="/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/" title="RT-DETR 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-01</div><div class="info-item-2">RT-DETR 详解</div></div><div class="info-2"><div class="info-item-1">RT-DETR: Real-Time Detection Transformer 论文: DETRs Beat YOLOs on Real-time Object Detection (CVPR 2024)作者: Yian Zhao, Wenyu Lv, Shangliang Xu, et al. (Baidu &#x2F; 百度)代码: PaddlePaddle&#x2F;PP-DETR &#x2F; lyuwenyu&#x2F;RT-DETR   一句话总结：RT-DETR 是第一个实时端到端目标检测器–它用混合编码器（CNN + 稀疏 Transformer）解决 DETR 太慢的问题，用 IoU-aware 查询初始化 + CDN 训练加速收敛，全程无 NMS，在同等速度下超越 YOLOv8。   一、概述1.1 为什么要有 RT-DETRDETR（2020）开创了端到端检测（无 NMS、无 anchor、匈牙利匹配），但有两个致命问题：  太慢：Transformer 编码器处理所有特征图的所有位置，计算量巨大； 收敛慢：从头训需要 500 epoch，远多于 YOLO...</div></div></div></a><a class="pagination-related" href="/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/RetinaNet%20%E8%AF%A6%E8%A7%A3/" title="RetinaNet 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-19</div><div class="info-item-2">RetinaNet 详解</div></div><div class="info-2"><div class="info-item-1">RetinaNet: Focal Loss for Dense Object Detection 论文: Focal Loss for Dense Object Detection (ICCV 2017, best paper)作者: Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, Piotr Dollár (FAIR)代码: facebookresearch&#x2F;Detectron   一句话总结：这篇论文找到了”一阶段检测器精度不如两阶段”的根因–类别极度不平衡导致训练被大量易分负样本主导–并用 Focal Loss 一举解决，使 RetinaNet 成为第一个精度超越两阶段的一阶段检测器。 ⚠️ 论文的主角其实是 Focal Loss，RetinaNet 网络本身只是”顺便”提出、用来验证损失函数有效性的载体–结构上并无颠覆性创新（ResNet + FPN + anchor 双头都是已有组件）。   一、背景与动机：一阶段为什么打不过两阶段？12345两阶段 (Faster R-CNN 等):  RPN 筛选...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/" title="YOLO 核心概念"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 核心概念</div></div><div class="info-2"><div class="info-item-1">🧠 YOLO 核心概念详解1. 目标检测基础什么是目标检测 同时解决两个问题：物体在哪里（定位）+ 物体是什么（分类）  输出形式： 1(x, y, w, h, confidence, class_probs...)  Two-Stage vs One-Stage   方法 流程 代表 特点    Two-Stage 提取候选区 → 分类回归 R-CNN, Faster R-CNN 精度高，速度慢   One-Stage 一步到位直接预测 YOLO, SSD 速度快，端到端    YOLO 的本质：把检测变成回归问题，整张图输入，一次性输出所有预测。   2. 核心机制2.1 Grid Cell（网格划分）12输入图像 448×448 → 划分为 S×S 网格 (v1: S=7)每个网格负责预测中心点落在该网格内的目标  v1 例子：  7×7 &#x3D; 49 个网格 每个网格预测 2 个 bounding box 每个 box: (x, y, w, h, confidence) &#x3D; 5 个值 每个网格预测 C 个类别 (VOC: 20) 输出张量: 7×7×(5...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E7%B3%BB%E5%88%97%E6%80%BB%E8%A7%88/" title="YOLO 系列总览"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 系列总览</div></div><div class="info-2"><div class="info-item-1">🎯 YOLO 系列目标检测算法总览一句话理解 YOLO You Only Look Once —— 只需看一次，就能完成目标检测。 把目标检测从”先找候选区再分类”的两阶段，变成了”一步到位”的回归问题。   版本演进时间线   版本 年份 作者&#x2F;机构 核心创新 论文&#x2F;状态    v1 2016 Joseph Redmon 单阶段检测、Grid Cell 划分 1506.02640   v2 2017 Redmon &amp; Farhadi Anchor Box、BN、Darknet-19、细粒度特征 1612.08242   v3 2018 Redmon &amp; Farhadi Darknet-53、多尺度预测(FPN)、逻辑分类器 1804.02767   v4 2020 Alexey Bochkovskiy CSPDarknet53、PAN、Mosaic增强、BoF&#x2F;BoS 2004.10934   v5 2020 Ultralytics PyTorch实现、工程化、CSPNet+PAN ❌ 无论文   v6 2022 美团 工业级部署...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO26%20%E8%AF%A6%E8%A7%A3/" title="YOLO26 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO26 详解</div></div><div class="info-2"><div class="info-item-1">YOLO26: 魔改终结者, 边缘端到端 状态: 🚧 开发中 (Ultralytics YOLO Vision 2025 预览)作者: Ultralytics定位: 专为边缘和低功耗设备设计   设计哲学 不是堆砌模块，而是精简 + 针对性创新：  Simple: 原生端到端，无需 NMS Efficient: CPU 推理提速 43% Innovative: LLM 训练技术跨界引入 CV    三大设计原则1. 简单 (Simple): 原生端到端12345678传统 YOLO:  模型 → NMS 后处理 → 最终输出              ↑        必须的额外步骤YOLO26:  模型 → 直接输出!         (无 DFL, 无 NMS)   继承 v10 的 NMS-Free 理念，进一步简化 移除 DFL (Distribution Focal Loss) 模块：虽然有效，但使导出和硬件兼容复杂化  2. 部署效率 (Deployment Efficiency)1234567传统流程:  预处理 → Backbone → Neck → Head ...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#FCOS-Fully-Convolutional-One-Stage-Object-Detection"><span class="toc-number">1.</span> <span class="toc-text">FCOS: Fully Convolutional One-Stage Object Detection</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%9C%89-anchor-free"><span class="toc-number">1.1.</span> <span class="toc-text">一、概述：为什么要有 anchor-free</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3%EF%BC%9A%E9%80%90%E5%83%8F%E7%B4%A0%E5%9B%9E%E5%BD%92-l-t-r-b"><span class="toc-number">1.2.</span> <span class="toc-text">二、核心思想：逐像素回归 (l, t, r, b)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E7%BD%91%E7%BB%9C%E6%9E%B6%E6%9E%84"><span class="toc-number">1.3.</span> <span class="toc-text">三、网络架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%F0%9F%94%A5-%E6%95%B0%E6%8D%AE%E4%B8%8E%E7%9B%AE%E6%A0%87%E6%9E%84%E9%80%A0%EF%BC%9AYOLO-%E6%A0%BC%E5%BC%8F%E5%A6%82%E4%BD%95%E8%BD%AC-FCOS"><span class="toc-number">1.4.</span> <span class="toc-text">四、🔥 数据与目标构造：YOLO 格式如何转 FCOS</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E5%85%88%E7%90%86%E6%B8%85%E4%B8%A4%E4%B8%AA%E5%B1%82%E6%AC%A1"><span class="toc-number">1.4.1.</span> <span class="toc-text">4.1 先理清两个层次</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-YOLO-%E6%A0%BC%E5%BC%8F-vs-COCO-%E6%A0%BC%E5%BC%8F"><span class="toc-number">1.4.2.</span> <span class="toc-text">4.2 YOLO 格式 vs COCO 格式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E5%9D%90%E6%A0%87%E8%BD%AC%E6%8D%A2%EF%BC%88%E6%A0%B8%E5%BF%83%E4%B8%80%E6%AD%A5%EF%BC%89"><span class="toc-number">1.4.3.</span> <span class="toc-text">4.3 坐标转换（核心一步）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-YOLO-%E6%95%B0%E6%8D%AE%E9%9B%86-%E2%86%92-COCO-JSON-%E8%BD%AC%E6%8D%A2%E8%84%9A%E6%9C%AC"><span class="toc-number">1.4.4.</span> <span class="toc-text">4.4 YOLO 数据集 → COCO JSON 转换脚本</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-5-FCOS-%E7%9A%84%E7%9B%AE%E6%A0%87%E5%88%86%E9%85%8D%E4%BB%A3%E7%A0%81%EF%BC%88l-t-r-b-%E6%98%AF%E6%80%8E%E4%B9%88%E7%AE%97%E5%87%BA%E6%9D%A5%E7%9A%84%EF%BC%89"><span class="toc-number">1.4.5.</span> <span class="toc-text">4.5 FCOS 的目标分配代码（l, t, r, b 是怎么算出来的）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-6-%E4%BD%8D%E7%BD%AE%E7%94%9F%E6%88%90-%E4%B8%AD%E5%BF%83%E9%87%87%E6%A0%B7-FPN-%E5%88%86%E7%BA%A7"><span class="toc-number">1.4.6.</span> <span class="toc-text">4.6 位置生成 + 中心采样 + FPN 分级</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81Center-ness-%E5%88%86%E6%94%AF"><span class="toc-number">1.5.</span> <span class="toc-text">五、Center-ness 分支</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%A4%9A%E7%BA%A7%E9%A2%84%E6%B5%8B%EF%BC%88FPN%EF%BC%89%E8%A7%A3%E5%86%B3%E6%AD%A7%E4%B9%89%E4%B8%8E%E4%BD%8E%E5%8F%AC%E5%9B%9E"><span class="toc-number">1.6.</span> <span class="toc-text">六、多级预测（FPN）解决歧义与低召回</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E6%8C%89%E5%9B%9E%E5%BD%92%E8%8C%83%E5%9B%B4%E5%88%86%E7%BA%A7"><span class="toc-number">1.6.1.</span> <span class="toc-text">6.1 按回归范围分级</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E5%9B%9E%E5%BD%92%E8%8C%83%E5%9B%B4%E5%B7%AE%E5%BC%82%E7%9A%84%E5%A4%84%E7%90%86"><span class="toc-number">1.6.2.</span> <span class="toc-text">6.2 回归范围差异的处理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-BPR-%E4%B8%8E%E6%AD%A7%E4%B9%89%E7%BB%9F%E8%AE%A1"><span class="toc-number">1.6.3.</span> <span class="toc-text">6.3 BPR 与歧义统计</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0"><span class="toc-number">1.7.</span> <span class="toc-text">七、损失函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86"><span class="toc-number">1.8.</span> <span class="toc-text">八、训练与推理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E6%80%A7%E8%83%BD"><span class="toc-number">1.9.</span> <span class="toc-text">九、性能</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#9-1-FCOS-vs-RetinaNet"><span class="toc-number">1.9.1.</span> <span class="toc-text">9.1 FCOS vs RetinaNet</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-2-%E4%B8%BB%E8%A6%81%E7%BB%93%E6%9E%9C"><span class="toc-number">1.9.2.</span> <span class="toc-text">9.2 主要结果</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E4%BC%98%E7%BC%BA%E7%82%B9%E4%B8%8E%E6%80%BB%E7%BB%93"><span class="toc-number">1.10.</span> <span class="toc-text">十、优缺点与总结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E7%82%B9-%E2%9C%85"><span class="toc-number">1.10.1.</span> <span class="toc-text">优点 ✅</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B1%80%E9%99%90-%E2%9D%8C"><span class="toc-number">1.10.2.</span> <span class="toc-text">局限 ❌</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.10.3.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5"><span class="toc-number">1.11.</span> <span class="toc-text">十一、相关链接</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/01-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87/" title="CARLA教程-01-环境准备">CARLA教程-01-环境准备</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/02-%E6%9E%84%E5%BB%BAUE4%E4%B8%8ECARLA/" title="CARLA教程-02-构建UE4与CARLA">CARLA教程-02-构建UE4与CARLA</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/03-%E8%BF%90%E8%A1%8C%E4%BB%BF%E7%9C%9F/" title="CARLA教程-03-运行仿真">CARLA教程-03-运行仿真</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/04-ROS2%E6%8E%A5%E5%8F%A3%E4%B8%8E%E8%AF%9D%E9%A2%98/" title="CARLA教程-04-ROS2接口与话题">CARLA教程-04-ROS2接口与话题</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>

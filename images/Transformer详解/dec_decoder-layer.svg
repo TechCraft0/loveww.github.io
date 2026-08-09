@@ -1,0 +1,137 @@
+<svg viewBox="0 0 800 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      text { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+      .bg { fill: #2d333b; }
+      .text-main { fill: #cdd9e5; font-size: 14px; }
+      .text-small { fill: #adbac7; font-size: 12px; }
+      .text-tiny { fill: #768390; font-size: 11px; }
+      .box { fill: none; stroke: #388bfd; stroke-width: 2; }
+      .box-blue { fill: none; stroke: #388bfd; stroke-width: 2; }
+      .box-green { fill: none; stroke: #3fb950; stroke-width: 2; }
+      .box-orange { fill: none; stroke: #f0883e; stroke-width: 2; }
+      .box-purple { fill: none; stroke: #a371f7; stroke-width: 2; }
+      .arrow { stroke: #768390; stroke-width: 1.5; fill: none; marker-end: url(#arrowhead); }
+      .arrow-blue { stroke: #388bfd; stroke-width: 2; fill: none; marker-end: url(#arrowhead-blue); }
+      .arrow-green { stroke: #3fb950; stroke-width: 2; fill: none; marker-end: url(#arrowhead-green); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#768390" />
+    </marker>
+    <marker id="arrowhead-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#388bfd" />
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#3fb950" />
+    </marker>
+  </defs>
+  
+  <rect class="bg" width="800" height="900"/>
+  
+  <!-- Title -->
+  <text class="text-main" x="400" y="30" text-anchor="middle" font-size="18" font-weight="bold">Decoder Layer 结构</text>
+  
+  <!-- Input from previous layer -->
+  <rect class="box-purple" x="350" y="60" width="100" height="40" rx="4"/>
+  <text class="text-main" x="400" y="85" text-anchor="middle">decoder 输入</text>
+  
+  <!-- Arrow down -->
+  <path class="arrow" d="M 400 100 L 400 130"/>
+  
+  <!-- Block 1: Masked Self-Attention -->
+  <rect class="box" x="200" y="130" width="400" height="140" rx="6"/>
+  <text class="text-main" x="400" y="155" text-anchor="middle" font-weight="bold">① Masked Multi-Head Self-Attention</text>
+  
+  <rect class="box-orange" x="220" y="170" width="80" height="30" rx="3"/>
+  <text class="text-small" x="260" y="192" text-anchor="middle">Q</text>
+  
+  <rect class="box-orange" x="320" y="170" width="80" height="30" rx="3"/>
+  <text class="text-small" x="360" y="192" text-anchor="middle">K</text>
+  
+  <rect class="box-orange" x="420" y="170" width="80" height="30" rx="3"/>
+  <text class="text-small" x="460" y="192" text-anchor="middle">V</text>
+  
+  <text class="text-tiny" x="400" y="225" text-anchor="middle">Q、K、V 均来自 decoder 自身</text>
+  <text class="text-tiny" x="400" y="245" text-anchor="middle">Causal Mask：位置 t 只能看到 ≤ t 的 token</text>
+  
+  <!-- Arrow down -->
+  <path class="arrow" d="M 400 270 L 400 300"/>
+  
+  <!-- Add & Norm 1 -->
+  <rect class="box-green" x="300" y="300" width="200" height="40" rx="4"/>
+  <text class="text-main" x="400" y="325" text-anchor="middle">Add &amp; LayerNorm</text>
+  
+  <!-- Residual connection 1 -->
+  <path class="arrow" d="M 600 180 L 650 180 L 650 320 L 500 320" stroke-dasharray="4,4"/>
+  <text class="text-tiny" x="655" y="185" fill="#768390">残差</text>
+  
+  <!-- Arrow down -->
+  <path class="arrow" d="M 400 340 L 400 370"/>
+  
+  <!-- Block 2: Cross-Attention -->
+  <rect class="box" x="150" y="370" width="500" height="160" rx="6"/>
+  <text class="text-main" x="400" y="395" text-anchor="middle" font-weight="bold">② Cross-Attention</text>
+  
+  <rect class="box-green" x="200" y="410" width="80" height="30" rx="3"/>
+  <text class="text-small" x="240" y="432" text-anchor="middle">Q</text>
+  <text class="text-tiny" x="240" y="455" text-anchor="middle">来自 decoder</text>
+  
+  <rect class="box-blue" x="360" y="410" width="80" height="30" rx="3"/>
+  <text class="text-small" x="400" y="432" text-anchor="middle">K</text>
+  <text class="text-tiny" x="400" y="455" text-anchor="middle">来自 encoder</text>
+  
+  <rect class="box-blue" x="520" y="410" width="80" height="30" rx="3"/>
+  <text class="text-small" x="560" y="432" text-anchor="middle">V</text>
+  <text class="text-tiny" x="560" y="455" text-anchor="middle">来自 encoder</text>
+  
+  <text class="text-tiny" x="400" y="490" text-anchor="middle">decoder 用当前状态作 Query</text>
+  <text class="text-tiny" x="400" y="510" text-anchor="middle">在 encoder 输出上检索源端信息</text>
+  
+  <!-- Encoder output input -->
+  <rect class="box-blue" x="50" y="410" width="100" height="40" rx="4"/>
+  <text class="text-small" x="100" y="435" text-anchor="middle">encoder</text>
+  <text class="text-small" x="100" y="450" text-anchor="middle">输出</text>
+  <path class="arrow-blue" d="M 150 430 L 360 425"/>
+  
+  <!-- Arrow down -->
+  <path class="arrow" d="M 400 530 L 400 560"/>
+  
+  <!-- Add & Norm 2 -->
+  <rect class="box-green" x="300" y="560" width="200" height="40" rx="4"/>
+  <text class="text-main" x="400" y="585" text-anchor="middle">Add &amp; LayerNorm</text>
+  
+  <!-- Residual connection 2 -->
+  <path class="arrow" d="M 650 450 L 700 450 L 700 580 L 500 580" stroke-dasharray="4,4"/>
+  <text class="text-tiny" x="705" y="455" fill="#768390">残差</text>
+  
+  <!-- Arrow down -->
+  <path class="arrow" d="M 400 600 L 400 630"/>
+  
+  <!-- Block 3: FFN -->
+  <rect class="box" x="250" y="630" width="300" height="100" rx="6"/>
+  <text class="text-main" x="400" y="655" text-anchor="middle" font-weight="bold">③ Feed-Forward Network</text>
+  <text class="text-small" x="400" y="680" text-anchor="middle">Linear → ReLU → Linear</text>
+  <text class="text-tiny" x="400" y="705" text-anchor="middle">d_model → d_ff (通常 4×) → d_model</text>
+  
+  <!-- Arrow down -->
+  <path class="arrow" d="M 400 730 L 400 760"/>
+  
+  <!-- Add & Norm 3 -->
+  <rect class="box-green" x="300" y="760" width="200" height="40" rx="4"/>
+  <text class="text-main" x="400" y="785" text-anchor="middle">Add &amp; LayerNorm</text>
+  
+  <!-- Residual connection 3 -->
+  <path class="arrow" d="M 550 680 L 620 680 L 620 780 L 500 780" stroke-dasharray="4,4"/>
+  <text class="text-tiny" x="625" y="685" fill="#768390">残差</text>
+  
+  <!-- Arrow down -->
+  <path class="arrow" d="M 400 800 L 400 830"/>
+  
+  <!-- Output to next layer -->
+  <rect class="box-purple" x="350" y="830" width="100" height="40" rx="4"/>
+  <text class="text-main" x="400" y="855" text-anchor="middle">输出到下一层</text>
+  
+  <!-- Legend -->
+  <text class="text-tiny" x="50" y="880" fill="#768390">重复堆叠 N=6 层</text>
+  <text class="text-tiny" x="550" y="880" fill="#768390">最后一层输出 → Linear + Softmax → 词概率</text>
+</svg>

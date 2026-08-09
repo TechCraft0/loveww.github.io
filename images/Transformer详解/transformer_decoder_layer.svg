@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 540" font-family="ui-monospace,monospace" font-size="12">
+  <rect width="700" height="540" fill="#2d333b"/>
+  <text x="350" y="28" text-anchor="middle" fill="#adbac7" font-size="16">Decoder Layer 内部（单层放大）</text>
+  <rect x="100" y="60" width="500" height="450" fill="none" stroke="#a371f7" stroke-dasharray="6 4" rx="6"/>
+  <g>
+    <rect x="200" y="450" width="300" height="30" fill="none" stroke="#adbac7" rx="4"/>
+    <text x="350" y="470" text-anchor="middle" fill="#adbac7">y ∈ ℝ^(m×d)  (decoder 输入)</text>
+
+    <rect x="200" y="390" width="300" height="36" fill="none" stroke="#f85149" rx="4"/>
+    <text x="350" y="413" text-anchor="middle" fill="#f85149">Masked Self-Attention（QKV 都来自 y）</text>
+
+    <rect x="200" y="345" width="300" height="32" fill="none" stroke="#a371f7" rx="4"/>
+    <text x="350" y="366" text-anchor="middle" fill="#a371f7">+ Residual, LayerNorm</text>
+
+    <rect x="200" y="280" width="300" height="36" fill="none" stroke="#3fb950" rx="4"/>
+    <text x="350" y="303" text-anchor="middle" fill="#3fb950">Cross-Attention：Q=y, K,V=encoder 输出</text>
+
+    <rect x="200" y="235" width="300" height="32" fill="none" stroke="#a371f7" rx="4"/>
+    <text x="350" y="256" text-anchor="middle" fill="#a371f7">+ Residual, LayerNorm</text>
+
+    <rect x="200" y="175" width="300" height="36" fill="none" stroke="#f0883e" rx="4"/>
+    <text x="350" y="198" text-anchor="middle" fill="#f0883e">Feed Forward (d → 4d → d)</text>
+
+    <rect x="200" y="130" width="300" height="32" fill="none" stroke="#a371f7" rx="4"/>
+    <text x="350" y="151" text-anchor="middle" fill="#a371f7">+ Residual, LayerNorm</text>
+
+    <rect x="200" y="80" width="300" height="30" fill="none" stroke="#adbac7" rx="4"/>
+    <text x="350" y="100" text-anchor="middle" fill="#adbac7">y' ∈ ℝ^(m×d)（传给下一层）</text>
+  </g>
+  <g stroke="#adbac7">
+    <line x1="350" y1="450" x2="350" y2="426" marker-end="url(#a3)"/>
+    <line x1="350" y1="390" x2="350" y2="377" marker-end="url(#a3)"/>
+    <line x1="350" y1="345" x2="350" y2="316" marker-end="url(#a3)"/>
+    <line x1="350" y1="280" x2="350" y2="267" marker-end="url(#a3)"/>
+    <line x1="350" y1="235" x2="350" y2="211" marker-end="url(#a3)"/>
+    <line x1="350" y1="175" x2="350" y2="162" marker-end="url(#a3)"/>
+    <line x1="350" y1="130" x2="350" y2="110" marker-end="url(#a3)"/>
+  </g>
+  <line x1="540" y1="298" x2="600" y2="298" stroke="#3fb950" stroke-dasharray="3 2" marker-start="url(#a3)"/>
+  <text x="610" y="295" fill="#3fb950" font-size="11">来自 encoder</text>
+  <text x="610" y="310" fill="#3fb950" font-size="11">最后一层输出</text>
+  <defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#adbac7"/></marker></defs>
+  <text x="350" y="525" text-anchor="middle" fill="#768390" font-size="11">3 个 sublayer：masked-SA → cross-attn → FFN，每个后接 Add+Norm</text>
+</svg>

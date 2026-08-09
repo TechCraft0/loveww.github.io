@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 760">
+  <defs>
+    <style><![CDATA[
+      text {
+        font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+      }
+      .bg { fill: #0d1117; }
+      .panel {
+        fill: none;
+        stroke-width: 2;
+        stroke-dasharray: 9 7;
+      }
+      .encoder-panel { stroke: #3fb950; }
+      .decoder-panel { stroke: #a371f7; }
+      .box {
+        fill: #161b22;
+        stroke-width: 2;
+      }
+      .muted-box { stroke: #6e7681; }
+      .blue-box { stroke: #58a6ff; }
+      .red-box { stroke: #ff7b72; }
+      .orange-box { stroke: #f2cc60; }
+      .green-box { stroke: #3fb950; }
+      .title {
+        fill: #e6edf3;
+        font-size: 27px;
+        font-weight: 700;
+      }
+      .subtitle {
+        fill: #8b949e;
+        font-size: 13px;
+      }
+      .panel-title {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .encoder-title { fill: #3fb950; }
+      .decoder-title { fill: #a371f7; }
+      .label {
+        fill: #e6edf3;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .sub {
+        fill: #8b949e;
+        font-size: 11px;
+      }
+      .foot {
+        fill: #9da7b3;
+        font-size: 12px;
+      }
+      .token {
+        fill: #8b949e;
+        font-size: 12px;
+      }
+      .residual {
+        fill: none;
+        stroke: #d2a8ff;
+        stroke-width: 1.5;
+        stroke-dasharray: 4 4;
+      }
+      .accent-green {
+        fill: #3fb950;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .accent-blue {
+        fill: #58a6ff;
+        font-size: 12px;
+        font-weight: 700;
+      }
+    ]]></style>
+    <marker id="arrow-neutral" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b949e"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3fb950"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="980" height="760"/>
+
+  <text x="490" y="38" text-anchor="middle" class="title">Transformer Architecture</text>
+  <text x="490" y="61" text-anchor="middle" class="subtitle">Redrawn from Attention Is All You Need, Figure 1</text>
+
+  <text x="230" y="255" text-anchor="middle" class="panel-title encoder-title">Encoder Stack × 6</text>
+  <text x="750" y="255" text-anchor="middle" class="panel-title decoder-title">Decoder Stack × 6</text>
+
+  <rect x="105" y="132" width="250" height="44" rx="10" class="box green-box"/>
+  <text x="230" y="158" text-anchor="middle" class="label">Encoder Final Output</text>
+  <text x="230" y="172" text-anchor="middle" class="sub">used as K / V by each decoder layer</text>
+
+  <rect x="625" y="92" width="250" height="36" rx="10" class="box muted-box"/>
+  <text x="750" y="116" text-anchor="middle" class="label">Output Probabilities</text>
+
+  <rect x="625" y="142" width="250" height="38" rx="10" class="box blue-box"/>
+  <text x="750" y="166" text-anchor="middle" class="label">Softmax</text>
+
+  <rect x="625" y="194" width="250" height="44" rx="10" class="box blue-box"/>
+  <text x="750" y="219" text-anchor="middle" class="label">Linear → Vocab</text>
+  <text x="750" y="233" text-anchor="middle" class="sub">project decoder states into target-token logits</text>
+
+  <rect x="70" y="282" width="320" height="378" rx="18" class="panel encoder-panel"/>
+  <rect x="590" y="282" width="320" height="378" rx="18" class="panel decoder-panel"/>
+
+  <rect x="105" y="310" width="250" height="38" rx="10" class="box muted-box"/>
+  <text x="230" y="334" text-anchor="middle" class="label">Add + LayerNorm</text>
+
+  <rect x="105" y="367" width="250" height="50" rx="10" class="box orange-box"/>
+  <text x="230" y="394" text-anchor="middle" class="label">Position-wise FFN</text>
+  <text x="230" y="409" text-anchor="middle" class="sub">d → 4d → d</text>
+
+  <rect x="105" y="442" width="250" height="38" rx="10" class="box muted-box"/>
+  <text x="230" y="466" text-anchor="middle" class="label">Add + LayerNorm</text>
+
+  <rect x="105" y="499" width="250" height="46" rx="10" class="box blue-box"/>
+  <text x="230" y="523" text-anchor="middle" class="label">Multi-Head Self-Attention</text>
+  <text x="230" y="538" text-anchor="middle" class="sub">Q, K, V come from the same layer input</text>
+
+  <rect x="105" y="682" width="250" height="44" rx="10" class="box muted-box"/>
+  <text x="230" y="706" text-anchor="middle" class="label">Input Embedding</text>
+  <text x="230" y="720" text-anchor="middle" class="sub">+ Positional Encoding</text>
+  <text x="230" y="744" text-anchor="middle" class="token">source tokens</text>
+
+  <rect x="625" y="310" width="250" height="38" rx="10" class="box muted-box"/>
+  <text x="750" y="334" text-anchor="middle" class="label">Add + LayerNorm</text>
+
+  <rect x="625" y="367" width="250" height="50" rx="10" class="box orange-box"/>
+  <text x="750" y="394" text-anchor="middle" class="label">Position-wise FFN</text>
+  <text x="750" y="409" text-anchor="middle" class="sub">d → 4d → d</text>
+
+  <rect x="625" y="442" width="250" height="38" rx="10" class="box muted-box"/>
+  <text x="750" y="466" text-anchor="middle" class="label">Add + LayerNorm</text>
+
+  <rect x="625" y="499" width="250" height="46" rx="10" class="box green-box"/>
+  <text x="750" y="523" text-anchor="middle" class="label">Cross-Attention</text>
+  <text x="750" y="538" text-anchor="middle" class="sub">Q from decoder, K / V from encoder output</text>
+
+  <rect x="625" y="556" width="250" height="38" rx="10" class="box muted-box"/>
+  <text x="750" y="580" text-anchor="middle" class="label">Add + LayerNorm</text>
+
+  <rect x="625" y="613" width="250" height="46" rx="10" class="box red-box"/>
+  <text x="750" y="637" text-anchor="middle" class="label">Masked Multi-Head Attention</text>
+  <text x="750" y="652" text-anchor="middle" class="sub">self-attention with causal mask, no future tokens</text>
+
+  <rect x="625" y="682" width="250" height="44" rx="10" class="box muted-box"/>
+  <text x="750" y="706" text-anchor="middle" class="label">Output Embedding</text>
+  <text x="750" y="720" text-anchor="middle" class="sub">+ Positional Encoding</text>
+  <text x="750" y="744" text-anchor="middle" class="token">shifted-right targets</text>
+
+  <line x1="230" y1="682" x2="230" y2="545" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="230" y1="499" x2="230" y2="480" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="230" y1="442" x2="230" y2="417" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="230" y1="367" x2="230" y2="348" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="230" y1="310" x2="230" y2="176" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+
+  <circle cx="230" cy="226" r="3.2" fill="#6e7681"/>
+  <circle cx="230" cy="242" r="3.2" fill="#6e7681"/>
+  <circle cx="230" cy="258" r="3.2" fill="#6e7681"/>
+
+  <line x1="750" y1="682" x2="750" y2="659" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="750" y1="613" x2="750" y2="594" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="750" y1="556" x2="750" y2="545" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="750" y1="499" x2="750" y2="480" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="750" y1="442" x2="750" y2="417" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="750" y1="367" x2="750" y2="348" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="750" y1="310" x2="750" y2="238" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="750" y1="194" x2="750" y2="180" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+  <line x1="750" y1="142" x2="750" y2="128" stroke="#8b949e" stroke-width="2" marker-end="url(#arrow-neutral)"/>
+
+  <path d="M 88 522 L 74 522 L 74 461 L 88 461" class="residual"/>
+  <path d="M 88 392 L 74 392 L 74 329 L 88 329" class="residual"/>
+  <text x="50" y="425" text-anchor="middle" fill="#d2a8ff" font-size="10" transform="rotate(-90 50 425)">residual path</text>
+
+  <path d="M 608 636 L 594 636 L 594 575 L 608 575" class="residual"/>
+  <path d="M 608 522 L 594 522 L 594 461 L 608 461" class="residual"/>
+  <path d="M 608 392 L 594 392 L 594 329 L 608 329" class="residual"/>
+
+  <path d="M 355 149 C 455 149, 535 240, 625 516" fill="none" stroke="#3fb950" stroke-width="2.5" marker-end="url(#arrow-green)"/>
+  <path d="M 355 162 C 460 162, 550 255, 625 530" fill="none" stroke="#3fb950" stroke-width="2.5" marker-end="url(#arrow-green)"/>
+  <text x="515" y="266" class="accent-green">encoder K / V</text>
+
+</svg>

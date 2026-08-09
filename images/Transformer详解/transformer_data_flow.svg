@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" font-family="ui-monospace,monospace" font-size="12">
+  <rect width="760" height="460" fill="#2d333b"/>
+  <text x="380" y="28" text-anchor="middle" fill="#adbac7" font-size="16">训练 vs 推理：数据流时序对比</text>
+
+  <text x="180" y="60" text-anchor="middle" fill="#3fb950" font-size="14">训练（Teacher Forcing）</text>
+  <g transform="translate(40,80)">
+    <rect width="280" height="40" fill="none" stroke="#adbac7" rx="4"/>
+    <text x="140" y="25" text-anchor="middle" fill="#adbac7">整个目标序列一次喂入</text>
+    <rect y="60" width="280" height="40" fill="none" stroke="#388bfd" rx="4"/>
+    <text x="140" y="85" text-anchor="middle" fill="#388bfd">decoder 并行处理所有位置</text>
+    <rect y="120" width="280" height="40" fill="none" stroke="#f85149" rx="4"/>
+    <text x="140" y="145" text-anchor="middle" fill="#f85149">causal mask 保证不偷看未来</text>
+    <rect y="180" width="280" height="40" fill="none" stroke="#3fb950" rx="4"/>
+    <text x="140" y="205" text-anchor="middle" fill="#3fb950">一次 forward 算 m 步 loss</text>
+    <rect y="240" width="280" height="40" fill="none" stroke="#f0883e" rx="4"/>
+    <text x="140" y="265" text-anchor="middle" fill="#f0883e">高度并行，O(1) 步</text>
+  </g>
+
+  <text x="580" y="60" text-anchor="middle" fill="#a371f7" font-size="14">推理（Autoregressive）</text>
+  <g transform="translate(440,80)">
+    <rect width="280" height="40" fill="none" stroke="#adbac7" rx="4"/>
+    <text x="140" y="25" text-anchor="middle" fill="#adbac7">从 BOS 开始，一次一个 token</text>
+    <rect y="60" width="280" height="40" fill="none" stroke="#388bfd" rx="4"/>
+    <text x="140" y="85" text-anchor="middle" fill="#388bfd">每步前向只新算一行</text>
+    <rect y="120" width="280" height="40" fill="none" stroke="#3fb950" rx="4"/>
+    <text x="140" y="145" text-anchor="middle" fill="#3fb950">KV cache 复用历史</text>
+    <rect y="180" width="280" height="40" fill="none" stroke="#f85149" rx="4"/>
+    <text x="140" y="205" text-anchor="middle" fill="#f85149">采样下一个 token，喂回</text>
+    <rect y="240" width="280" height="40" fill="none" stroke="#f0883e" rx="4"/>
+    <text x="140" y="265" text-anchor="middle" fill="#f0883e">串行，O(m) 步</text>
+  </g>
+
+  <text x="380" y="400" text-anchor="middle" fill="#768390" font-size="11">同一个权重，两种执行方式 —— 这是 Transformer 「训练快但推理慢」的根本原因</text>
+  <text x="380" y="420" text-anchor="middle" fill="#768390" font-size="11">causal mask 把训练时的并行和推理时的串行连接起来（参见第 17 篇）</text>
+</svg>

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 480" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13">
+  <rect width="880" height="480" fill="#2d333b"/>
+  <text x="440" y="32" text-anchor="middle" fill="#cdd9e5" font-size="16" font-weight="bold">self-attention 是排列等变的：换 token 顺序，输出也换序</text>
+
+  <g>
+    <text x="200" y="70" text-anchor="middle" fill="#f0883e" font-size="14">原序列：猫 / 吃 / 鱼</text>
+    <rect x="60" y="90" width="80" height="40" rx="4" fill="#22272e" stroke="#388bfd"/>
+    <text x="100" y="115" text-anchor="middle" fill="#adbac7">猫</text>
+    <rect x="160" y="90" width="80" height="40" rx="4" fill="#22272e" stroke="#388bfd"/>
+    <text x="200" y="115" text-anchor="middle" fill="#adbac7">吃</text>
+    <rect x="260" y="90" width="80" height="40" rx="4" fill="#22272e" stroke="#388bfd"/>
+    <text x="300" y="115" text-anchor="middle" fill="#adbac7">鱼</text>
+
+    <line x1="100" y1="135" x2="100" y2="180" stroke="#636e7b" stroke-width="1"/>
+    <line x1="200" y1="135" x2="200" y2="180" stroke="#636e7b" stroke-width="1"/>
+    <line x1="300" y1="135" x2="300" y2="180" stroke="#636e7b" stroke-width="1"/>
+
+    <rect x="60" y="180" width="280" height="40" rx="4" fill="#1c2128" stroke="#3fb950"/>
+    <text x="200" y="205" text-anchor="middle" fill="#adbac7">Self-Attention（无位置信息）</text>
+
+    <line x1="100" y1="225" x2="100" y2="260" stroke="#636e7b" stroke-width="1"/>
+    <line x1="200" y1="225" x2="200" y2="260" stroke="#636e7b" stroke-width="1"/>
+    <line x1="300" y1="225" x2="300" y2="260" stroke="#636e7b" stroke-width="1"/>
+
+    <rect x="60" y="260" width="80" height="40" rx="4" fill="#22272e" stroke="#a371f7"/>
+    <text x="100" y="285" text-anchor="middle" fill="#adbac7">y₁</text>
+    <rect x="160" y="260" width="80" height="40" rx="4" fill="#22272e" stroke="#a371f7"/>
+    <text x="200" y="285" text-anchor="middle" fill="#adbac7">y₂</text>
+    <rect x="260" y="260" width="80" height="40" rx="4" fill="#22272e" stroke="#a371f7"/>
+    <text x="300" y="285" text-anchor="middle" fill="#adbac7">y₃</text>
+  </g>
+
+  <g>
+    <text x="640" y="70" text-anchor="middle" fill="#f85149" font-size="14">交换：鱼 / 吃 / 猫</text>
+    <rect x="500" y="90" width="80" height="40" rx="4" fill="#22272e" stroke="#388bfd"/>
+    <text x="540" y="115" text-anchor="middle" fill="#adbac7">鱼</text>
+    <rect x="600" y="90" width="80" height="40" rx="4" fill="#22272e" stroke="#388bfd"/>
+    <text x="640" y="115" text-anchor="middle" fill="#adbac7">吃</text>
+    <rect x="700" y="90" width="80" height="40" rx="4" fill="#22272e" stroke="#388bfd"/>
+    <text x="740" y="115" text-anchor="middle" fill="#adbac7">猫</text>
+
+    <line x1="540" y1="135" x2="540" y2="180" stroke="#636e7b" stroke-width="1"/>
+    <line x1="640" y1="135" x2="640" y2="180" stroke="#636e7b" stroke-width="1"/>
+    <line x1="740" y1="135" x2="740" y2="180" stroke="#636e7b" stroke-width="1"/>
+
+    <rect x="500" y="180" width="280" height="40" rx="4" fill="#1c2128" stroke="#3fb950"/>
+    <text x="640" y="205" text-anchor="middle" fill="#adbac7">Self-Attention（同一组权重）</text>
+
+    <line x1="540" y1="225" x2="540" y2="260" stroke="#636e7b" stroke-width="1"/>
+    <line x1="640" y1="225" x2="640" y2="260" stroke="#636e7b" stroke-width="1"/>
+    <line x1="740" y1="225" x2="740" y2="260" stroke="#636e7b" stroke-width="1"/>
+
+    <rect x="500" y="260" width="80" height="40" rx="4" fill="#22272e" stroke="#a371f7"/>
+    <text x="540" y="285" text-anchor="middle" fill="#adbac7">y₃</text>
+    <rect x="600" y="260" width="80" height="40" rx="4" fill="#22272e" stroke="#a371f7"/>
+    <text x="640" y="285" text-anchor="middle" fill="#adbac7">y₂</text>
+    <rect x="700" y="260" width="80" height="40" rx="4" fill="#22272e" stroke="#a371f7"/>
+    <text x="740" y="285" text-anchor="middle" fill="#adbac7">y₁</text>
+  </g>
+
+  <text x="440" y="360" text-anchor="middle" fill="#f0883e" font-size="14">两侧用的是同一组 W_Q / W_K / W_V，输出仅仅是位置被换了</text>
+  <text x="440" y="385" text-anchor="middle" fill="#adbac7">→ 「猫吃鱼」与「鱼吃猫」对模型来说语义不可分</text>
+  <text x="440" y="410" text-anchor="middle" fill="#3fb950">→ 必须给输入显式注入「我是序列中的第几位」这条信息</text>
+  <text x="440" y="445" text-anchor="middle" fill="#768390" font-size="12">数学上：Attention(PX) = P · Attention(X)，其中 P 是任意置换矩阵</text>
+</svg>

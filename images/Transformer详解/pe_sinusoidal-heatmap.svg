@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 520" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">
+  <rect width="880" height="520" fill="#2d333b"/>
+  <text x="440" y="30" text-anchor="middle" fill="#cdd9e5" font-size="16" font-weight="bold">正弦位置编码：不同维度对应不同频率</text>
+
+  <text x="40" y="70" fill="#adbac7" font-size="13">维度 i = 0（最高频，sin(pos)）</text>
+  <g transform="translate(40,80)">
+    <rect width="800" height="50" fill="#1c2128" stroke="#444c56"/>
+    <path d="M 0 25 Q 20 5 40 25 T 80 25 T 120 25 T 160 25 T 200 25 T 240 25 T 280 25 T 320 25 T 360 25 T 400 25 T 440 25 T 480 25 T 520 25 T 560 25 T 600 25 T 640 25 T 680 25 T 720 25 T 760 25 T 800 25" fill="none" stroke="#388bfd" stroke-width="1.5"/>
+  </g>
+
+  <text x="40" y="160" fill="#adbac7" font-size="13">维度 i = 16（中频）</text>
+  <g transform="translate(40,170)">
+    <rect width="800" height="50" fill="#1c2128" stroke="#444c56"/>
+    <path d="M 0 25 Q 80 0 160 25 T 320 25 T 480 25 T 640 25 T 800 25" fill="none" stroke="#3fb950" stroke-width="1.5"/>
+  </g>
+
+  <text x="40" y="250" fill="#adbac7" font-size="13">维度 i = 64（低频，sin(pos / 10000^…)）</text>
+  <g transform="translate(40,260)">
+    <rect width="800" height="50" fill="#1c2128" stroke="#444c56"/>
+    <path d="M 0 25 Q 200 -5 400 25 T 800 25" fill="none" stroke="#f0883e" stroke-width="1.5"/>
+  </g>
+
+  <text x="40" y="340" fill="#adbac7" font-size="13">维度 i = 254（接近常数，sin(pos / 10000) ≈ 线性）</text>
+  <g transform="translate(40,350)">
+    <rect width="800" height="50" fill="#1c2128" stroke="#444c56"/>
+    <path d="M 0 28 Q 400 22 800 18" fill="none" stroke="#a371f7" stroke-width="1.5"/>
+  </g>
+
+  <text x="40" y="430" fill="#768390" font-size="12">高频维度精确区分相邻 token，低频维度区分远端区段；</text>
+  <text x="40" y="450" fill="#768390" font-size="12">把所有维度拼起来，每个 pos 得到一个唯一的向量「指纹」。</text>
+  <text x="40" y="475" fill="#3fb950" font-size="13">设计目标：覆盖从「相邻」到「上下文窗口最远端」的全频谱。</text>
+  <text x="440" y="505" text-anchor="middle" fill="#636e7b" font-size="11">水平轴 pos = 0..512，垂直方向是该维度的取值，仅作示意</text>
+</svg>

@@ -1,0 +1,518 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>RT-DETR 详解 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="RT-DETR: Real-Time Detection Transformer 论文: DETRs Beat YOLOs on Real-time Object Detection (CVPR 2024)作者: Yian Zhao, Wenyu Lv, Shangliang Xu, et al. (Baidu &#x2F; 百度)代码: PaddlePaddle&#x2F;PP-DETR &amp;#x">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RT-DETR 详解">
+<meta property="og:url" content="https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="RT-DETR: Real-Time Detection Transformer 论文: DETRs Beat YOLOs on Real-time Object Detection (CVPR 2024)作者: Yian Zhao, Wenyu Lv, Shangliang Xu, et al. (Baidu &#x2F; 百度)代码: PaddlePaddle&#x2F;PP-DETR &amp;#x">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-07-31T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-09T15:28:30.624Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="目标检测">
+<meta property="article:tag" content="计算机视觉">
+<meta property="article:tag" content="RT-DETR">
+<meta property="article:tag" content="DETR">
+<meta property="article:tag" content="端到端检测">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "RT-DETR 详解",
+  "url": "https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-07-31T16:00:00.000Z",
+  "dateModified": "2026-08-09T15:28:30.624Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'RT-DETR 详解',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">RT-DETR 详解</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">RT-DETR 详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-07-31T16:00:00.000Z" title="发表于 2026-08-01 00:00:00">2026-08-01</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-08-09T15:28:30.624Z" title="更新于 2026-08-09 23:28:30">2026-08-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/2D%E6%A3%80%E6%B5%8B/">2D检测</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">2.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>10分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="RT-DETR-Real-Time-Detection-Transformer"><a href="#RT-DETR-Real-Time-Detection-Transformer" class="headerlink" title="RT-DETR: Real-Time Detection Transformer"></a>RT-DETR: Real-Time Detection Transformer</h1><blockquote>
+<p><strong>论文</strong>: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2304.08069">DETRs Beat YOLOs on Real-time Object Detection</a> (CVPR 2024)<br><strong>作者</strong>: Yian Zhao, Wenyu Lv, Shangliang Xu, et al. (Baidu &#x2F; 百度)<br><strong>代码</strong>: <a target="_blank" rel="noopener" href="https://github.com/PaddlePaddle/PaddleDetection">PaddlePaddle&#x2F;PP-DETR</a> &#x2F; <a target="_blank" rel="noopener" href="https://github.com/lyuwenyu/RT-DETR">lyuwenyu&#x2F;RT-DETR</a></p>
+</blockquote>
+<blockquote>
+<p>一句话总结：<strong>RT-DETR 是第一个实时端到端目标检测器–它用混合编码器（CNN + 稀疏 Transformer）解决 DETR 太慢的问题，用 IoU-aware 查询初始化 + CDN 训练加速收敛，全程无 NMS，在同等速度下超越 YOLOv8。</strong></p>
+</blockquote>
+<hr>
+<h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><h3 id="1-1-为什么要有-RT-DETR"><a href="#1-1-为什么要有-RT-DETR" class="headerlink" title="1.1 为什么要有 RT-DETR"></a>1.1 为什么要有 RT-DETR</h3><p>DETR（2020）开创了端到端检测（无 NMS、无 anchor、匈牙利匹配），但有两个致命问题：</p>
+<ul>
+<li><strong>太慢</strong>：Transformer 编码器处理所有特征图的所有位置，计算量巨大；</li>
+<li><strong>收敛慢</strong>：从头训需要 500 epoch，远多于 YOLO 的 ~100 epoch。</li>
+</ul>
+<p>YOLO 系列（v1-v8）靠 NMS + anchor&#x2F;anchor-free 做到了实时，但 NMS 有超参（IoU 阈值）、对密集场景不稳定。</p>
+<p><strong>RT-DETR 的定位</strong>：把 DETR 的端到端优势（无 NMS）做到实时速度，同时超过 YOLOv8。</p>
+<h3 id="1-2-与-DETR-YOLO-的定位对比"><a href="#1-2-与-DETR-YOLO-的定位对比" class="headerlink" title="1.2 与 DETR &#x2F; YOLO 的定位对比"></a>1.2 与 DETR &#x2F; YOLO 的定位对比</h3><table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">原版 DETR</th>
+<th align="left">YOLO 系列</th>
+<th align="left"><strong>RT-DETR</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">NMS</td>
+<td align="left">❌ 无（端到端）</td>
+<td align="left">✅ 需要</td>
+<td align="left"><strong>❌ 无（端到端）</strong></td>
+</tr>
+<tr>
+<td align="left">标签分配</td>
+<td align="left">匈牙利匹配（1对1）</td>
+<td align="left">静态&#x2F;动态（1对多）</td>
+<td align="left"><strong>匈牙利匹配（1对1）</strong></td>
+</tr>
+<tr>
+<td align="left">预测方式</td>
+<td align="left">稀疏查询（~100-300）</td>
+<td align="left">密集预测（~8400）</td>
+<td align="left"><strong>稀疏查询（~300）</strong></td>
+</tr>
+<tr>
+<td align="left">编码器</td>
+<td align="left">Transformer 处理所有特征</td>
+<td align="left">CNN FPN&#x2F;PAN</td>
+<td align="left"><strong>混合编码器（CNN + 稀疏 Transformer）</strong></td>
+</tr>
+<tr>
+<td align="left">实时性</td>
+<td align="left">❌ 非3实时</td>
+<td align="left">✅ 实时</td>
+<td align="left"><strong>✅ 实时</strong></td>
+</tr>
+<tr>
+<td align="left">收敛速度</td>
+<td align="left">❌ 慢（500ep）</td>
+<td align="left">✅ 快（~100ep）</td>
+<td align="left"><strong>✅ 较快（CDN 加速）</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>RT-DETR &#x3D; DETR 的端到端框架 + YOLO 的实时速度。它填补了”端到端但实时”这个空白。</p>
+</blockquote>
+<p><img src="/images/RT-DETR%E8%AF%A6%E8%A7%A3/rtdetr_vs_yolo.jpg"></p>
+<hr>
+<h2 id="二、整体架构"><a href="#二、整体架构" class="headerlink" title="二、整体架构"></a>二、整体架构</h2><p><img src="/images/RT-DETR%E8%AF%A6%E8%A7%A3/rtdetr_architecture.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">输入图像</span><br><span class="line">   ↓</span><br><span class="line">Backbone: ResNet/HGNetv2</span><br><span class="line">   ↓ 输出 C3, C4, C5 (stride 8/16/32)</span><br><span class="line">Hybrid Encoder ⭐</span><br><span class="line">   ├─ 通道投影: C3/C4/C5 -&gt; 256 维 (1×1 Conv+BN)</span><br><span class="line">   ├─ Transformer 编码器: 仅对 P5 (stride=32) 做自注意力  ← 稀疏，不全做</span><br><span class="line">   ├─ FPN (自顶向下): 上采样 + CSPRep 融合</span><br><span class="line">   └─ PAN (自底向上): 下采样 + CSPRep 融合</span><br><span class="line">   ↓ 输出 3 级增强特征 (256 维)</span><br><span class="line">IoU-aware Query Selection</span><br><span class="line">   ↓ 从编码器输出选 top-k 个查询（按 cls+obj 分数）</span><br><span class="line">Transformer Decoder</span><br><span class="line">   ├─ 自注意力（查询间交互）</span><br><span class="line">   ├─ 交叉注意力（查询 -&gt; 编码器特征）</span><br><span class="line">   ├─ 迭代框精修（每层精修一次框）</span><br><span class="line">   └─ 输出 ~300 个 (类别 + 框)</span><br><span class="line">   ↓</span><br><span class="line">无 NMS 后处理</span><br><span class="line">   ↓ 直接取 top-k，不做 NMS</span><br><span class="line">最终检测结果</span><br></pre></td></tr></table></figure>
+
+<p>源码结构极简（<code>rtdetr.py</code>）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">RTDETR</span>(nn.Module):</span><br><span class="line">    __inject__ = [<span class="string">&#x27;backbone&#x27;</span>, <span class="string">&#x27;encoder&#x27;</span>, <span class="string">&#x27;decoder&#x27;</span>]</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, backbone, encoder, decoder, multi_scale=<span class="literal">None</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.backbone = backbone</span><br><span class="line">        <span class="variable language_">self</span>.encoder = encoder    <span class="comment"># HybridEncoder</span></span><br><span class="line">        <span class="variable language_">self</span>.decoder = decoder    <span class="comment"># RTDETRDecoder</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, targets=<span class="literal">None</span></span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.backbone(x)      <span class="comment"># C3, C4, C5</span></span><br><span class="line">        x = <span class="variable language_">self</span>.encoder(x)       <span class="comment"># Hybrid Encoder -&gt; 3 级增强特征</span></span><br><span class="line">        x = <span class="variable language_">self</span>.decoder(x, targets)  <span class="comment"># Transformer Decoder -&gt; 检测结果</span></span><br><span class="line">        <span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>三层结构</strong>：backbone 提特征 -&gt; hybrid encoder 融合+增强 -&gt; decoder 预测。全程无 NMS。</p>
+</blockquote>
+<hr>
+<h2 id="三、Hybrid-Encoder：核心创新-⭐"><a href="#三、Hybrid-Encoder：核心创新-⭐" class="headerlink" title="三、Hybrid Encoder：核心创新 ⭐"></a>三、Hybrid Encoder：核心创新 ⭐</h2><blockquote>
+<p>这是 RT-DETR 能做到实时的关键。原版 DETR 对所有特征图的所有位置做 Transformer（太慢），RT-DETR 改为<strong>混合策略：CNN 做大部分融合，Transformer 只做少量关键尺度的全局增强</strong>。</p>
+</blockquote>
+<p><img src="/images/RT-DETR%E8%AF%A6%E8%A7%A3/rtdetr_encoder.png"></p>
+<h3 id="3-1-“混合”体现在哪"><a href="#3-1-“混合”体现在哪" class="headerlink" title="3.1 “混合”体现在哪"></a>3.1 “混合”体现在哪</h3><table>
+<thead>
+<tr>
+<th align="left">步骤</th>
+<th align="left">用什么</th>
+<th align="left">为什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">通道投影</td>
+<td align="left">1×1 Conv+BN</td>
+<td align="left">统一到 256 维</td>
+</tr>
+<tr>
+<td align="left"><strong>Transformer 自注意力</strong></td>
+<td align="left"><strong>仅对 P5（stride&#x3D;32）做 1 层</strong></td>
+<td align="left">P5 特征图最小（20×20&#x3D;400 位置），算得动；且大目标需全局上下文</td>
+</tr>
+<tr>
+<td align="left">FPN 融合（自顶向下）</td>
+<td align="left">CNN（上采样 + CSPRep）</td>
+<td align="left">高效，CNN 做多尺度融合足够</td>
+</tr>
+<tr>
+<td align="left">PAN 融合（自底向上）</td>
+<td align="left">CNN（下采样 + CSPRep）</td>
+<td align="left">同上</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>关键洞察</strong>：不是所有特征都需要 Transformer 的全局注意力。小目标（P3，80×80&#x3D;6400 位置）用 CNN 融合就够，只有大目标（P5，400 位置）才需要 Transformer 全局建模。<strong>只在 P5 上放 1 层 Transformer</strong>，既获得全局信息又控制了计算量。</p>
+</blockquote>
+<h3 id="3-2-源码（HybridEncoder）"><a href="#3-2-源码（HybridEncoder）" class="headerlink" title="3.2 源码（HybridEncoder）"></a>3.2 源码（HybridEncoder）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">HybridEncoder</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, in_channels=[<span class="number">512</span>,<span class="number">1024</span>,<span class="number">2048</span>], feat_strides=[<span class="number">8</span>,<span class="number">16</span>,<span class="number">32</span>],</span></span><br><span class="line"><span class="params">                 hidden_dim=<span class="number">256</span>, use_encoder_idx=[<span class="number">2</span>], num_encoder_layers=<span class="number">1</span>, ...</span>):</span><br><span class="line">        <span class="comment"># 1. 通道投影: 每级特征 -&gt; 256 维</span></span><br><span class="line">        <span class="variable language_">self</span>.input_proj = [Conv2d(in_ch, <span class="number">256</span>, <span class="number">1</span>) + BN <span class="keyword">for</span> in_ch <span class="keyword">in</span> in_channels]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 2. Transformer 编码器: 仅对 use_encoder_idx 指定的层（默认 [2] = P5）</span></span><br><span class="line">        <span class="variable language_">self</span>.encoder = [TransformerEncoder(layer, num_encoder_layers=<span class="number">1</span>)</span><br><span class="line">                        <span class="keyword">for</span> _ <span class="keyword">in</span> use_encoder_idx]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 3. FPN (top-down): lateral_conv + CSPRepLayer</span></span><br><span class="line">        <span class="variable language_">self</span>.lateral_convs = [ConvNormLayer(<span class="number">256</span>, <span class="number">256</span>, <span class="number">1</span>) <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>)]</span><br><span class="line">        <span class="variable language_">self</span>.fpn_blocks = [CSPRepLayer(<span class="number">512</span>, <span class="number">256</span>) <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>)]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 4. PAN (bottom-up): downsample_conv + CSPRepLayer</span></span><br><span class="line">        <span class="variable language_">self</span>.downsample_convs = [ConvNormLayer(<span class="number">256</span>, <span class="number">256</span>, <span class="number">3</span>, stride=<span class="number">2</span>) <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>)]</span><br><span class="line">        <span class="variable language_">self</span>.pan_blocks = [CSPRepLayer(<span class="number">512</span>, <span class="number">256</span>) <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>)]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, feats</span>):</span><br><span class="line">        <span class="comment"># 1. 通道投影</span></span><br><span class="line">        proj_feats = [<span class="variable language_">self</span>.input_proj[i](feat) <span class="keyword">for</span> i, feat <span class="keyword">in</span> <span class="built_in">enumerate</span>(feats)]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 2. ★ Transformer 仅对 P5 做（use_encoder_idx=[2]）</span></span><br><span class="line">        <span class="keyword">for</span> i, enc_ind <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="variable language_">self</span>.use_encoder_idx):  <span class="comment"># enc_ind=2 -&gt; P5</span></span><br><span class="line">            src_flatten = proj_feats[enc_ind].flatten(<span class="number">2</span>).permute(<span class="number">0</span>,<span class="number">2</span>,<span class="number">1</span>)  <span class="comment"># [B, H*W, C]</span></span><br><span class="line">            pos_embed = build_2d_sincos_position_embedding(w, h, <span class="number">256</span>)    <span class="comment"># 2D 位置编码</span></span><br><span class="line">            memory = <span class="variable language_">self</span>.encoder[i](src_flatten, pos_embed=pos_embed)    <span class="comment"># 1 层 Transformer</span></span><br><span class="line">            proj_feats[enc_ind] = memory.reshape(B, <span class="number">256</span>, H, W)           <span class="comment"># 写回</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 3. FPN top-down: P5 -&gt; 上采样 -&gt; 拼接 P4 -&gt; CSPRep -&gt; 上采样 -&gt; 拼接 P3 -&gt; CSPRep</span></span><br><span class="line">        <span class="comment"># 4. PAN bottom-up: P3 -&gt; 下采样 -&gt; 拼接 P4 -&gt; CSPRep -&gt; 下采样 -&gt; 拼接 P5 -&gt; CSPRep</span></span><br><span class="line">        <span class="keyword">return</span> outs  <span class="comment"># 3 级增强特征</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-3-CSPRepLayer-RepVGG"><a href="#3-3-CSPRepLayer-RepVGG" class="headerlink" title="3.3 CSPRepLayer + RepVGG"></a>3.3 CSPRepLayer + RepVGG</h3><p>编码器中的 CNN 融合块用 <strong>CSPRepLayer</strong>（CSP 结构 + RepVGG 块）：</p>
+<ul>
+<li><strong>RepVGG</strong>：训练时 3×3 + 1×3 双分支（精度好），部署时融合成单 3×3 卷积（速度快）；</li>
+<li><strong>CSP 结构</strong>：输入分两路，一路过 bottleneck 一路直通，拼接后融合（参数效率高）。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CSPRepLayer</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x_1 = <span class="variable language_">self</span>.conv1(x)           <span class="comment"># 一路</span></span><br><span class="line">        x_1 = <span class="variable language_">self</span>.bottlenecks(x_1)   <span class="comment"># RepVGG blocks</span></span><br><span class="line">        x_2 = <span class="variable language_">self</span>.conv2(x)           <span class="comment"># 另一路直通</span></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.conv3(x_1 + x_2)  <span class="comment"># 融合</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="四、IoU-aware-Query-Selection-Decoder"><a href="#四、IoU-aware-Query-Selection-Decoder" class="headerlink" title="四、IoU-aware Query Selection + Decoder"></a>四、IoU-aware Query Selection + Decoder</h2><h3 id="4-1-IoU-aware-Query-Selection"><a href="#4-1-IoU-aware-Query-Selection" class="headerlink" title="4.1 IoU-aware Query Selection"></a>4.1 IoU-aware Query Selection</h3><p>原版 DETR 的查询（query）是随机初始化的，收敛慢。RT-DETR 从编码器输出中<strong>按分数选 top-k 个位置作为初始查询</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">编码器输出 -&gt; 每个位置算 cls_score × obj_score -&gt; 排序 -&gt; 取 top-300 作为查询初始</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>查询不再是”从零学”，而是”从一个有希望的起点开始学”，大幅加速收敛。这类似 YOLOX 的 SimOTA”从预测质量出发分配”，但 RT-DETR 用它来初始化查询而非标签分配。</p>
+</blockquote>
+<h3 id="4-2-Transformer-Decoder"><a href="#4-2-Transformer-Decoder" class="headerlink" title="4.2 Transformer Decoder"></a>4.2 Transformer Decoder</h3><p><img src="/images/RT-DETR%E8%AF%A6%E8%A7%A3/rtdetr_decoder.png"></p>
+<p>解码器是标准 Transformer Decoder（L 层），每层：</p>
+<ol>
+<li><strong>自注意力</strong>：查询之间交互（让不同查询学会负责不同物体，避免重复）；</li>
+<li><strong>交叉注意力</strong>：查询 -&gt; 编码器特征（Q 来自查询，K&#x2F;V 来自编码器输出）；</li>
+<li><strong>迭代框精修</strong>：每层在前一层基础上精修框坐标（不是从零预测）；</li>
+<li><strong>FFN</strong>：非线性变换。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">初始查询 (300 个, IoU-aware 选出)</span><br><span class="line">   ↓ 自注意力 (查询间避免重复)</span><br><span class="line">   ↓ 交叉注意力 (从编码器特征读信息)</span><br><span class="line">   ↓ 框精修 + 类别预测</span><br><span class="line">Decoder Layer 1</span><br><span class="line">   ↓ ... 重复 L 层</span><br><span class="line">Decoder Layer L</span><br><span class="line">   ↓</span><br><span class="line">300 个 (类别 logit + 框坐标)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、训练：匈牙利匹配-VFL-CDN"><a href="#五、训练：匈牙利匹配-VFL-CDN" class="headerlink" title="五、训练：匈牙利匹配 + VFL + CDN"></a>五、训练：匈牙利匹配 + VFL + CDN</h2><h3 id="5-1-匈牙利匹配（一对一）"><a href="#5-1-匈牙利匹配（一对一）" class="headerlink" title="5.1 匈牙利匹配（一对一）"></a>5.1 匈牙利匹配（一对一）</h3><p>与 YOLO 的”一对多”不同，RT-DETR 用<strong>匈牙利匹配</strong>：每个 GT 只匹配 1 个查询（一对一），从根源上避免了重复检测，所以不需要 NMS。</p>
+<p>匹配 cost &#x3D; 分类 loss + 回归 loss（GIoU + L1），用匈牙利算法求全局最优分配。</p>
+<h3 id="5-2-VFL（Varifocal-Loss）"><a href="#5-2-VFL（Varifocal-Loss）" class="headerlink" title="5.2 VFL（Varifocal Loss）"></a>5.2 VFL（Varifocal Loss）</h3><p>分类损失用 <strong>Varifocal Loss</strong>：对正样本用 IoU 作权重（预测越准权重越大），对负样本用 focal 式衰减。比标准 Focal Loss 更好地平衡了分类与定位质量。</p>
+<h3 id="5-3-CDN（Contrastive-DeNoising）"><a href="#5-3-CDN（Contrastive-DeNoising）" class="headerlink" title="5.3 CDN（Contrastive DeNoising）"></a>5.3 CDN（Contrastive DeNoising）</h3><p><strong>CDN 是 RT-DETR 加速收敛的关键训练技巧</strong>：</p>
+<ul>
+<li>在正常查询之外，额外加入一批<strong>去噪查询</strong>：把 GT 框加噪声作为输入，让网络学习”还原”成 GT；</li>
+<li><strong>对比去噪</strong>：正样本去噪（轻微噪声）+ 负样本去噪（大噪声），防止查询互相干扰；</li>
+<li>作用：给网络一个”已知答案”的辅助任务，加速学习如何从查询预测框。</li>
+</ul>
+<blockquote>
+<p>CDN 不改变推理结构（推理时只用正常查询），纯粹是训练时的加速技巧。</p>
+</blockquote>
+<hr>
+<h2 id="六、无-NMS-端到端推理"><a href="#六、无-NMS-端到端推理" class="headerlink" title="六、无 NMS 端到端推理"></a>六、无 NMS 端到端推理</h2><p><img src="/images/RT-DETR%E8%AF%A6%E8%A7%A3/rtdetr_comparison.jpg"></p>
+<p>RT-DETR 的后处理<strong>没有 NMS</strong>（源码 <code>RTDETRPostProcessor</code>）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">RTDETRPostProcessor</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, outputs, orig_target_sizes</span>):</span><br><span class="line">        logits, boxes = outputs[<span class="string">&#x27;pred_logits&#x27;</span>], outputs[<span class="string">&#x27;pred_boxes&#x27;</span>]</span><br><span class="line">        <span class="comment"># 解码框: cxcywh -&gt; xyxy, 缩放到原图尺寸</span></span><br><span class="line">        bbox_pred = box_convert(boxes, <span class="string">&#x27;cxcywh&#x27;</span>, <span class="string">&#x27;xyxy&#x27;</span>) * orig_target_sizes</span><br><span class="line">        <span class="comment"># focal loss 模式: sigmoid + top-k</span></span><br><span class="line">        scores = sigmoid(logits).flatten(<span class="number">1</span>)</span><br><span class="line">        <span class="comment"># ★ 直接取 top-k，不做 NMS！</span></span><br><span class="line">        topk_values, topk_indexes = torch.topk(scores, num_top_queries, dim=<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">return</span> results  <span class="comment"># 直接输出 top-k 个检测</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>为什么能无 NMS</strong>：匈牙利匹配的一对一训练让每个查询学会负责不同物体，推理时不会产生大量重复框。只需取 top-k 个高分数查询即可。</p>
+</blockquote>
+<p><strong>对比 YOLO 的 NMS 流程</strong>：</p>
+<ul>
+<li>YOLO：8400 个框 -&gt; obj 阈值过滤 -&gt; NMS（IoU&gt;0.65 抑制）-&gt; 结果</li>
+<li>RT-DETR：300 个查询 -&gt; 直接 top-k -&gt; 结果（无 NMS，更简洁、无超参）</li>
+</ul>
+<hr>
+<h2 id="七、性能"><a href="#七、性能" class="headerlink" title="七、性能"></a>七、性能</h2><table>
+<thead>
+<tr>
+<th align="left">模型</th>
+<th align="left">AP (COCO)</th>
+<th align="left">FPS (T4)</th>
+<th align="left">NMS?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">YOLOv8-S</td>
+<td align="left">44.9</td>
+<td align="left">128</td>
+<td align="left">✅ 需要</td>
+</tr>
+<tr>
+<td align="left">YOLOv8-M</td>
+<td align="left">50.2</td>
+<td align="left">102</td>
+<td align="left">✅</td>
+</tr>
+<tr>
+<td align="left">YOLOv8-L</td>
+<td align="left">52.9</td>
+<td align="left">71</td>
+<td align="left">✅</td>
+</tr>
+<tr>
+<td align="left"><strong>RT-DETR-R18</strong></td>
+<td align="left">46.7</td>
+<td align="left">108</td>
+<td align="left"><strong>❌ 无</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>RT-DETR-R34</strong></td>
+<td align="left">48.9</td>
+<td align="left">74</td>
+<td align="left"><strong>❌ 无</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>RT-DETR-R50</strong></td>
+<td align="left">53.1</td>
+<td align="left">74</td>
+<td align="left"><strong>❌ 无</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>RT-DETR-R101</strong></td>
+<td align="left">54.3</td>
+<td align="left">36</td>
+<td align="left"><strong>❌ 无</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>RT-DETR-R50（53.1 AP）在同等速度下超越 YOLOv8-L（52.9 AP），且无需 NMS。</p>
+</blockquote>
+<hr>
+<h2 id="八、总结"><a href="#八、总结" class="headerlink" title="八、总结"></a>八、总结</h2><p>RT-DETR 的核心贡献是把 DETR 的端到端框架做到实时，靠三个关键设计：</p>
+<ol>
+<li><strong>混合编码器</strong>：CNN FPN&#x2F;PAN 做大部分融合 + Transformer 只在 P5 做 1 层全局增强（<strong>实时的关键</strong>）；</li>
+<li><strong>IoU-aware 查询初始化 + CDN 训练</strong>：解决 DETR 收敛慢的问题；</li>
+<li><strong>匈牙利一对一匹配 + 无 NMS</strong>：端到端推理，比 YOLO 的 NMS 更简洁、更稳定。</li>
+</ol>
+<blockquote>
+<p>RT-DETR 证明了”端到端（无 NMS）也能实时”，在速度-精度曲线上首次让 DETR 超越 YOLO。它开启了 DETR 系列的实时化路线（后续 RT-DETRv2、DFINE 等延续）。</p>
+</blockquote>
+<hr>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><ul>
+<li>📝 [[20.notes&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;YOLOX 详解|YOLOX 详解]] - 对比：YOLOX 用 NMS，RT-DETR 无 NMS</li>
+<li>📝 [[20.notes&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;RetinaNet&#x2F;RetinaNet 详解|RetinaNet 详解]] - 匈牙利匹配 vs IoU 阈值分配</li>
+<li>📋 论文原文: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2304.08069">arxiv.org&#x2F;abs&#x2F;2304.08069</a></li>
+<li>📋 官方代码: <a target="_blank" rel="noopener" href="https://github.com/lyuwenyu/RT-DETR">lyuwenyu&#x2F;RT-DETR</a></li>
+<li>📦 源码参考: <code>deeplearning/detect/RT-DETR/rtdetr_pytorch/src/zoo/rtdetr/</code>（hybrid_encoder &#x2F; rtdetr_decoder &#x2F; matcher &#x2F; criterion &#x2F; postprocessor）</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;DETR系列&#x2F;RT-DETR&#x2F;DETR系列：RT-DETR（一） 论文解析_rt-detr论文-CSDN博客]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;DETR系列&#x2F;RT-DETR&#x2F;RT-DETR 1、网络结构详解]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;DETR系列&#x2F;RT-DETR&#x2F;RT-DETR全解析：超越 YOLO，实时物体检测更快更精准（附代码）]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;DETR系列&#x2F;RT-DETR&#x2F;RT-DETR网络结构图]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;DETR系列&#x2F;RT-DETR&#x2F;RT-DETR：实时检测 Transformer]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;DETR系列&#x2F;RT-DETR&#x2F;《目标检测大杂烩》-第14章-浅析RT-DETR]]</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/">https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/">目标检测</a><a class="post-meta__tags" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89/">计算机视觉</a><a class="post-meta__tags" href="/tags/RT-DETR/">RT-DETR</a><a class="post-meta__tags" href="/tags/DETR/">DETR</a><a class="post-meta__tags" href="/tags/%E7%AB%AF%E5%88%B0%E7%AB%AF%E6%A3%80%E6%B5%8B/">端到端检测</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/YOLOX%20%E8%AF%A6%E8%A7%A3/" title="YOLOX 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">YOLOX 详解</div></div><div class="info-2"><div class="info-item-1">YOLOX: Exceeding YOLO Series in 2021 论文: YOLOX: Exceeding YOLO Series in 2021 (2021)作者: Zheng Ge, Songtao Liu, Feng Wang, Zeming Li, Jian Sun (Megvii &#x2F; 旷视)代码: Megvii&#x2F;yolox   一句话总结：YOLOX &#x3D; YOLOv5 结构 + FCOS 检测头 + OTA 标签分配。 它把 YOLO 系列从 anchor-based 推进到 anchor-free，引入解耦头与 SimOTA 动态标签分配，在 COCO 上以同等推理速度超越 YOLOv5。   一、概述YOLOX（2021，旷视）是 YOLO 系列的一个重要转折点。它不是堆叠 trick，而是把检测范式从 anchor-based 切换到 anchor-free，并解决了随之而来的训练稳定性问题（靠解耦头 + SimOTA）。 核心改进三点：  Anchor-free：去掉所有预定义 anchor，每个网格点直接预测 1 个框（类...</div></div></div></a><a class="pagination-related" href="/2026/08/01/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/SORT%20%E8%AF%A6%E8%A7%A3/" title="SORT 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">SORT 详解</div></div><div class="info-2"><div class="info-item-1">SORT: Simple Online and Realtime Tracking 论文: Simple Online and Realtime Tracking (ICIP 2016)作者: Alex Bewley, Zongyuan Ge, Lionel Ott, Fabio Ramos, Ben Upcroft代码: abewley&#x2F;sort（~200 行 Python）   一句话总结：SORT 用”卡尔曼滤波预测 + IoU 匈牙利匹配”三步循环实现多目标跟踪，极简但奠基–后续 DeepSORT、ByteTrack、OC-SORT 全部基于此框架。   一、背景：多目标跟踪（MOT）1.1 什么是 MOT多目标跟踪（MOT）：在视频每一帧检测出所有物体后，还要保持每个物体跨帧的身份（ID）–”第 1 帧的人 A，在第 2 帧还是 A，不是 B”。 1.2 Tracking-by-Detection 范式SORT 采用 tracking-by-detection：先用检测器（YOLO&#x2F;Faster R-CNN）逐帧出框，再用跟踪算法把相邻帧的框关联起来...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/FCOS%20%E8%AF%A6%E8%A7%A3/" title="FCOS 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-19</div><div class="info-item-2">FCOS 详解</div></div><div class="info-2"><div class="info-item-1">FCOS: Fully Convolutional One-Stage Object Detection 论文: FCOS: Fully Convolutional One-Stage Object Detection (ICCV 2019)作者: Zhi Tian, Chunhua Shen, Hao Chen, Tong He ( Adelaide &#x2F; 商汤 )代码: tianzhi0549&#x2F;FCOS &#x2F; AdelaiDet   一句话总结：FCOS 抛弃 anchor，把目标检测变成”逐像素预测”–特征图上每个位置直接回归到所在 GT 框四条边的距离 (l, t, r, b)。 它证明了只要配合 FPN 多级预测 + center-ness，anchor-free 检测器就能追平甚至超过 anchor-based。   一、概述：为什么要有 anchor-free主流检测器（RetinaNet &#x2F; SSD &#x2F; YOLOv2+ &#x2F; Faster R-CNN）都依赖预设 anchor。anchor 的问题：  超参敏感...</div></div></div></a><a class="pagination-related" href="/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/RetinaNet%20%E8%AF%A6%E8%A7%A3/" title="RetinaNet 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-19</div><div class="info-item-2">RetinaNet 详解</div></div><div class="info-2"><div class="info-item-1">RetinaNet: Focal Loss for Dense Object Detection 论文: Focal Loss for Dense Object Detection (ICCV 2017, best paper)作者: Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, Piotr Dollár (FAIR)代码: facebookresearch&#x2F;Detectron   一句话总结：这篇论文找到了”一阶段检测器精度不如两阶段”的根因–类别极度不平衡导致训练被大量易分负样本主导–并用 Focal Loss 一举解决，使 RetinaNet 成为第一个精度超越两阶段的一阶段检测器。 ⚠️ 论文的主角其实是 Focal Loss，RetinaNet 网络本身只是”顺便”提出、用来验证损失函数有效性的载体–结构上并无颠覆性创新（ResNet + FPN + anchor 双头都是已有组件）。   一、背景与动机：一阶段为什么打不过两阶段？12345两阶段 (Faster R-CNN 等):  RPN 筛选...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/" title="YOLO 核心概念"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 核心概念</div></div><div class="info-2"><div class="info-item-1">🧠 YOLO 核心概念详解1. 目标检测基础什么是目标检测 同时解决两个问题：物体在哪里（定位）+ 物体是什么（分类）  输出形式： 1(x, y, w, h, confidence, class_probs...)  Two-Stage vs One-Stage   方法 流程 代表 特点    Two-Stage 提取候选区 → 分类回归 R-CNN, Faster R-CNN 精度高，速度慢   One-Stage 一步到位直接预测 YOLO, SSD 速度快，端到端    YOLO 的本质：把检测变成回归问题，整张图输入，一次性输出所有预测。   2. 核心机制2.1 Grid Cell（网格划分）12输入图像 448×448 → 划分为 S×S 网格 (v1: S=7)每个网格负责预测中心点落在该网格内的目标  v1 例子：  7×7 &#x3D; 49 个网格 每个网格预测 2 个 bounding box 每个 box: (x, y, w, h, confidence) &#x3D; 5 个值 每个网格预测 C 个类别 (VOC: 20) 输出张量: 7×7×(5...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E7%B3%BB%E5%88%97%E6%80%BB%E8%A7%88/" title="YOLO 系列总览"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 系列总览</div></div><div class="info-2"><div class="info-item-1">🎯 YOLO 系列目标检测算法总览一句话理解 YOLO You Only Look Once —— 只需看一次，就能完成目标检测。 把目标检测从”先找候选区再分类”的两阶段，变成了”一步到位”的回归问题。   版本演进时间线   版本 年份 作者&#x2F;机构 核心创新 论文&#x2F;状态    v1 2016 Joseph Redmon 单阶段检测、Grid Cell 划分 1506.02640   v2 2017 Redmon &amp; Farhadi Anchor Box、BN、Darknet-19、细粒度特征 1612.08242   v3 2018 Redmon &amp; Farhadi Darknet-53、多尺度预测(FPN)、逻辑分类器 1804.02767   v4 2020 Alexey Bochkovskiy CSPDarknet53、PAN、Mosaic增强、BoF&#x2F;BoS 2004.10934   v5 2020 Ultralytics PyTorch实现、工程化、CSPNet+PAN ❌ 无论文   v6 2022 美团 工业级部署...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO26%20%E8%AF%A6%E8%A7%A3/" title="YOLO26 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO26 详解</div></div><div class="info-2"><div class="info-item-1">YOLO26: 魔改终结者, 边缘端到端 状态: 🚧 开发中 (Ultralytics YOLO Vision 2025 预览)作者: Ultralytics定位: 专为边缘和低功耗设备设计   设计哲学 不是堆砌模块，而是精简 + 针对性创新：  Simple: 原生端到端，无需 NMS Efficient: CPU 推理提速 43% Innovative: LLM 训练技术跨界引入 CV    三大设计原则1. 简单 (Simple): 原生端到端12345678传统 YOLO:  模型 → NMS 后处理 → 最终输出              ↑        必须的额外步骤YOLO26:  模型 → 直接输出!         (无 DFL, 无 NMS)   继承 v10 的 NMS-Free 理念，进一步简化 移除 DFL (Distribution Focal Loss) 模块：虽然有效，但使导出和硬件兼容复杂化  2. 部署效率 (Deployment Efficiency)1234567传统流程:  预处理 → Backbone → Neck → Head ...</div></div></div></a><a class="pagination-related" href="/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/YOLOX%20%E8%AF%A6%E8%A7%A3/" title="YOLOX 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-01</div><div class="info-item-2">YOLOX 详解</div></div><div class="info-2"><div class="info-item-1">YOLOX: Exceeding YOLO Series in 2021 论文: YOLOX: Exceeding YOLO Series in 2021 (2021)作者: Zheng Ge, Songtao Liu, Feng Wang, Zeming Li, Jian Sun (Megvii &#x2F; 旷视)代码: Megvii&#x2F;yolox   一句话总结：YOLOX &#x3D; YOLOv5 结构 + FCOS 检测头 + OTA 标签分配。 它把 YOLO 系列从 anchor-based 推进到 anchor-free，引入解耦头与 SimOTA 动态标签分配，在 COCO 上以同等推理速度超越 YOLOv5。   一、概述YOLOX（2021，旷视）是 YOLO 系列的一个重要转折点。它不是堆叠 trick，而是把检测范式从 anchor-based 切换到 anchor-free，并解决了随之而来的训练稳定性问题（靠解耦头 + SimOTA）。 核心改进三点：  Anchor-free：去掉所有预定义 anchor，每个网格点直接预测 1 个框（类...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#RT-DETR-Real-Time-Detection-Transformer"><span class="toc-number">1.</span> <span class="toc-text">RT-DETR: Real-Time Detection Transformer</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0"><span class="toc-number">1.1.</span> <span class="toc-text">一、概述</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%9C%89-RT-DETR"><span class="toc-number">1.1.1.</span> <span class="toc-text">1.1 为什么要有 RT-DETR</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E4%B8%8E-DETR-YOLO-%E7%9A%84%E5%AE%9A%E4%BD%8D%E5%AF%B9%E6%AF%94"><span class="toc-number">1.1.2.</span> <span class="toc-text">1.2 与 DETR &#x2F; YOLO 的定位对比</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84"><span class="toc-number">1.2.</span> <span class="toc-text">二、整体架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81Hybrid-Encoder%EF%BC%9A%E6%A0%B8%E5%BF%83%E5%88%9B%E6%96%B0-%E2%AD%90"><span class="toc-number">1.3.</span> <span class="toc-text">三、Hybrid Encoder：核心创新 ⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E2%80%9C%E6%B7%B7%E5%90%88%E2%80%9D%E4%BD%93%E7%8E%B0%E5%9C%A8%E5%93%AA"><span class="toc-number">1.3.1.</span> <span class="toc-text">3.1 “混合”体现在哪</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E6%BA%90%E7%A0%81%EF%BC%88HybridEncoder%EF%BC%89"><span class="toc-number">1.3.2.</span> <span class="toc-text">3.2 源码（HybridEncoder）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-CSPRepLayer-RepVGG"><span class="toc-number">1.3.3.</span> <span class="toc-text">3.3 CSPRepLayer + RepVGG</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81IoU-aware-Query-Selection-Decoder"><span class="toc-number">1.4.</span> <span class="toc-text">四、IoU-aware Query Selection + Decoder</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-IoU-aware-Query-Selection"><span class="toc-number">1.4.1.</span> <span class="toc-text">4.1 IoU-aware Query Selection</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-Transformer-Decoder"><span class="toc-number">1.4.2.</span> <span class="toc-text">4.2 Transformer Decoder</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E8%AE%AD%E7%BB%83%EF%BC%9A%E5%8C%88%E7%89%99%E5%88%A9%E5%8C%B9%E9%85%8D-VFL-CDN"><span class="toc-number">1.5.</span> <span class="toc-text">五、训练：匈牙利匹配 + VFL + CDN</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E5%8C%88%E7%89%99%E5%88%A9%E5%8C%B9%E9%85%8D%EF%BC%88%E4%B8%80%E5%AF%B9%E4%B8%80%EF%BC%89"><span class="toc-number">1.5.1.</span> <span class="toc-text">5.1 匈牙利匹配（一对一）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-VFL%EF%BC%88Varifocal-Loss%EF%BC%89"><span class="toc-number">1.5.2.</span> <span class="toc-text">5.2 VFL（Varifocal Loss）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-CDN%EF%BC%88Contrastive-DeNoising%EF%BC%89"><span class="toc-number">1.5.3.</span> <span class="toc-text">5.3 CDN（Contrastive DeNoising）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%97%A0-NMS-%E7%AB%AF%E5%88%B0%E7%AB%AF%E6%8E%A8%E7%90%86"><span class="toc-number">1.6.</span> <span class="toc-text">六、无 NMS 端到端推理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%80%A7%E8%83%BD"><span class="toc-number">1.7.</span> <span class="toc-text">七、性能</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%80%BB%E7%BB%93"><span class="toc-number">1.8.</span> <span class="toc-text">八、总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5"><span class="toc-number">1.9.</span> <span class="toc-text">相关链接</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/01-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87/" title="CARLA教程-01-环境准备">CARLA教程-01-环境准备</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/02-%E6%9E%84%E5%BB%BAUE4%E4%B8%8ECARLA/" title="CARLA教程-02-构建UE4与CARLA">CARLA教程-02-构建UE4与CARLA</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/03-%E8%BF%90%E8%A1%8C%E4%BB%BF%E7%9C%9F/" title="CARLA教程-03-运行仿真">CARLA教程-03-运行仿真</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/04-ROS2%E6%8E%A5%E5%8F%A3%E4%B8%8E%E8%AF%9D%E9%A2%98/" title="CARLA教程-04-ROS2接口与话题">CARLA教程-04-ROS2接口与话题</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>

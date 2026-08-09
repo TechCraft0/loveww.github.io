@@ -1,0 +1,772 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>YOLOX 详解 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="YOLOX: Exceeding YOLO Series in 2021 论文: YOLOX: Exceeding YOLO Series in 2021 (2021)作者: Zheng Ge, Songtao Liu, Feng Wang, Zeming Li, Jian Sun (Megvii &#x2F; 旷视)代码: Megvii&#x2F;yolox   一句话总结：YOLOX &amp;#x3">
+<meta property="og:type" content="article">
+<meta property="og:title" content="YOLOX 详解">
+<meta property="og:url" content="https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/YOLOX%20%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="YOLOX: Exceeding YOLO Series in 2021 论文: YOLOX: Exceeding YOLO Series in 2021 (2021)作者: Zheng Ge, Songtao Liu, Feng Wang, Zeming Li, Jian Sun (Megvii &#x2F; 旷视)代码: Megvii&#x2F;yolox   一句话总结：YOLOX &amp;#x3">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-07-31T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-09T15:28:31.409Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="目标检测">
+<meta property="article:tag" content="计算机视觉">
+<meta property="article:tag" content="AnchorFree">
+<meta property="article:tag" content="YOLOX">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "YOLOX 详解",
+  "url": "https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/YOLOX%20%E8%AF%A6%E8%A7%A3/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-07-31T16:00:00.000Z",
+  "dateModified": "2026-08-09T15:28:31.409Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/YOLOX%20%E8%AF%A6%E8%A7%A3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'YOLOX 详解',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">YOLOX 详解</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">YOLOX 详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-07-31T16:00:00.000Z" title="发表于 2026-08-01 00:00:00">2026-08-01</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-08-09T15:28:31.409Z" title="更新于 2026-08-09 23:28:31">2026-08-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/2D%E6%A3%80%E6%B5%8B/">2D检测</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">5.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>22分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="YOLOX-Exceeding-YOLO-Series-in-2021"><a href="#YOLOX-Exceeding-YOLO-Series-in-2021" class="headerlink" title="YOLOX: Exceeding YOLO Series in 2021"></a>YOLOX: Exceeding YOLO Series in 2021</h1><blockquote>
+<p><strong>论文</strong>: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2107.08430">YOLOX: Exceeding YOLO Series in 2021</a> (2021)<br><strong>作者</strong>: Zheng Ge, Songtao Liu, Feng Wang, Zeming Li, Jian Sun (Megvii &#x2F; 旷视)<br><strong>代码</strong>: <a target="_blank" rel="noopener" href="https://github.com/Megvii-YOLOSeries/YOLOX">Megvii&#x2F;yolox</a></p>
+</blockquote>
+<blockquote>
+<p>一句话总结：<strong>YOLOX &#x3D; YOLOv5 结构 + FCOS 检测头 + OTA 标签分配。</strong> 它把 YOLO 系列从 anchor-based 推进到 anchor-free，引入解耦头与 SimOTA 动态标签分配，在 COCO 上以同等推理速度超越 YOLOv5。</p>
+</blockquote>
+<hr>
+<h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>YOLOX（2021，旷视）是 YOLO 系列的一个重要转折点。它不是堆叠 trick，而是<strong>把检测范式从 anchor-based 切换到 anchor-free</strong>，并解决了随之而来的训练稳定性问题（靠解耦头 + SimOTA）。</p>
+<p>核心改进三点：</p>
+<ol>
+<li><strong>Anchor-free</strong>：去掉所有预定义 anchor，每个网格点直接预测 1 个框（类似 FCOS）；</li>
+<li><strong>Decoupled Head（解耦头）</strong>：分类与回归分支分离（YOLOv3-v5 是耦合头）；</li>
+<li><strong>SimOTA 标签分配</strong>：基于最优传输（OT）的动态标签分配，替代传统的静态 IoU 阈值分配。</li>
+</ol>
+<blockquote>
+<p>简单理解：<code>YOLOX = YOLOv5(5.0) 的结构 + FCOS 的检测头 + OTA 的标签分配</code>。整体网络（backbone&#x2F;neck）沿用 YOLOv5，关键改动在检测头与训练时的标签分配策略。</p>
+</blockquote>
+<hr>
+<h2 id="二、与-YOLO-v1-v4-的区别-⭐"><a href="#二、与-YOLO-v1-v4-的区别-⭐" class="headerlink" title="二、与 YOLO v1-v4 的区别 ⭐"></a>二、与 YOLO v1-v4 的区别 ⭐</h2><blockquote>
+<p>这是理解 YOLOX 最直接的角度：它相对前几代改了什么、为什么改。</p>
+</blockquote>
+<h3 id="2-1-总览对比表"><a href="#2-1-总览对比表" class="headerlink" title="2.1 总览对比表"></a>2.1 总览对比表</h3><table>
+<thead>
+<tr>
+<th align="left">维度</th>
+<th align="left">YOLOv1 (2016)</th>
+<th align="left">YOLOv2 (2017)</th>
+<th align="left">YOLOv3 (2018)</th>
+<th align="left">YOLOv4 (2020)</th>
+<th align="left"><strong>YOLOX (2021)</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Anchor</td>
+<td align="left">❌ 无（直接回归）</td>
+<td align="left">✅ 5 个（K-means）</td>
+<td align="left">✅ 9 个（3尺度×3）</td>
+<td align="left">✅ 9 个</td>
+<td align="left"><strong>❌ 无（anchor-free）</strong></td>
+</tr>
+<tr>
+<td align="left">检测头</td>
+<td align="left">耦合（FC）</td>
+<td align="left">耦合</td>
+<td align="left">耦合</td>
+<td align="left">耦合</td>
+<td align="left"><strong>解耦（cls&#x2F;reg 分离）</strong></td>
+</tr>
+<tr>
+<td align="left">标签分配</td>
+<td align="left">网格中心点</td>
+<td align="left">IoU 阈值 + 中心</td>
+<td align="left">IoU 0.5&#x2F;0.4 + ignore</td>
+<td align="left">IoU 阈值</td>
+<td align="left"><strong>SimOTA（动态，最优传输）</strong></td>
+</tr>
+<tr>
+<td align="left">每位置预测框</td>
+<td align="left">2</td>
+<td align="left">5</td>
+<td align="left">3</td>
+<td align="left">3</td>
+<td align="left"><strong>1</strong></td>
+</tr>
+<tr>
+<td align="left">Backbone</td>
+<td align="left">Darknet-24</td>
+<td align="left">Darknet-19</td>
+<td align="left">Darknet-53</td>
+<td align="left">CSPDarknet</td>
+<td align="left">CSPDarknet</td>
+</tr>
+<tr>
+<td align="left">Neck</td>
+<td align="left">无</td>
+<td align="left">Passthrough</td>
+<td align="left">FPN</td>
+<td align="left">PANet</td>
+<td align="left"><strong>PAFPN</strong></td>
+</tr>
+<tr>
+<td align="left">激活函数</td>
+<td align="left">LeakyReLU</td>
+<td align="left">LeakyReLU</td>
+<td align="left">LeakyReLU</td>
+<td align="left">Mish</td>
+<td align="left"><strong>SiLU</strong></td>
+</tr>
+<tr>
+<td align="left">分类损失</td>
+<td align="left">SSE</td>
+<td align="left">SSE</td>
+<td align="left">BCE</td>
+<td align="left">BCE</td>
+<td align="left"><strong>BCE</strong></td>
+</tr>
+<tr>
+<td align="left">回归损失</td>
+<td align="left">SSE</td>
+<td align="left">SSE</td>
+<td align="left">SSE</td>
+<td align="left">CIoU</td>
+<td align="left"><strong>IOU loss (1-IoU²)</strong></td>
+</tr>
+<tr>
+<td align="left">数据增强</td>
+<td align="left">无</td>
+<td align="left">无</td>
+<td align="left">无</td>
+<td align="left">Mosaic</td>
+<td align="left"><strong>Mosaic + MixUp</strong></td>
+</tr>
+</tbody></table>
+<h3 id="2-2-关键区别详解"><a href="#2-2-关键区别详解" class="headerlink" title="2.2 关键区别详解"></a>2.2 关键区别详解</h3><p><strong>① Anchor-free：去掉 anchor 这个”脚手架”</strong></p>
+<ul>
+<li><strong>v2-v4 都是 anchor-based</strong>：每个网格点预设 3-5 个 anchor（不同尺寸&#x2F;宽高比），预测相对 anchor 的偏移。anchor 的尺寸&#x2F;数量&#x2F;宽高比是敏感超参，换数据集要重新聚类（K-means）。</li>
+<li><strong>YOLOX 改为 anchor-free</strong>：每个网格点只预测 <strong>1 个框</strong>，直接回归 $(x, y, w, h)$（无 anchor 偏移）。好处：① 去掉 anchor 超参，泛化更简单；② 减少 NMS 输入量（框数减少 3-9 倍）。</li>
+<li>这与 FCOS 思路一致，但 YOLOX 仍保留 objectness 分支（FCOS 用 centerness）。</li>
+</ul>
+<p><strong>② Decoupled Head：分类与回归解耦</strong></p>
+<ul>
+<li><strong>v3-v4 耦合头</strong>：cls、reg、obj 共享同一组卷积，最后用 1×1 卷积切出不同通道。</li>
+<li><strong>YOLOX 解耦头</strong>：特征图先经 1×1 stem 降维到 256，再分两个独立分支（各自 2 层 3×3 卷积），cls 分支预测类别、reg 分支预测框+objectness。</li>
+<li><strong>为什么解耦</strong>：作者实验发现，anchor-free + OTA 训练时，耦合头收敛慢且易冲突（cls 和 reg 的梯度互相干扰）；解耦后训练稳定、收敛快。代价是多一点计算量。</li>
+</ul>
+<p><strong>③ SimOTA：动态标签分配</strong></p>
+<ul>
+<li><strong>v1</strong>：物体中心落在哪个网格，那个网格负责（最简单）。</li>
+<li><strong>v2-v4</strong>：静态 IoU 阈值–IoU&gt;0.5 为正、&lt;0.4 为负、中间 ignore（v3）。每个 GT 的正样本数固定且依赖人为阈值。</li>
+<li><strong>YOLOX SimOTA</strong>：把标签分配建模为<strong>最优传输问题</strong>，每个 GT <strong>动态</strong>分配 k 个正样本（k 由预测质量决定：高质量预测的 GT 多分几个正样本，低质量的少分）。详见第五章。</li>
+</ul>
+<p><strong>④ 数据增强与训练策略</strong></p>
+<ul>
+<li><strong>Mosaic + MixUp</strong>：v4 用 Mosaic，YOLOX 额外加 MixUp（改进了实现，类似 copy-paste）。</li>
+<li><strong>最后 15 epoch 关闭 Mosaic&#x2F;MixUp</strong>：Mosaic 会截断 bbox、偏离真实分布，最后阶段关掉增强让模型在真实分布上精修（涨点明显）。</li>
+</ul>
+<p><strong>⑤ 激活函数：SiLU（&#x3D; Swish）</strong></p>
+<ul>
+<li>v3 用 LeakyReLU，v4 用 Mish，YOLOX 用 <strong>SiLU</strong>（$x \cdot \sigma(x)$）。SiLU 在硬件上比 Mish 快，效果相近。</li>
+</ul>
+<h3 id="2-3-YOLOX-与-YOLOv1-的渊源：anchor-free-的回归"><a href="#2-3-YOLOX-与-YOLOv1-的渊源：anchor-free-的回归" class="headerlink" title="2.3 YOLOX 与 YOLOv1 的渊源：anchor-free 的回归"></a>2.3 YOLOX 与 YOLOv1 的渊源：anchor-free 的回归</h3><p>一个重要的观察：<strong>YOLOX 在 anchor-free 这件事上，本质是回到了 YOLOv1 的思路</strong>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">YOLOv1 (2016): anchor-free，每个网格直接预测框</span><br><span class="line">       ↓ 但 recall 低、效果不好</span><br><span class="line">YOLOv2 (2017): 加回 anchor（&quot;v1 不行，加先验框&quot;）</span><br><span class="line">       ↓</span><br><span class="line">YOLOv3/v4/v5: 一直用 anchor</span><br><span class="line">       ↓</span><br><span class="line">YOLOX (2021): 去掉 anchor，回到 v1 思路 -- 但这次配套技术补齐了</span><br></pre></td></tr></table></figure>
+
+<p>v1 的 anchor-free 失败不是因为思路错，而是配套没跟上。YOLOX 补齐了：</p>
+<table>
+<thead>
+<tr>
+<th align="left">v1 的短板</th>
+<th align="left">YOLOX 怎么补</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">只有 1 层 7×7，无多尺度</td>
+<td align="left">FPN 3 级（80×80 &#x2F; 40×40 &#x2F; 20×20）</td>
+</tr>
+<tr>
+<td align="left">每 GT 只 1 个正样本（中心网格）</td>
+<td align="left">SimOTA 动态分配 ~3-5 个</td>
+</tr>
+<tr>
+<td align="left">SSE 损失，对大小框不公</td>
+<td align="left">IOU loss + BCE</td>
+</tr>
+<tr>
+<td align="left">无数据增强</td>
+<td align="left">Mosaic + MixUp</td>
+</tr>
+<tr>
+<td align="left">耦合头</td>
+<td align="left">解耦头</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>一句话</strong>：YOLOX &#x3D; YOLOv1 的 anchor-free 思路 + v3 的 FPN + SimOTA + 解耦头。它是”v1 的回归”，带着 v2-v5 积累的技术进步。</p>
+</blockquote>
+<hr>
+<h2 id="三、网络架构"><a href="#三、网络架构" class="headerlink" title="三、网络架构"></a>三、网络架构</h2><p><img src="/images/YOLOX%E8%AF%A6%E8%A7%A3/yolox_architecture.jpg"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">输入图像</span><br><span class="line">   ↓</span><br><span class="line">Backbone: CSPDarknet（同 YOLOv4/v5）</span><br><span class="line">   ↓ 输出 C3, C4, C5 三级特征</span><br><span class="line">Neck: PAFPN（Path Aggregation FPN，类似 PANet）</span><br><span class="line">   ↓ 输出 P3, P4, P5 三级特征 (stride 8/16/32)</span><br><span class="line">Head: Decoupled Head（解耦头，每级独立 cls/reg 分支）</span><br><span class="line">   ↓</span><br><span class="line">P3: 80×80 × (cls=80, reg=4, obj=1)   小目标</span><br><span class="line">P4: 40×40 × (cls=80, reg=4, obj=1)   中目标</span><br><span class="line">P5: 20×20 × (cls=80, reg=4, obj=1)   大目标</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>Backbone</strong>：CSPDarknet，同 YOLOv4&#x2F;v5，取 $C_3, C_4, C_5$ 三级特征；</li>
+<li><strong>Neck</strong>：PAFPN（路径聚合 FPN），自顶向下 + 自底向上双向融合，比单向上行的 FPN 更强；</li>
+<li><strong>Head</strong>：解耦头，3 个尺度（stride 8&#x2F;16&#x2F;32），每个网格点预测 1 个框（anchor-free）。</li>
+</ul>
+<hr>
+<h2 id="四、Decoupled-Head（解耦头）"><a href="#四、Decoupled-Head（解耦头）" class="headerlink" title="四、Decoupled Head（解耦头）"></a>四、Decoupled Head（解耦头）</h2><h3 id="4-1-结构"><a href="#4-1-结构" class="headerlink" title="4.1 结构"></a>4.1 结构</h3><p><img src="/images/YOLOX%E8%AF%A6%E8%A7%A3/yolox_decoupled_head.jpg"></p>
+<p>neck 传进来的特征图先经 <strong>1×1 stem</strong> 降维到 256，再分两个并行分支：</p>
+<ul>
+<li><strong>分类分支</strong>：2×（3×3 Conv + SiLU）→ 1×1 Conv → 输出 <code>num_classes</code> 个类别分数；</li>
+<li><strong>回归分支</strong>：2×（3×3 Conv + SiLU）→ 1×1 Conv → 输出 4（框坐标）+ 1（objectness）。</li>
+</ul>
+<h3 id="4-2-为什么解耦"><a href="#4-2-为什么解耦" class="headerlink" title="4.2 为什么解耦"></a>4.2 为什么解耦</h3><p><img src="/images/YOLOX%E8%AF%A6%E8%A7%A3/yolox_decoupled_exp.jpg"></p>
+<p>作者在 YOLOv3 上做实验：耦合头 vs 解耦头。结果显示<strong>解耦头收敛更快、最终精度更高</strong>，尤其在引入 anchor-free 和 OTA 训练时，耦合头训练不稳定。代价是解耦头多了几个卷积层、计算量略增，但对整体速度影响不大。</p>
+<h3 id="4-3-Anchor-free-到底怎么做的-⭐"><a href="#4-3-Anchor-free-到底怎么做的-⭐" class="headerlink" title="4.3 Anchor-free 到底怎么做的 ⭐"></a>4.3 Anchor-free 到底怎么做的 ⭐</h3><blockquote>
+<p>这一节对比 anchor-based（YOLOv3&#x2F;v4&#x2F;v5）与 anchor-free（YOLOX），把”怎么就 anchor-free 了”讲透。</p>
+</blockquote>
+<h4 id="4-3-1-先搞懂：anchor-是什么、为什么有它"><a href="#4-3-1-先搞懂：anchor-是什么、为什么有它" class="headerlink" title="4.3.1 先搞懂：anchor 是什么、为什么有它"></a>4.3.1 先搞懂：anchor 是什么、为什么有它</h4><p><strong>Anchor（先验框）</strong> 是预先定义在网格点上的”参考框”，有固定的宽高。以 YOLOv3 为例，每个网格点放 <strong>3 个 anchor</strong>（通过 K-means 聚类 COCO 数据集得到），比如 P3 层的 anchor 是 <code>(10×13), (16×30), (33×23)</code>。</p>
+<p><strong>为什么要有 anchor</strong>：网络不直接预测框的绝对大小，而是预测<strong>相对 anchor 的偏移量</strong>。anchor 提供一个”起始猜测”，网络只需微调–这比从零学大小容易收敛。</p>
+<p><strong>YOLOv3 的解码公式</strong>（anchor-based）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bx = (sigmoid(tx) × 2 - 0.5 + grid_x) × stride     # 中心点</span><br><span class="line">bw = anchor_w × exp(tw)                              # ★ 宽 = anchor 的宽 × 缩放因子</span><br><span class="line">bh = anchor_h × exp(th)                              # ★ 高 = anchor 的高 × 缩放因子</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键</strong>：<code>anchor_w</code> 是<strong>预设的固定值</strong>（如 10、16、33…），网络只学 <code>tw</code>（缩放比的对数）。框的大小 &#x3D; anchor 大小 × exp(tw)。anchor 越接近真实物体大小，网络越好学。</p>
+<h4 id="4-3-2-YOLOX-怎么去掉-anchor"><a href="#4-3-2-YOLOX-怎么去掉-anchor" class="headerlink" title="4.3.2 YOLOX 怎么去掉 anchor"></a>4.3.2 YOLOX 怎么去掉 anchor</h4><p>YOLOX 的做法很简单但很关键：<strong>把 anchor 去掉，每个网格点只预测 1 个框，直接从网格点回归绝对坐标</strong>。</p>
+<p><strong>YOLOX 的解码公式</strong>（anchor-free，源码 <code>get_output_and_grid</code>）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 源码 yolo_head.py: get_output_and_grid()</span></span><br><span class="line">output[..., :<span class="number">2</span>] = (output[..., :<span class="number">2</span>] + grid) * stride      <span class="comment"># 中心 = (网络输出 + 网格坐标) × stride</span></span><br><span class="line">output[..., <span class="number">2</span>:<span class="number">4</span>] = torch.exp(output[..., <span class="number">2</span>:<span class="number">4</span>]) * stride   <span class="comment"># 宽高 = exp(网络输出) × stride</span></span><br></pre></td></tr></table></figure>
+
+<p>翻译成公式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bx = (tx + grid_x) × stride      # 中心点 (无 sigmoid，raw output + grid)</span><br><span class="line">bw = exp(tw) × stride             # ★ 宽 = exp(预测) × stride，没有 anchor_w！</span><br><span class="line">bh = exp(th) × stride             # ★ 高 = exp(预测) × stride，没有 anchor_h！</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-3-3-两者放一起对比"><a href="#4-3-3-两者放一起对比" class="headerlink" title="4.3.3 两者放一起对比"></a>4.3.3 两者放一起对比</h4><table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">YOLOv3（anchor-based）</th>
+<th align="left">YOLOX（anchor-free）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>每网格点预测数</strong></td>
+<td align="left">3 个（3 个 anchor 各一个）</td>
+<td align="left"><strong>1 个</strong>（无 anchor）</td>
+</tr>
+<tr>
+<td align="left"><strong>中心点解码</strong></td>
+<td align="left"><code>(sigmoid(tx)×2-0.5 + grid) × stride</code></td>
+<td align="left"><code>(tx + grid) × stride</code></td>
+</tr>
+<tr>
+<td align="left"><strong>宽高解码</strong></td>
+<td align="left"><code>anchor_w × exp(tw)</code> ★有 anchor</td>
+<td align="left"><code>exp(tw) × stride</code> ★<strong>无 anchor</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>宽高的”起点”</strong></td>
+<td align="left">anchor 的宽高（预设固定值）</td>
+<td align="left">stride（仅尺度因子，非框先验）</td>
+</tr>
+<tr>
+<td align="left"><strong>网络学什么</strong></td>
+<td align="left">相对 anchor 的缩放比 <code>tw</code></td>
+<td align="left">绝对大小 <code>tw</code>（exp(tw)×stride 即真实像素宽）</td>
+</tr>
+<tr>
+<td align="left"><strong>需要 anchor 超参？</strong></td>
+<td align="left">✅ 需要（尺寸&#x2F;比例&#x2F;数量，K-means 聚类）</td>
+<td align="left">❌ 不需要</td>
+</tr>
+<tr>
+<td align="left"><strong>总预测框数</strong></td>
+<td align="left">(80²+40²+20²)×3 &#x3D; <strong>25,200</strong></td>
+<td align="left">(80²+40²+20²)×1 &#x3D; <strong>8,400</strong>（少 3 倍）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>核心区别一句话</strong>：v3 的 <code>bw = anchor_w × exp(tw)</code> 里 anchor_w 是预设的”拐杖”；YOLOX 的 <code>bw = exp(tw) × stride</code> 里没有 anchor_w，网络直接学绝对大小。<strong>去掉 anchor_w 这一项，就是 anchor-free。</strong></p>
+</blockquote>
+<h4 id="4-3-4-为什么去掉-anchor-还能work"><a href="#4-3-4-为什么去掉-anchor-还能work" class="headerlink" title="4.3.4 为什么去掉 anchor 还能work"></a>4.3.4 为什么去掉 anchor 还能work</h4><p>你可能会问：没有 anchor 提供”起始猜测”，网络怎么知道框该多大？</p>
+<ol>
+<li><strong>FPN 已提供多尺度</strong>：P3（stride&#x3D;8）检测小物体（8<del>64px），P5（stride&#x3D;32）检测大物体（128</del>512px）。不同层的 stride 天然覆盖不同尺度，<strong>替代了多组 anchor 尺寸的作用</strong>；</li>
+<li><strong>exp(tw) × stride 可以表示任意大小</strong>：P3 上 exp(tw)≈1 → 8px，exp(tw)≈4 → 32px；P5 上 exp(tw)≈5 → 160px，exp(tw)≈10 → 320px。范围足够覆盖；</li>
+<li><strong>网络有足够容量学习</strong>：从数据中学”这个位置的物体大概多大”，不需要人为预设。代价是前期收敛稍慢，但最终精度不输甚至超越 anchor-based。</li>
+</ol>
+<h4 id="4-3-5-源码关键：那个-“1”"><a href="#4-3-5-源码关键：那个-“1”" class="headerlink" title="4.3.5 源码关键：那个 “1”"></a>4.3.5 源码关键：那个 “1”</h4><p>源码 <code>get_output_and_grid</code> 中有一行决定 anchor-free 的关键：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># YOLOX: view 里的 &quot;1&quot; = 每个网格点 1 个预测（anchor-free）</span></span><br><span class="line">output = output.view(batch_size, <span class="number">1</span>, n_ch, hsize, wsize)   <span class="comment"># ★ 这里的 1</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 对比 YOLOv3: view 里的 &quot;3&quot; = 每个网格点 3 个 anchor</span></span><br><span class="line"><span class="comment"># output = output.view(batch_size, 3, n_ch, hsize, wsize)  # v3 是 3</span></span><br></pre></td></tr></table></figure>
+
+<p>这个 <code>1</code> 意味着：特征图的每个位置只产生 1 组 <code>(tx, ty, tw, th, obj, cls...)</code>，不拆成 3 份给 3 个 anchor。<strong>从”3 个 anchor 各预测 1 个框”变成”1 个位置直接预测 1 个框”</strong>。</p>
+<h4 id="4-3-6-预测（推理）时的完整流程"><a href="#4-3-6-预测（推理）时的完整流程" class="headerlink" title="4.3.6 预测（推理）时的完整流程"></a>4.3.6 预测（推理）时的完整流程</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">① 输入图像 (640×640×3)</span><br><span class="line">   ↓ Backbone + PAFPN</span><br><span class="line">② 得到 3 级特征图: P3(80×80), P4(40×40), P5(20×20)</span><br><span class="line">   ↓ Decoupled Head (每级独立)</span><br><span class="line">③ 每个网格点输出一组 raw 值: (tx, ty, tw, th, obj_logit, cls_logit...)</span><br><span class="line">   - P3: 80×80 = 6,400 个点</span><br><span class="line">   - P4: 40×40 = 1,600 个点</span><br><span class="line">   - P5: 20×20 =   400 个点</span><br><span class="line">   - 合计 8,400 个预测（vs v3 的 25,200）</span><br><span class="line">   ↓ 解码 (decode_outputs)</span><br><span class="line">④ 每个点解码成绝对坐标:</span><br><span class="line">   - center = (tx + grid) × stride       → 原图像素坐标</span><br><span class="line">   - wh = exp(tw, th) × stride           → 原图像素宽高</span><br><span class="line">   - obj = sigmoid(obj_logit)            → 物体置信度 [0,1]</span><br><span class="line">   - cls = sigmoid(cls_logit)            → 类别概率 [0,1]</span><br><span class="line">   ↓ 过滤</span><br><span class="line">⑤ 保留 obj &gt; 阈值 (如 0.01) 的框 → 大部分框被滤掉（8400 → 几百个）</span><br><span class="line">   ↓ NMS</span><br><span class="line">⑥ 每个类别做 NMS (IoU &gt; 0.65 的抑制) → 最终检测结果</span><br></pre></td></tr></table></figure>
+
+<p>源码 <code>decode_outputs</code>（推理解码）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">decode_outputs</span>(<span class="params">self, outputs, dtype</span>):</span><br><span class="line">    <span class="comment"># 生成所有网格坐标 + 对应 stride</span></span><br><span class="line">    <span class="keyword">for</span> (hsize, wsize), stride <span class="keyword">in</span> <span class="built_in">zip</span>(<span class="variable language_">self</span>.hw, <span class="variable language_">self</span>.strides):</span><br><span class="line">        grid = meshgrid → [<span class="number">1</span>, H×W, <span class="number">2</span>]       <span class="comment"># 每个网格点的 (x, y) 坐标</span></span><br><span class="line">        strides → [<span class="number">1</span>, H×W, <span class="number">1</span>]               <span class="comment"># 每个网格点的 stride</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># ★ 解码（与训练时 get_output_and_grid 一致）</span></span><br><span class="line">    outputs = torch.cat([</span><br><span class="line">        (outputs[..., <span class="number">0</span>:<span class="number">2</span>] + grids) * strides,    <span class="comment"># 中心点</span></span><br><span class="line">        torch.exp(outputs[..., <span class="number">2</span>:<span class="number">4</span>]) * strides,    <span class="comment"># 宽高</span></span><br><span class="line">        outputs[..., <span class="number">4</span>:]                            <span class="comment"># obj + cls（已 sigmoid）</span></span><br><span class="line">    ], dim=-<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">return</span> outputs   <span class="comment"># [batch, 8400, 5+num_classes] → 送 NMS</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>训练与推理的解码公式完全一致</strong>，区别仅在于：训练时还需要用解码结果做 SimOTA 标签分配 + 算 loss；推理时解码后直接过滤 + NMS。</p>
+</blockquote>
+<h3 id="4-4-源码（解耦头定义）"><a href="#4-4-源码（解耦头定义）" class="headerlink" title="4.4 源码（解耦头定义）"></a>4.4 源码（解耦头定义）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">YOLOXHead</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, num_classes, strides=[<span class="number">8</span>, <span class="number">16</span>, <span class="number">32</span>], in_channels=[<span class="number">256</span>, <span class="number">512</span>, <span class="number">1024</span>], act=<span class="string">&quot;silu&quot;</span></span>):</span><br><span class="line">        <span class="comment"># 每个尺度各一组 stem + cls_convs + reg_convs + cls_preds + reg_preds + obj_preds</span></span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(in_channels)):</span><br><span class="line">            <span class="variable language_">self</span>.stems.append(BaseConv(in_channels[i], <span class="number">256</span>, <span class="number">1</span>, act=act))      <span class="comment"># 1×1 降维</span></span><br><span class="line">            <span class="variable language_">self</span>.cls_convs.append(<span class="number">2</span>×(Conv(<span class="number">256</span>,<span class="number">256</span>,<span class="number">3</span>,act)))                     <span class="comment"># cls 分支</span></span><br><span class="line">            <span class="variable language_">self</span>.reg_convs.append(<span class="number">2</span>×(Conv(<span class="number">256</span>,<span class="number">256</span>,<span class="number">3</span>,act)))                     <span class="comment"># reg 分支</span></span><br><span class="line">            <span class="variable language_">self</span>.cls_preds.append(Conv2d(<span class="number">256</span>, num_classes, <span class="number">1</span>))                 <span class="comment"># 类别输出</span></span><br><span class="line">            <span class="variable language_">self</span>.reg_preds.append(Conv2d(<span class="number">256</span>, <span class="number">4</span>, <span class="number">1</span>))                           <span class="comment"># 框回归输出</span></span><br><span class="line">            <span class="variable language_">self</span>.obj_preds.append(Conv2d(<span class="number">256</span>, <span class="number">1</span>, <span class="number">1</span>))                           <span class="comment"># objectness 输出</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意：<strong>objectness 从 reg 分支出</strong>（不是 cls 分支），因为 obj 与定位质量更相关。</p>
+</blockquote>
+<hr>
+<h2 id="五、OTA：标签分配的最优传输视角-⭐⭐"><a href="#五、OTA：标签分配的最优传输视角-⭐⭐" class="headerlink" title="五、OTA：标签分配的最优传输视角 ⭐⭐"></a>五、OTA：标签分配的最优传输视角 ⭐⭐</h2><blockquote>
+<p>这是 YOLOX 最核心的创新，也是你最想搞懂的部分。</p>
+</blockquote>
+<h4 id="先搞清一个常见困惑：8-400-个框与-OTA-的关系"><a href="#先搞清一个常见困惑：8-400-个框与-OTA-的关系" class="headerlink" title="先搞清一个常见困惑：8,400 个框与 OTA 的关系"></a>先搞清一个常见困惑：8,400 个框与 OTA 的关系</h4><blockquote>
+<p>“每个网格点只预测 1 个框”<strong>不等于</strong>“总共只有 1 个框”。一张 640×640 的图有 8,400 个网格点（80²+40²+20²），每个点出 1 个框 &#x3D; <strong>8,400 个框</strong>。</p>
+</blockquote>
+<p>一张训练图可能只有 3 个 GT，但网络吐了 8,400 个框。<strong>OTA 的任务就是：从这 8,400 个框里挑出哪些是正样本（负责预测 GT）、哪些是负样本（背景）。</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">8,400 个预测框</span><br><span class="line">├── ~30 个落在 GT1 附近 -&gt; SimOTA 选 5 个作正样本</span><br><span class="line">├── ~25 个落在 GT2 附近 -&gt; SimOTA 选 3 个作正样本</span><br><span class="line">├── ~20 个落在 GT3 附近 -&gt; SimOTA 选 4 个作正样本</span><br><span class="line">└── 剩下 ~8,345 个      -&gt; 全判负样本（背景）</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>正样本</strong>（~12 个）：学”往 GT 靠”（回归 + 分类 loss）；</li>
+<li><strong>负样本</strong>（~8,345 个）：学”别出框”（objectness loss，target&#x3D;0）。</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">训练</th>
+<th align="left">推理</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">网络输出</td>
+<td align="left">8,400 个框</td>
+<td align="left">8,400 个框</td>
+</tr>
+<tr>
+<td align="left">有 GT？</td>
+<td align="left">✅ 有（标注）</td>
+<td align="left">❌ 没有</td>
+</tr>
+<tr>
+<td align="left">OTA 用？</td>
+<td align="left">✅ 挑正样本算 loss</td>
+<td align="left">❌ 不用</td>
+</tr>
+<tr>
+<td align="left">出结果方式</td>
+<td align="left">OTA + loss + 反向传播</td>
+<td align="left">过滤 obj &gt; 阈值 + NMS</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>anchor-free 和 OTA 不矛盾</strong>：anchor-free 决定”每个位置出几个框”（1 个，不是 3 个）；OTA 决定”这 8,400 个框里哪些是正样本”。两件事。</p>
+</blockquote>
+<h3 id="5-1-标签分配问题"><a href="#5-1-标签分配问题" class="headerlink" title="5.1 标签分配问题"></a>5.1 标签分配问题</h3><p><strong>什么是标签分配</strong>：训练时，对每个网格点（anchor point）判定它是正样本（负责预测某个 GT）还是负样本（背景），并分配学习目标。</p>
+<p><strong>静态分配的问题</strong>（v2-v4 的 IoU 阈值法）：</p>
+<p><img src="/images/YOLOX%E8%AF%A6%E8%A7%A3/yolox_ambiguity.jpg"></p>
+<ul>
+<li><strong>模糊框（ambiguity）</strong>：同一个网格点可能与多个 GT 都有较高 IoU，静态分配只按规则选一个，可能选错，给其他 GT 带来有害梯度；</li>
+<li>静态阈值（如 0.5）不考虑 GT 的大小&#x2F;形状&#x2F;遮挡，不同 GT 合适的正样本数其实不同；</li>
+<li><strong>没有全局视角</strong>：每个 GT 独立分配，不考虑”这个 anchor 给哪个 GT 最优”。</li>
+</ul>
+<h3 id="5-2-OTA：最优传输"><a href="#5-2-OTA：最优传输" class="headerlink" title="5.2 OTA：最优传输"></a>5.2 OTA：最优传输</h3><p><strong>OTA（Optimal Transport Assignment）</strong> 把标签分配建模为<strong>最优传输（Optimal Transport）问题</strong>：</p>
+<ul>
+<li><strong>GT &#x3D; supplier（供应方）</strong>：提供 label，每个 GT 需要把 label”运输”给若干 anchor；</li>
+<li><strong>Anchor &#x3D; demander（需求方）</strong>：需要 label 去学习；</li>
+<li><strong>目标</strong>：找到一个映射（哪些 anchor 负责哪个 GT），使<strong>总运输成本（cost）最低</strong>。</li>
+</ul>
+<p><strong>cost 的定义</strong>（第 $i$ 个 anchor 与第 $j$ 个前景 GT）：</p>
+<p>$$<br>\text{cost}<em>{ij} &#x3D; \underbrace{L</em>{\text{cls}}(\hat{c}<em>i, c_j)}</em>{\text{分类损失}} + \lambda \underbrace{L_{\text{reg}}(\hat{b}<em>i, b_j)}</em>{\text{回归损失（IoU）}} + \underbrace{\text{center_loss}}_{\text{是否在中心区域}}<br>$$</p>
+<ul>
+<li>不在 GT 中心区域内的 anchor，cost 乘一个极大系数（如 $10^6$），迫使分配倾向于中心区域内的 anchor；</li>
+</ul>
+<p><img src="/images/YOLOX%E8%AF%A6%E8%A7%A3/yolox_center_region.jpg"></p>
+<p><strong>OTA 的算法步骤</strong>：</p>
+<ol>
+<li><strong>计算 cost 矩阵</strong>：所有 GT × 所有 anchor 的成本；</li>
+<li><strong>计算每个 GT 的动态 k</strong>：取与该 GT IoU 前 q（q&#x3D;10）的 anchor，对这 10 个 IoU 求和取整作为 k（<strong>高质量 GT 多分配、低质量 GT 少分配</strong>）；</li>
+<li><strong>用 Sinkhorn-Knopp 算法</strong>求解最优传输计划（最小化总 cost 的全局最优分配）。</li>
+</ol>
+<blockquote>
+<p><strong>OTA 的关键洞察</strong>：① 用全局信息找全局最优（不是每个 GT 独立贪心）；② 动态 k–一个 GT 该分几个正样本取决于预测质量，而非固定阈值。</p>
+</blockquote>
+<h3 id="5-3-SimOTA：OTA-的简化（YOLOX-实际用的）"><a href="#5-3-SimOTA：OTA-的简化（YOLOX-实际用的）" class="headerlink" title="5.3 SimOTA：OTA 的简化（YOLOX 实际用的）"></a>5.3 SimOTA：OTA 的简化（YOLOX 实际用的）</h3><p>OTA 效果好但<strong>训练成本高</strong>：Sinkhorn-Knopp 迭代算法在 300 epoch 训练中增加约 <strong>25% 训练时间</strong>。YOLOX 提出 <strong>SimOTA</strong>，用简单手工规则替代 Sinkhorn-Knopp：</p>
+<p><strong>SimOTA 与 OTA 的唯一区别</strong>：第三步不用 Sinkhorn-Knopp，改为<strong>直接按 cost 选 top-k</strong>。</p>
+<p><img src="/images/YOLOX%E8%AF%A6%E8%A7%A3/yolox_simota_matching.jpg"></p>
+<p><strong>SimOTA 步骤</strong>（对应源码 <code>simota_matching</code>）：</p>
+<ol>
+<li><strong>计算 cost 矩阵</strong>（同 OTA）：<code>cost = cls_loss + 3.0 × iou_loss + 1e6 × (不在中心区域)</code></li>
+<li><strong>动态 k</strong>：<code>dynamic_k = sum(top-10 IoU)</code>，即每个 GT 取与它 IoU 最大的 10 个 anchor 的 IoU 之和作为正样本数；</li>
+<li><strong>直接选 top-k</strong>：对每个 GT，从候选 anchor 中选 cost 最小的 <code>dynamic_k</code> 个作为正样本；</li>
+<li><strong>冲突处理</strong>：若一个 anchor 被多个 GT 选中，分配给 cost 最小的那个 GT。</li>
+</ol>
+<p><img src="/images/YOLOX%E8%AF%A6%E8%A7%A3/yolox_simota_conflict.jpg"></p>
+<blockquote>
+<p><strong>SimOTA 的核心</strong>：保留 OTA 的”动态 k + cost 最小”思想，但去掉昂贵的 Sinkhorn-Knopp 迭代，用直接的 top-k 选取近似全局最优。效果接近 OTA，训练时间大幅缩短。</p>
+</blockquote>
+<h3 id="5-4-源码（SimOTA-实现）"><a href="#5-4-源码（SimOTA-实现）" class="headerlink" title="5.4 源码（SimOTA 实现）"></a>5.4 源码（SimOTA 实现）</h3><p>源码在 <code>yolox/models/yolo_head.py</code> 的 <code>YOLOXHead</code> 中，核心是 <code>get_assignments</code> + <code>simota_matching</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@torch.no_grad()</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_assignments</span>(<span class="params">self, ...</span>):</span><br><span class="line">    <span class="comment"># 1. 中心区域筛选（center sampling, radius=1.5×stride）</span></span><br><span class="line">    fg_mask, geometry_relation = <span class="variable language_">self</span>.get_geometry_constraint(...)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 2. 计算 pair-wise IoU 与 IoU loss</span></span><br><span class="line">    pair_wise_ious = bboxes_iou(gt_bboxes, bboxes_preds)</span><br><span class="line">    pair_wise_ious_loss = -torch.log(pair_wise_ious + <span class="number">1e-8</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 3. 计算 pair-wise 分类 loss（预测 cls×obj 的 sqrt 与 GT one-hot 的 BCE）</span></span><br><span class="line">    cls_preds_ = (cls_preds.sigmoid() * obj_preds.sigmoid()).sqrt()</span><br><span class="line">    pair_wise_cls_loss = BCE(cls_preds_, gt_cls_onehot).<span class="built_in">sum</span>(-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 4. ★ cost = cls_loss + 3.0 × iou_loss + 1e6 × (不在中心区域)</span></span><br><span class="line">    cost = pair_wise_cls_loss + <span class="number">3.0</span> * pair_wise_ious_loss + <span class="number">1e6</span> * (~geometry_relation)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 5. SimOTA 匹配</span></span><br><span class="line">    num_fg, gt_matched_classes, pred_ious, matched_gt_inds = \</span><br><span class="line">        <span class="variable language_">self</span>.simota_matching(cost, pair_wise_ious, gt_classes, num_gt, fg_mask)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">simota_matching</span>(<span class="params">self, cost, pair_wise_ious, gt_classes, num_gt, fg_mask</span>):</span><br><span class="line">    matching_matrix = torch.zeros_like(cost)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># ★ 动态 k：每个 GT 取 top-10 IoU 之和作为正样本数</span></span><br><span class="line">    n_candidate_k = <span class="built_in">min</span>(<span class="number">10</span>, pair_wise_ious.size(<span class="number">1</span>))</span><br><span class="line">    topk_ious, _ = torch.topk(pair_wise_ious, n_candidate_k, dim=<span class="number">1</span>)</span><br><span class="line">    dynamic_ks = torch.clamp(topk_ious.<span class="built_in">sum</span>(<span class="number">1</span>).<span class="built_in">int</span>(), <span class="built_in">min</span>=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 每个 GT 选 cost 最小的 dynamic_k 个 anchor</span></span><br><span class="line">    <span class="keyword">for</span> gt_idx <span class="keyword">in</span> <span class="built_in">range</span>(num_gt):</span><br><span class="line">        _, pos_idx = torch.topk(cost[gt_idx], k=dynamic_ks[gt_idx], largest=<span class="literal">False</span>)</span><br><span class="line">        matching_matrix[gt_idx][pos_idx] = <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 冲突处理：一个 anchor 匹配多个 GT 时，选 cost 最小的 GT</span></span><br><span class="line">    anchor_matching_gt = matching_matrix.<span class="built_in">sum</span>(<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">if</span> anchor_matching_gt.<span class="built_in">max</span>() &gt; <span class="number">1</span>:</span><br><span class="line">        multiple_match_mask = anchor_matching_gt &gt; <span class="number">1</span></span><br><span class="line">        _, cost_argmin = torch.<span class="built_in">min</span>(cost[:, multiple_match_mask], dim=<span class="number">0</span>)</span><br><span class="line">        matching_matrix[:, multiple_match_mask] *= <span class="number">0</span></span><br><span class="line">        matching_matrix[cost_argmin, multiple_match_mask] = <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 整理输出</span></span><br><span class="line">    fg_mask_inboxes = anchor_matching_gt &gt; <span class="number">0</span></span><br><span class="line">    matched_gt_inds = matching_matrix[:, fg_mask_inboxes].argmax(<span class="number">0</span>)</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>关键代码点</strong>：</p>
+<ul>
+<li><code>dynamic_ks = topk_ious.sum(1)</code>：动态 k 的计算（top-10 IoU 求和）；</li>
+<li><code>cost = cls_loss + 3.0 * iou_loss + 1e6 * (~in_center)</code>：成本 &#x3D; 分类 + 回归 + 中心约束；</li>
+<li>冲突处理：<code>torch.min(cost, dim=0)</code> 选最小 cost 的 GT。</li>
+</ul>
+</blockquote>
+<h3 id="5-5-SimOTA-的-loss"><a href="#5-5-SimOTA-的-loss" class="headerlink" title="5.5 SimOTA 的 loss"></a>5.5 SimOTA 的 loss</h3><p>标签分配完成后，损失在 <code>get_losses</code> 中计算：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">loss_iou = IOUloss(bbox_preds[fg_mask], reg_targets).<span class="built_in">sum</span>() / num_fg   <span class="comment"># 1 - IoU²</span></span><br><span class="line">loss_obj = BCE(obj_preds, obj_target).<span class="built_in">sum</span>() / num_fg                   <span class="comment"># objectness</span></span><br><span class="line">loss_cls = BCE(cls_preds[fg_mask], cls_target).<span class="built_in">sum</span>() / num_fg          <span class="comment"># 分类（soft label）</span></span><br><span class="line">loss_l1 = L1(origin_preds[fg_mask], l1_target) <span class="keyword">if</span> use_l1 <span class="keyword">else</span> <span class="number">0</span>        <span class="comment"># 可选 L1（fine-tune）</span></span><br><span class="line"></span><br><span class="line">loss = <span class="number">5.0</span> * loss_iou + loss_obj + loss_cls + loss_l1</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>cls_target 是 soft label</strong>：<code>one_hot(class) × pred_iou</code>，即分类目标乘以匹配的 IoU（预测越准，分类目标越接近 1）；</li>
+<li><strong>IOUloss &#x3D; 1 - IoU²</strong>（不是 CIoU）；</li>
+<li><code>reg_weight = 5.0</code>：回归损失权重最高。</li>
+</ul>
+<hr>
+<h2 id="六、其他改进"><a href="#六、其他改进" class="headerlink" title="六、其他改进"></a>六、其他改进</h2><h3 id="6-1-数据增强"><a href="#6-1-数据增强" class="headerlink" title="6.1 数据增强"></a>6.1 数据增强</h3><ul>
+<li><strong>Mosaic + MixUp</strong>：Mosaic（4 图拼接）+ MixUp（改进版，类似 copy-paste 效果）；</li>
+<li><strong>最后 15 epoch 关闭</strong>：Mosaic 会截断 bbox、偏离真实分布，最后阶段关掉让模型在真实分布上精修。作者解释：Mosaic 改变了数据分布，最后关闭相当于用真实分布 fine-tune。</li>
+</ul>
+<h3 id="6-2-SiLU-激活函数"><a href="#6-2-SiLU-激活函数" class="headerlink" title="6.2 SiLU 激活函数"></a>6.2 SiLU 激活函数</h3><p>$$<br>\text{SiLU}(x) &#x3D; x \cdot \sigma(x)<br>$$</p>
+<ul>
+<li>比 LeakyReLU（v3）平滑、有上界抑制；</li>
+<li>比 Mish（v4）计算更快，效果相近；</li>
+<li>YOLOX 全网用 SiLU。</li>
+</ul>
+<h3 id="6-3-Bias-初始化（focal-loss-trick）"><a href="#6-3-Bias-初始化（focal-loss-trick）" class="headerlink" title="6.3 Bias 初始化（focal loss trick）"></a>6.3 Bias 初始化（focal loss trick）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">initialize_biases</span>(<span class="params">self, prior_prob=<span class="number">0.01</span></span>):</span><br><span class="line">    b = -math.log((<span class="number">1</span> - prior_prob) / prior_prob)   <span class="comment"># ≈ -4.6</span></span><br></pre></td></tr></table></figure>
+
+<p>cls 和 obj 的 bias 初始化为 $-\log((1-0.01)&#x2F;0.01)$，使初始输出概率约 0.01，防止训练初期大量 False Positive 导致 loss 爆炸（同 RetinaNet 的 focal loss 初始化）。</p>
+<h3 id="6-4-End-to-End（可选）"><a href="#6-4-End-to-End（可选）" class="headerlink" title="6.4 End-to-End（可选）"></a>6.4 End-to-End（可选）</h3><p>YOLOX 提供一个 end-to-end 模式，用 [OTA 的后续工作] 去掉 NMS，实现真正端到端。但默认仍用 NMS。</p>
+<hr>
+<h2 id="七、性能"><a href="#七、性能" class="headerlink" title="七、性能"></a>七、性能</h2><table>
+<thead>
+<tr>
+<th align="left">模型</th>
+<th align="left">输入</th>
+<th align="left">AP (COCO)</th>
+<th align="left">FPS</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">YOLOX-Nano</td>
+<td align="left">416</td>
+<td align="left">25.8</td>
+<td align="left">-</td>
+</tr>
+<tr>
+<td align="left">YOLOX-Tiny</td>
+<td align="left">416</td>
+<td align="left">32.8</td>
+<td align="left">-</td>
+</tr>
+<tr>
+<td align="left">YOLOX-S</td>
+<td align="left">640</td>
+<td align="left">40.5</td>
+<td align="left">-</td>
+</tr>
+<tr>
+<td align="left">YOLOX-M</td>
+<td align="left">640</td>
+<td align="left">46.9</td>
+<td align="left">-</td>
+</tr>
+<tr>
+<td align="left">YOLOX-L</td>
+<td align="left">640</td>
+<td align="left">49.7</td>
+<td align="left">-</td>
+</tr>
+<tr>
+<td align="left">YOLOX-X</td>
+<td align="left">640</td>
+<td align="left">51.5</td>
+<td align="left">-</td>
+</tr>
+<tr>
+<td align="left">YOLOv5-S (对比)</td>
+<td align="left">640</td>
+<td align="left">~37</td>
+<td align="left">-</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>YOLOX-S（40.5 AP）显著超越 YOLOv5-S（~37 AP），同速度档。YOLOX-X 达 51.5 AP，接近两阶段检测器水平。</p>
+</blockquote>
+<hr>
+<h2 id="八、总结"><a href="#八、总结" class="headerlink" title="八、总结"></a>八、总结</h2><p>YOLOX 的核心贡献不是新结构，而是<strong>范式切换</strong>：把 YOLO 从 anchor-based 推进到 anchor-free，并解决了随之而来的两个关键问题：</p>
+<ol>
+<li><strong>解耦头</strong>：让 anchor-free + OTA 训练稳定收敛（耦合头会冲突）；</li>
+<li><strong>SimOTA</strong>：用最优传输的思路动态分配正样本，替代静态 IoU 阈值，解决模糊框分配问题。</li>
+</ol>
+<p>理解 YOLOX 的关键三件事：</p>
+<ul>
+<li><strong>Anchor-free</strong>：每位置预测 1 框，去掉 anchor 超参（vs v2-v4 的 3-9 个 anchor）；</li>
+<li><strong>Decoupled Head</strong>：cls&#x2F;reg 分离，训练更稳（vs v3-v4 耦合头）；</li>
+<li><strong>SimOTA</strong>：动态 k + cost 最小的标签分配（vs v1-v4 的静态规则），近似 OTA 全局最优但更快。</li>
+</ul>
+<blockquote>
+<p>YOLOX 之后，YOLOv6&#x2F;v7&#x2F;v8 普遍跟进 anchor-free + 解耦头 + 动态分配的范式，YOLOX 是这个范式切换的关键节点。</p>
+</blockquote>
+<hr>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><ul>
+<li>📝 [[20.notes&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLO&#x2F;YOLOv3 详解|YOLOv3 详解]] - 对比基准（耦合头&#x2F;anchor&#x2F;静态分配）</li>
+<li>📝 [[20.notes&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLO&#x2F;YOLOv4 详解|YOLOv4 详解]] - 对比基准（CSPDarknet&#x2F;Mosaic）</li>
+<li>📝 [[20.notes&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;RetinaNet&#x2F;RetinaNet 详解|RetinaNet 详解]] - bias 初始化 trick 同源</li>
+<li>📝 [[20.notes&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;FCOS&#x2F;FCOS 详解|FCOS 详解]] - anchor-free 先驱，YOLOX 检测头借鉴</li>
+<li>📋 论文原文: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2107.08430">arxiv.org&#x2F;abs&#x2F;2107.08430</a></li>
+<li>📋 官方代码: <a target="_blank" rel="noopener" href="https://github.com/Megvii-YOLOSeries/YOLOX">Megvii&#x2F;yolox</a></li>
+<li>📦 源码参考: <code>deeplearning/detect/YOLOX/yolox/models/yolo_head.py</code>（解耦头 + SimOTA 实现）<br><strong>剪藏来源（10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;）：</strong></li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;YOLOX 詳細解讀]] - 詳細解讀</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;YOLOX——SimOTA图文详解]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;YOLOX深度解析]] - 深度解析</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;YOLOX深度解析（二）-simOTA详解]] - simOTA 详解</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;YOLOX解析]] - 解析</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;YOLOX：2021年超越YOLOv5的先进检测技术-CSDN博客]] - CSDN 详解</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;yolox论文研读]] - 论文研读</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;【YOLOX 论文+源码解读】YOLOX Exceeding YOLO Series in 2021_yolox论文-CSDN博客]] - 论文+源码解读</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;【精华】从YOLOX详解模型优化思路及涨点技巧]] - 优化思路及涨点技巧</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;【论文阅读】YOLOX：Exceeding YOLO Series in 2021 - welcome to x-jeff blog]] - 论文阅读</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;最详细最易懂的【YOLOX原理篇】]] - 原理篇</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;深入浅出Yolo系列之Yolox核心基础完整讲解]] - 与 YOLOv1-v5 对比</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLOX&#x2F;解读YOLOX（OTA]] - OTA&#x2F;SimOTA 概念详解</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/YOLOX%20%E8%AF%A6%E8%A7%A3/">https://www.loveww.top/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/YOLOX%20%E8%AF%A6%E8%A7%A3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/">目标检测</a><a class="post-meta__tags" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89/">计算机视觉</a><a class="post-meta__tags" href="/tags/AnchorFree/">AnchorFree</a><a class="post-meta__tags" href="/tags/YOLOX/">YOLOX</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/OC-SORT%20%E8%AF%A6%E8%A7%A3/" title="OC-SORT 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">OC-SORT 详解</div></div><div class="info-2"><div class="info-item-1">OC-SORT: Observation-Centric SORT 论文: Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking (CVPR 2023)作者: Jinkun Cao, Xinshuo Weng, Rawal Khirodkar, Kris Kitani, Jiangmiao Pang (CMU &#x2F; 商汤)代码: noahcao&#x2F;OC_SORT   一句话总结：OC-SORT 把 SORT 从”以估计为中心”改为”以观测为中心”–当轨迹从遮挡中恢复时，用观测历史修正卡尔曼参数（ORU）；在关联代价中加入观测方向一致性（OCM）；用最后一次观测做二次恢复匹配（OCR）。 无需外观特征，即超越 DeepSORT。   一、背景：SORT 的三个局限 OC-SORT 的出发点是分析 SORT 的三个根本局限，逐一解决。  1.1 局限一：对状态噪声敏感SORT 假设匀速运动，用卡尔曼滤波估计速度。但在高帧率视频中，连续帧间位移很小，噪声与实际位移量级相当，导...</div></div></div></a><a class="pagination-related" href="/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/" title="RT-DETR 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">RT-DETR 详解</div></div><div class="info-2"><div class="info-item-1">RT-DETR: Real-Time Detection Transformer 论文: DETRs Beat YOLOs on Real-time Object Detection (CVPR 2024)作者: Yian Zhao, Wenyu Lv, Shangliang Xu, et al. (Baidu &#x2F; 百度)代码: PaddlePaddle&#x2F;PP-DETR &#x2F; lyuwenyu&#x2F;RT-DETR   一句话总结：RT-DETR 是第一个实时端到端目标检测器–它用混合编码器（CNN + 稀疏 Transformer）解决 DETR 太慢的问题，用 IoU-aware 查询初始化 + CDN 训练加速收敛，全程无 NMS，在同等速度下超越 YOLOv8。   一、概述1.1 为什么要有 RT-DETRDETR（2020）开创了端到端检测（无 NMS、无 anchor、匈牙利匹配），但有两个致命问题：  太慢：Transformer 编码器处理所有特征图的所有位置，计算量巨大； 收敛慢：从头训需要 500 epoch，远多于 YOLO...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/FCOS%20%E8%AF%A6%E8%A7%A3/" title="FCOS 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-19</div><div class="info-item-2">FCOS 详解</div></div><div class="info-2"><div class="info-item-1">FCOS: Fully Convolutional One-Stage Object Detection 论文: FCOS: Fully Convolutional One-Stage Object Detection (ICCV 2019)作者: Zhi Tian, Chunhua Shen, Hao Chen, Tong He ( Adelaide &#x2F; 商汤 )代码: tianzhi0549&#x2F;FCOS &#x2F; AdelaiDet   一句话总结：FCOS 抛弃 anchor，把目标检测变成”逐像素预测”–特征图上每个位置直接回归到所在 GT 框四条边的距离 (l, t, r, b)。 它证明了只要配合 FPN 多级预测 + center-ness，anchor-free 检测器就能追平甚至超过 anchor-based。   一、概述：为什么要有 anchor-free主流检测器（RetinaNet &#x2F; SSD &#x2F; YOLOv2+ &#x2F; Faster R-CNN）都依赖预设 anchor。anchor 的问题：  超参敏感...</div></div></div></a><a class="pagination-related" href="/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/" title="RT-DETR 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-01</div><div class="info-item-2">RT-DETR 详解</div></div><div class="info-2"><div class="info-item-1">RT-DETR: Real-Time Detection Transformer 论文: DETRs Beat YOLOs on Real-time Object Detection (CVPR 2024)作者: Yian Zhao, Wenyu Lv, Shangliang Xu, et al. (Baidu &#x2F; 百度)代码: PaddlePaddle&#x2F;PP-DETR &#x2F; lyuwenyu&#x2F;RT-DETR   一句话总结：RT-DETR 是第一个实时端到端目标检测器–它用混合编码器（CNN + 稀疏 Transformer）解决 DETR 太慢的问题，用 IoU-aware 查询初始化 + CDN 训练加速收敛，全程无 NMS，在同等速度下超越 YOLOv8。   一、概述1.1 为什么要有 RT-DETRDETR（2020）开创了端到端检测（无 NMS、无 anchor、匈牙利匹配），但有两个致命问题：  太慢：Transformer 编码器处理所有特征图的所有位置，计算量巨大； 收敛慢：从头训需要 500 epoch，远多于 YOLO...</div></div></div></a><a class="pagination-related" href="/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/RetinaNet%20%E8%AF%A6%E8%A7%A3/" title="RetinaNet 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-19</div><div class="info-item-2">RetinaNet 详解</div></div><div class="info-2"><div class="info-item-1">RetinaNet: Focal Loss for Dense Object Detection 论文: Focal Loss for Dense Object Detection (ICCV 2017, best paper)作者: Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, Piotr Dollár (FAIR)代码: facebookresearch&#x2F;Detectron   一句话总结：这篇论文找到了”一阶段检测器精度不如两阶段”的根因–类别极度不平衡导致训练被大量易分负样本主导–并用 Focal Loss 一举解决，使 RetinaNet 成为第一个精度超越两阶段的一阶段检测器。 ⚠️ 论文的主角其实是 Focal Loss，RetinaNet 网络本身只是”顺便”提出、用来验证损失函数有效性的载体–结构上并无颠覆性创新（ResNet + FPN + anchor 双头都是已有组件）。   一、背景与动机：一阶段为什么打不过两阶段？12345两阶段 (Faster R-CNN 等):  RPN 筛选...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/" title="YOLO 核心概念"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 核心概念</div></div><div class="info-2"><div class="info-item-1">🧠 YOLO 核心概念详解1. 目标检测基础什么是目标检测 同时解决两个问题：物体在哪里（定位）+ 物体是什么（分类）  输出形式： 1(x, y, w, h, confidence, class_probs...)  Two-Stage vs One-Stage   方法 流程 代表 特点    Two-Stage 提取候选区 → 分类回归 R-CNN, Faster R-CNN 精度高，速度慢   One-Stage 一步到位直接预测 YOLO, SSD 速度快，端到端    YOLO 的本质：把检测变成回归问题，整张图输入，一次性输出所有预测。   2. 核心机制2.1 Grid Cell（网格划分）12输入图像 448×448 → 划分为 S×S 网格 (v1: S=7)每个网格负责预测中心点落在该网格内的目标  v1 例子：  7×7 &#x3D; 49 个网格 每个网格预测 2 个 bounding box 每个 box: (x, y, w, h, confidence) &#x3D; 5 个值 每个网格预测 C 个类别 (VOC: 20) 输出张量: 7×7×(5...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E7%B3%BB%E5%88%97%E6%80%BB%E8%A7%88/" title="YOLO 系列总览"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 系列总览</div></div><div class="info-2"><div class="info-item-1">🎯 YOLO 系列目标检测算法总览一句话理解 YOLO You Only Look Once —— 只需看一次，就能完成目标检测。 把目标检测从”先找候选区再分类”的两阶段，变成了”一步到位”的回归问题。   版本演进时间线   版本 年份 作者&#x2F;机构 核心创新 论文&#x2F;状态    v1 2016 Joseph Redmon 单阶段检测、Grid Cell 划分 1506.02640   v2 2017 Redmon &amp; Farhadi Anchor Box、BN、Darknet-19、细粒度特征 1612.08242   v3 2018 Redmon &amp; Farhadi Darknet-53、多尺度预测(FPN)、逻辑分类器 1804.02767   v4 2020 Alexey Bochkovskiy CSPDarknet53、PAN、Mosaic增强、BoF&#x2F;BoS 2004.10934   v5 2020 Ultralytics PyTorch实现、工程化、CSPNet+PAN ❌ 无论文   v6 2022 美团 工业级部署...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO26%20%E8%AF%A6%E8%A7%A3/" title="YOLO26 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO26 详解</div></div><div class="info-2"><div class="info-item-1">YOLO26: 魔改终结者, 边缘端到端 状态: 🚧 开发中 (Ultralytics YOLO Vision 2025 预览)作者: Ultralytics定位: 专为边缘和低功耗设备设计   设计哲学 不是堆砌模块，而是精简 + 针对性创新：  Simple: 原生端到端，无需 NMS Efficient: CPU 推理提速 43% Innovative: LLM 训练技术跨界引入 CV    三大设计原则1. 简单 (Simple): 原生端到端12345678传统 YOLO:  模型 → NMS 后处理 → 最终输出              ↑        必须的额外步骤YOLO26:  模型 → 直接输出!         (无 DFL, 无 NMS)   继承 v10 的 NMS-Free 理念，进一步简化 移除 DFL (Distribution Focal Loss) 模块：虽然有效，但使导出和硬件兼容复杂化  2. 部署效率 (Deployment Efficiency)1234567传统流程:  预处理 → Backbone → Neck → Head ...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#YOLOX-Exceeding-YOLO-Series-in-2021"><span class="toc-number">1.</span> <span class="toc-text">YOLOX: Exceeding YOLO Series in 2021</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0"><span class="toc-number">1.1.</span> <span class="toc-text">一、概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%B8%8E-YOLO-v1-v4-%E7%9A%84%E5%8C%BA%E5%88%AB-%E2%AD%90"><span class="toc-number">1.2.</span> <span class="toc-text">二、与 YOLO v1-v4 的区别 ⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E6%80%BB%E8%A7%88%E5%AF%B9%E6%AF%94%E8%A1%A8"><span class="toc-number">1.2.1.</span> <span class="toc-text">2.1 总览对比表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E5%85%B3%E9%94%AE%E5%8C%BA%E5%88%AB%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.2 关键区别详解</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-YOLOX-%E4%B8%8E-YOLOv1-%E7%9A%84%E6%B8%8A%E6%BA%90%EF%BC%9Aanchor-free-%E7%9A%84%E5%9B%9E%E5%BD%92"><span class="toc-number">1.2.3.</span> <span class="toc-text">2.3 YOLOX 与 YOLOv1 的渊源：anchor-free 的回归</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E7%BD%91%E7%BB%9C%E6%9E%B6%E6%9E%84"><span class="toc-number">1.3.</span> <span class="toc-text">三、网络架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81Decoupled-Head%EF%BC%88%E8%A7%A3%E8%80%A6%E5%A4%B4%EF%BC%89"><span class="toc-number">1.4.</span> <span class="toc-text">四、Decoupled Head（解耦头）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E7%BB%93%E6%9E%84"><span class="toc-number">1.4.1.</span> <span class="toc-text">4.1 结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A7%A3%E8%80%A6"><span class="toc-number">1.4.2.</span> <span class="toc-text">4.2 为什么解耦</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-Anchor-free-%E5%88%B0%E5%BA%95%E6%80%8E%E4%B9%88%E5%81%9A%E7%9A%84-%E2%AD%90"><span class="toc-number">1.4.3.</span> <span class="toc-text">4.3 Anchor-free 到底怎么做的 ⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4-3-1-%E5%85%88%E6%90%9E%E6%87%82%EF%BC%9Aanchor-%E6%98%AF%E4%BB%80%E4%B9%88%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9C%89%E5%AE%83"><span class="toc-number">1.4.3.1.</span> <span class="toc-text">4.3.1 先搞懂：anchor 是什么、为什么有它</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-3-2-YOLOX-%E6%80%8E%E4%B9%88%E5%8E%BB%E6%8E%89-anchor"><span class="toc-number">1.4.3.2.</span> <span class="toc-text">4.3.2 YOLOX 怎么去掉 anchor</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-3-3-%E4%B8%A4%E8%80%85%E6%94%BE%E4%B8%80%E8%B5%B7%E5%AF%B9%E6%AF%94"><span class="toc-number">1.4.3.3.</span> <span class="toc-text">4.3.3 两者放一起对比</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-3-4-%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8E%BB%E6%8E%89-anchor-%E8%BF%98%E8%83%BDwork"><span class="toc-number">1.4.3.4.</span> <span class="toc-text">4.3.4 为什么去掉 anchor 还能work</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-3-5-%E6%BA%90%E7%A0%81%E5%85%B3%E9%94%AE%EF%BC%9A%E9%82%A3%E4%B8%AA-%E2%80%9C1%E2%80%9D"><span class="toc-number">1.4.3.5.</span> <span class="toc-text">4.3.5 源码关键：那个 “1”</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-3-6-%E9%A2%84%E6%B5%8B%EF%BC%88%E6%8E%A8%E7%90%86%EF%BC%89%E6%97%B6%E7%9A%84%E5%AE%8C%E6%95%B4%E6%B5%81%E7%A8%8B"><span class="toc-number">1.4.3.6.</span> <span class="toc-text">4.3.6 预测（推理）时的完整流程</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E6%BA%90%E7%A0%81%EF%BC%88%E8%A7%A3%E8%80%A6%E5%A4%B4%E5%AE%9A%E4%B9%89%EF%BC%89"><span class="toc-number">1.4.4.</span> <span class="toc-text">4.4 源码（解耦头定义）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81OTA%EF%BC%9A%E6%A0%87%E7%AD%BE%E5%88%86%E9%85%8D%E7%9A%84%E6%9C%80%E4%BC%98%E4%BC%A0%E8%BE%93%E8%A7%86%E8%A7%92-%E2%AD%90%E2%AD%90"><span class="toc-number">1.5.</span> <span class="toc-text">五、OTA：标签分配的最优传输视角 ⭐⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%88%E6%90%9E%E6%B8%85%E4%B8%80%E4%B8%AA%E5%B8%B8%E8%A7%81%E5%9B%B0%E6%83%91%EF%BC%9A8-400-%E4%B8%AA%E6%A1%86%E4%B8%8E-OTA-%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="toc-number">1.5.0.1.</span> <span class="toc-text">先搞清一个常见困惑：8,400 个框与 OTA 的关系</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E6%A0%87%E7%AD%BE%E5%88%86%E9%85%8D%E9%97%AE%E9%A2%98"><span class="toc-number">1.5.1.</span> <span class="toc-text">5.1 标签分配问题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-OTA%EF%BC%9A%E6%9C%80%E4%BC%98%E4%BC%A0%E8%BE%93"><span class="toc-number">1.5.2.</span> <span class="toc-text">5.2 OTA：最优传输</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-SimOTA%EF%BC%9AOTA-%E7%9A%84%E7%AE%80%E5%8C%96%EF%BC%88YOLOX-%E5%AE%9E%E9%99%85%E7%94%A8%E7%9A%84%EF%BC%89"><span class="toc-number">1.5.3.</span> <span class="toc-text">5.3 SimOTA：OTA 的简化（YOLOX 实际用的）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E6%BA%90%E7%A0%81%EF%BC%88SimOTA-%E5%AE%9E%E7%8E%B0%EF%BC%89"><span class="toc-number">1.5.4.</span> <span class="toc-text">5.4 源码（SimOTA 实现）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-5-SimOTA-%E7%9A%84-loss"><span class="toc-number">1.5.5.</span> <span class="toc-text">5.5 SimOTA 的 loss</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%85%B6%E4%BB%96%E6%94%B9%E8%BF%9B"><span class="toc-number">1.6.</span> <span class="toc-text">六、其他改进</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA"><span class="toc-number">1.6.1.</span> <span class="toc-text">6.1 数据增强</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-SiLU-%E6%BF%80%E6%B4%BB%E5%87%BD%E6%95%B0"><span class="toc-number">1.6.2.</span> <span class="toc-text">6.2 SiLU 激活函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-Bias-%E5%88%9D%E5%A7%8B%E5%8C%96%EF%BC%88focal-loss-trick%EF%BC%89"><span class="toc-number">1.6.3.</span> <span class="toc-text">6.3 Bias 初始化（focal loss trick）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-End-to-End%EF%BC%88%E5%8F%AF%E9%80%89%EF%BC%89"><span class="toc-number">1.6.4.</span> <span class="toc-text">6.4 End-to-End（可选）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%80%A7%E8%83%BD"><span class="toc-number">1.7.</span> <span class="toc-text">七、性能</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%80%BB%E7%BB%93"><span class="toc-number">1.8.</span> <span class="toc-text">八、总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5"><span class="toc-number">1.9.</span> <span class="toc-text">相关链接</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/01-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87/" title="CARLA教程-01-环境准备">CARLA教程-01-环境准备</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/02-%E6%9E%84%E5%BB%BAUE4%E4%B8%8ECARLA/" title="CARLA教程-02-构建UE4与CARLA">CARLA教程-02-构建UE4与CARLA</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/03-%E8%BF%90%E8%A1%8C%E4%BB%BF%E7%9C%9F/" title="CARLA教程-03-运行仿真">CARLA教程-03-运行仿真</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/04-ROS2%E6%8E%A5%E5%8F%A3%E4%B8%8E%E8%AF%9D%E9%A2%98/" title="CARLA教程-04-ROS2接口与话题">CARLA教程-04-ROS2接口与话题</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>

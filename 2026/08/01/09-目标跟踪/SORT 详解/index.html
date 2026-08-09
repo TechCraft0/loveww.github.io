@@ -1,0 +1,612 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>SORT 详解 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="SORT: Simple Online and Realtime Tracking 论文: Simple Online and Realtime Tracking (ICIP 2016)作者: Alex Bewley, Zongyuan Ge, Lionel Ott, Fabio Ramos, Ben Upcroft代码: abewley&#x2F;sort（~200 行 Python）   一句">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SORT 详解">
+<meta property="og:url" content="https://www.loveww.top/2026/08/01/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/SORT%20%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="SORT: Simple Online and Realtime Tracking 论文: Simple Online and Realtime Tracking (ICIP 2016)作者: Alex Bewley, Zongyuan Ge, Lionel Ott, Fabio Ramos, Ben Upcroft代码: abewley&#x2F;sort（~200 行 Python）   一句">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-07-31T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-09T15:28:31.513Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="多目标跟踪">
+<meta property="article:tag" content="卡尔曼滤波">
+<meta property="article:tag" content="SORT">
+<meta property="article:tag" content="匈牙利算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "SORT 详解",
+  "url": "https://www.loveww.top/2026/08/01/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/SORT%20%E8%AF%A6%E8%A7%A3/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-07-31T16:00:00.000Z",
+  "dateModified": "2026-08-09T15:28:31.513Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/08/01/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/SORT%20%E8%AF%A6%E8%A7%A3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'SORT 详解',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">SORT 详解</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">SORT 详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-07-31T16:00:00.000Z" title="发表于 2026-08-01 00:00:00">2026-08-01</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-08-09T15:28:31.513Z" title="更新于 2026-08-09 23:28:31">2026-08-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/">目标跟踪</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">4.3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>17分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="SORT-Simple-Online-and-Realtime-Tracking"><a href="#SORT-Simple-Online-and-Realtime-Tracking" class="headerlink" title="SORT: Simple Online and Realtime Tracking"></a>SORT: Simple Online and Realtime Tracking</h1><blockquote>
+<p><strong>论文</strong>: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1602.00763">Simple Online and Realtime Tracking</a> (ICIP 2016)<br><strong>作者</strong>: Alex Bewley, Zongyuan Ge, Lionel Ott, Fabio Ramos, Ben Upcroft<br><strong>代码</strong>: <a target="_blank" rel="noopener" href="https://github.com/abewley/sort">abewley&#x2F;sort</a>（~200 行 Python）</p>
+</blockquote>
+<blockquote>
+<p>一句话总结：<strong>SORT 用”卡尔曼滤波预测 + IoU 匈牙利匹配”三步循环实现多目标跟踪，极简但奠基–后续 DeepSORT、ByteTrack、OC-SORT 全部基于此框架。</strong></p>
+</blockquote>
+<hr>
+<h2 id="一、背景：多目标跟踪（MOT）"><a href="#一、背景：多目标跟踪（MOT）" class="headerlink" title="一、背景：多目标跟踪（MOT）"></a>一、背景：多目标跟踪（MOT）</h2><h3 id="1-1-什么是-MOT"><a href="#1-1-什么是-MOT" class="headerlink" title="1.1 什么是 MOT"></a>1.1 什么是 MOT</h3><p><strong>多目标跟踪（MOT）</strong>：在视频每一帧检测出所有物体后，还要<strong>保持每个物体跨帧的身份（ID）</strong>–”第 1 帧的人 A，在第 2 帧还是 A，不是 B”。</p>
+<h3 id="1-2-Tracking-by-Detection-范式"><a href="#1-2-Tracking-by-Detection-范式" class="headerlink" title="1.2 Tracking-by-Detection 范式"></a>1.2 Tracking-by-Detection 范式</h3><p>SORT 采用 <strong>tracking-by-detection</strong>：先用检测器（YOLO&#x2F;Faster R-CNN）逐帧出框，再用跟踪算法把相邻帧的框关联起来保持 ID。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">帧1: 检测 [人, 人, 人]  -&gt;  分配 ID: 1, 2, 3</span><br><span class="line">帧2: 检测 [人, 人, 人]  -&gt;  哪个是 ID1? 哪个是 ID2? -&gt; 关联 -&gt; 更新轨迹</span><br><span class="line">帧3: 检测 [人, 人, 人, 人]  -&gt;  新的人是谁? -&gt; 新建 ID4</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>SORT 的核心问题：<strong>给定上一帧的跟踪结果和当前帧的检测结果，怎么知道哪个检测对应哪个跟踪？</strong></p>
+</blockquote>
+<h3 id="1-3-MOT-评测指标"><a href="#1-3-MOT-评测指标" class="headerlink" title="1.3 MOT 评测指标"></a>1.3 MOT 评测指标</h3><table>
+<thead>
+<tr>
+<th align="left">指标</th>
+<th align="left">全称</th>
+<th align="left">含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>MOTA</strong></td>
+<td align="left">Multiple Object Tracking Accuracy</td>
+<td align="left">$\text{MOTA} &#x3D; 1 - \frac{FN + FP + IDSW}{GT}$，综合漏检+误检+ID切换</td>
+</tr>
+<tr>
+<td align="left"><strong>MOTP</strong></td>
+<td align="left">Multiple Object Tracking Precision</td>
+<td align="left">匹配检测框与 GT 的平均 IoU，衡量定位精度</td>
+</tr>
+<tr>
+<td align="left"><strong>IDSW</strong></td>
+<td align="left">ID Switch</td>
+<td align="left">一个物体被切换了 ID 的次数（越少越好）</td>
+</tr>
+<tr>
+<td align="left"><strong>FP</strong></td>
+<td align="left">False Positive</td>
+<td align="left">误检框数（跟踪输出但 GT 没有）</td>
+</tr>
+<tr>
+<td align="left"><strong>FN</strong></td>
+<td align="left">False Negative</td>
+<td align="left">漏检框数（GT 有但跟踪没输出）</td>
+</tr>
+<tr>
+<td align="left"><strong>IDs</strong></td>
+<td align="left">ID F1</td>
+<td align="left">ID 分配的 F1 分数</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>SORT 的主要短板是 <strong>IDSW 高</strong>（只用 IoU 关联，遮挡后易切换 ID），DeepSORT 用外观特征改善此问题。</p>
+</blockquote>
+<hr>
+<h2 id="二、整体流程"><a href="#二、整体流程" class="headerlink" title="二、整体流程"></a>二、整体流程</h2><p>SORT 对每一帧执行”预测-匹配-更新”三步循环：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[&quot;当前帧检测结果&lt;br/&gt;dets = [box1, box2, ...]&quot;]</span><br><span class="line">    B[&quot;上一帧轨迹 trks&quot;]</span><br><span class="line">    C[&quot;卡尔曼滤波: 预测&lt;br/&gt;每个轨迹预测新位置&quot;]</span><br><span class="line">    D[&quot;预测框列表 predicts&quot;]</span><br><span class="line">    E[&quot;匈牙利匹配&lt;br/&gt;dets × predicts 的 IoU 代价矩阵&lt;br/&gt;找最优配对, IoU &lt; 阈值的丢弃&quot;]</span><br><span class="line">    F&#123;&quot;匹配结果&quot;&#125;</span><br><span class="line">    G[&quot;卡尔曼更新&lt;br/&gt;用检测修正预测&quot;]</span><br><span class="line">    H[&quot;新建轨迹&lt;br/&gt;初始化卡尔曼滤波&quot;]</span><br><span class="line">    I&#123;&quot;丢失帧数 &gt; max_age?&quot;&#125;</span><br><span class="line">    J[&quot;删除轨迹&quot;]</span><br><span class="line">    K[&quot;丢失计数 +1&quot;]</span><br><span class="line">    L&#123;&quot;匹配次数 &gt;= min_hits?&quot;&#125;</span><br><span class="line">    M[&quot;输出轨迹&quot;]</span><br><span class="line">    N[&quot;不输出&quot;]</span><br><span class="line">    O[&quot;下一帧重复&quot;]</span><br><span class="line"></span><br><span class="line">    B --&gt; C --&gt; D</span><br><span class="line">    A --&gt; E</span><br><span class="line">    D --&gt; E</span><br><span class="line">    E --&gt; F</span><br><span class="line">    F --&gt;|&quot;匹配成功&quot;| G</span><br><span class="line">    F --&gt;|&quot;未匹配检测&quot;| H</span><br><span class="line">    F --&gt;|&quot;未匹配轨迹&quot;| I</span><br><span class="line">    I --&gt;|&quot;是&quot;| J</span><br><span class="line">    I --&gt;|&quot;否&quot;| K</span><br><span class="line">    G --&gt; L</span><br><span class="line">    H --&gt; L</span><br><span class="line">    K --&gt; L</span><br><span class="line">    L --&gt;|&quot;是&quot;| M</span><br><span class="line">    L --&gt;|&quot;否&quot;| N</span><br><span class="line">    M --&gt; O</span><br><span class="line">    N --&gt; O</span><br><span class="line">    O -.-&gt; A</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/SORT%E8%AF%A6%E8%A7%A3/sort_tracking.gif"></p>
+<hr>
+<h2 id="三、卡尔曼滤波详解-⭐"><a href="#三、卡尔曼滤波详解-⭐" class="headerlink" title="三、卡尔曼滤波详解 ⭐"></a>三、卡尔曼滤波详解 ⭐</h2><blockquote>
+<p>卡尔曼滤波是 SORT 的核心：<strong>预测</strong>每个轨迹在当前帧的位置，用检测结果<strong>更新</strong>（修正）预测。它是一个”信息融合”过程–融合”模型预测”与”传感器观测”，得到更准的估计。</p>
+</blockquote>
+<h3 id="3-1-状态向量与观测向量"><a href="#3-1-状态向量与观测向量" class="headerlink" title="3.1 状态向量与观测向量"></a>3.1 状态向量与观测向量</h3><p><img src="/images/SORT%E8%AF%A6%E8%A7%A3/sort_state.png"></p>
+<p>SORT 用 <strong>7 维状态向量</strong>描述每个跟踪目标：</p>
+<p>$$<br>\mathbf{x} &#x3D; [u, v, s, r, \dot{u}, \dot{v}, \dot{s}]^T<br>$$</p>
+<table>
+<thead>
+<tr>
+<th align="left">符号</th>
+<th align="left">含义</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">$u, v$</td>
+<td align="left">框中心坐标</td>
+<td align="left">直接观测</td>
+</tr>
+<tr>
+<td align="left">$s$</td>
+<td align="left">框面积（scale）</td>
+<td align="left">直接观测</td>
+</tr>
+<tr>
+<td align="left">$r$</td>
+<td align="left">宽高比（aspect ratio）</td>
+<td align="left">直接观测，<strong>模型假设不变</strong>（无速度分量）</td>
+</tr>
+<tr>
+<td align="left">$\dot{u}, \dot{v}$</td>
+<td align="left">中心速度</td>
+<td align="left">隐含，不可直接观测</td>
+</tr>
+<tr>
+<td align="left">$\dot{s}$</td>
+<td align="left">面积变化速度</td>
+<td align="left">隐含，不可直接观测</td>
+</tr>
+</tbody></table>
+<p><strong>观测向量</strong>是 4 维：$\mathbf{z} &#x3D; [u, v, s, r]$（检测器输出的框）。</p>
+<blockquote>
+<p><strong>为什么用 $(s, r)$ 而非 $(w, h)$？</strong> SORT 假设宽高比 $r$ 在运动中不变（状态转移矩阵中 $r$ 无速度项），用 $(s, r)$ 可解出 $(w, h)$：$w &#x3D; \sqrt{s \cdot r}$, $h &#x3D; \sqrt{s &#x2F; r}$。这样只需对 3 个量（$u, v, s$）建模速度，而非 4 个。</p>
+</blockquote>
+<h3 id="3-2-状态转移矩阵-F（匀速运动模型）"><a href="#3-2-状态转移矩阵-F（匀速运动模型）" class="headerlink" title="3.2 状态转移矩阵 F（匀速运动模型）"></a>3.2 状态转移矩阵 F（匀速运动模型）</h3><p>SORT 假设物体做<strong>匀速直线运动</strong>（位置 +&#x3D; 速度 × dt，dt&#x3D;1 帧）：</p>
+<p>$$<br>\mathbf{F} &#x3D; \begin{bmatrix}<br>1 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 \<br>0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 \<br>0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 1 \<br>0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 \<br>0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 \<br>\end{bmatrix}<br>$$</p>
+<ul>
+<li>左上 4×4：位置部分（$u, v, s, r$）的”自保持”</li>
+<li>右上 4×3：位置 +&#x3D; 速度（$u’ &#x3D; u + \dot{u}$, $v’ &#x3D; v + \dot{v}$, $s’ &#x3D; s + \dot{s}$）</li>
+<li>第 4 行（$r$）：<strong>无速度项</strong>，$r’ &#x3D; r$（宽高比不变假设）</li>
+<li>右下 3×3：速度自保持（匀速假设：$\dot{u}’ &#x3D; \dot{u}$）</li>
+</ul>
+<h3 id="3-3-观测矩阵-H"><a href="#3-3-观测矩阵-H" class="headerlink" title="3.3 观测矩阵 H"></a>3.3 观测矩阵 H</h3><p>从 7 维状态中取出 4 维观测：</p>
+<p>$$<br>\mathbf{H} &#x3D; \begin{bmatrix}<br>1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 \<br>\end{bmatrix}<br>$$</p>
+<p>即 $\mathbf{z} &#x3D; \mathbf{H} \cdot \mathbf{x}$，只观测 $(u, v, s, r)$，速度不可直接观测。</p>
+<h3 id="3-4-预测（Predict）"><a href="#3-4-预测（Predict）" class="headerlink" title="3.4 预测（Predict）"></a>3.4 预测（Predict）</h3><p><img src="/images/SORT%E8%AF%A6%E8%A7%A3/sort_kalman.png"></p>
+<p>每帧开始时，对每个轨迹执行预测：</p>
+<p>$$<br>\hat{\mathbf{x}}<em>{k|k-1} &#x3D; \mathbf{F} \cdot \mathbf{x}</em>{k-1|k-1}<br>$$<br>$$<br>\hat{\mathbf{P}}<em>{k|k-1} &#x3D; \mathbf{F} \cdot \mathbf{P}</em>{k-1|k-1} \cdot \mathbf{F}^T + \mathbf{Q}<br>$$</p>
+<ul>
+<li>$\hat{\mathbf{x}}_{k|k-1}$：预测的状态（位置 +&#x3D; 速度）</li>
+<li>$\hat{\mathbf{P}}_{k|k-1}$：预测的<strong>协方差矩阵</strong>（不确定性，随预测增大）</li>
+<li>$\mathbf{Q}$：<strong>过程噪声</strong>（模型无法描述的运动不确定性，如突然转弯）</li>
+</ul>
+<blockquote>
+<p><strong>直觉</strong>：基于上一帧的位置和速度，推算”物体这一帧应该在哪”。推算越远越不准（协方差增大）。</p>
+</blockquote>
+<h3 id="3-5-更新（Update）"><a href="#3-5-更新（Update）" class="headerlink" title="3.5 更新（Update）"></a>3.5 更新（Update）</h3><p>匹配成功后，用检测框修正预测：</p>
+<p>$$<br>\mathbf{y}<em>k &#x3D; \mathbf{z}<em>k - \mathbf{H} \hat{\mathbf{x}}</em>{k|k-1} \quad \text{(残差：观测 - 预测)}<br>$$<br>$$<br>\mathbf{S}<em>k &#x3D; \mathbf{H} \hat{\mathbf{P}}</em>{k|k-1} \mathbf{H}^T + \mathbf{R} \quad \text{(残差协方差)}<br>$$<br>$$<br>\mathbf{K}<em>k &#x3D; \hat{\mathbf{P}}</em>{k|k-1} \mathbf{H}^T \mathbf{S}<em>k^{-1} \quad \text{(卡尔曼增益)}<br>$$<br>$$<br>\mathbf{x}</em>{k|k} &#x3D; \hat{\mathbf{x}}</em>{k|k-1} + \mathbf{K}_k \mathbf{y}<em>k \quad \text{(修正后的状态)}<br>$$<br>$$<br>\mathbf{P}</em>{k|k} &#x3D; (\mathbf{I} - \mathbf{K}<em>k \mathbf{H}) \hat{\mathbf{P}}</em>{k|k-1} \quad \text{(修正后的协方差)}<br>$$</p>
+<table>
+<thead>
+<tr>
+<th align="left">符号</th>
+<th align="left">含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">$\mathbf{z}_k$</td>
+<td align="left">检测框（观测值）</td>
+</tr>
+<tr>
+<td align="left">$\mathbf{y}_k$</td>
+<td align="left">残差（检测与预测的偏差）</td>
+</tr>
+<tr>
+<td align="left">$\mathbf{R}$</td>
+<td align="left"><strong>观测噪声</strong>（检测器的不确定性）</td>
+</tr>
+<tr>
+<td align="left">$\mathbf{K}_k$</td>
+<td align="left"><strong>卡尔曼增益</strong>（权衡信任预测还是信任观测）</td>
+</tr>
+<tr>
+<td align="left">$\mathbf{P}$</td>
+<td align="left">协方差矩阵（状态估计的不确定性）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>直觉</strong>：预测说”物体在这”，检测说”物体在那”，卡尔曼增益 $\mathbf{K}$ 决定”更信谁”。预测准（$\mathbf{P}$ 小）时 $\mathbf{K}$ 小、信任预测；检测准（$\mathbf{R}$ 小）时 $\mathbf{K}$ 大、信任检测。更新后不确定性减小。</p>
+</blockquote>
+<h3 id="3-6-初始化"><a href="#3-6-初始化" class="headerlink" title="3.6 初始化"></a>3.6 初始化</h3><p>新轨迹首次创建时：</p>
+<ul>
+<li>初始状态：$\mathbf{x}_0 &#x3D; [u, v, s, r, 0, 0, 0]$（速度初始化为 0）</li>
+<li>初始协方差：$\mathbf{P}_0$ 设为较大值（速度部分 $\times 1000$，位置部分 $\times 10$），表示”初始速度完全不确定”</li>
+<li>观测噪声 $\mathbf{R}$：面积和宽高比部分 $\times 10$（这两项检测不如位置准）</li>
+</ul>
+<h3 id="3-7-源码（KalmanBoxTracker）"><a href="#3-7-源码（KalmanBoxTracker）" class="headerlink" title="3.7 源码（KalmanBoxTracker）"></a>3.7 源码（KalmanBoxTracker）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">KalmanBoxTracker</span>:</span><br><span class="line">    count = <span class="number">0</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, bbox</span>):</span><br><span class="line">        <span class="comment"># 7维状态, 4维观测</span></span><br><span class="line">        <span class="variable language_">self</span>.kf = KalmanFilter(dim_x=<span class="number">7</span>, dim_z=<span class="number">4</span>)</span><br><span class="line">        <span class="variable language_">self</span>.kf.F = np.array([[<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>],  <span class="comment"># 状态转移矩阵 F</span></span><br><span class="line">                              [<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>],</span><br><span class="line">                              [<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>],</span><br><span class="line">                              [<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>],  <span class="comment"># r 无速度项</span></span><br><span class="line">                              [<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                              [<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>],</span><br><span class="line">                              [<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>]])</span><br><span class="line">        <span class="variable language_">self</span>.kf.H = np.array([[<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>],  <span class="comment"># 观测矩阵 H</span></span><br><span class="line">                              [<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                              [<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line">                              [<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>]])</span><br><span class="line">        <span class="comment"># 噪声设置</span></span><br><span class="line">        <span class="variable language_">self</span>.kf.R[<span class="number">2</span>:, <span class="number">2</span>:] *= <span class="number">10.</span>       <span class="comment"># 观测噪声: 面积/宽高比部分放大</span></span><br><span class="line">        <span class="variable language_">self</span>.kf.P[<span class="number">4</span>:, <span class="number">4</span>:] *= <span class="number">1000.</span>     <span class="comment"># 初始协方差: 速度部分高度不确定</span></span><br><span class="line">        <span class="variable language_">self</span>.kf.P *= <span class="number">10.</span></span><br><span class="line">        <span class="variable language_">self</span>.kf.Q[-<span class="number">1</span>, -<span class="number">1</span>] *= <span class="number">0.01</span>      <span class="comment"># 过程噪声: 面积速度噪声较小</span></span><br><span class="line">        <span class="variable language_">self</span>.kf.Q[<span class="number">4</span>:, <span class="number">4</span>:] *= <span class="number">0.01</span></span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.kf.x[:<span class="number">4</span>] = bbox_to_state(bbox)  <span class="comment"># 初始状态 (速度=0)</span></span><br><span class="line">        <span class="variable language_">self</span>.<span class="built_in">id</span> = KalmanBoxTracker.count      <span class="comment"># 分配全局 ID</span></span><br><span class="line">        KalmanBoxTracker.count += <span class="number">1</span></span><br><span class="line">        <span class="comment"># 轨迹状态计数器</span></span><br><span class="line">        <span class="variable language_">self</span>.hits = <span class="number">0</span>                <span class="comment"># 总匹配次数</span></span><br><span class="line">        <span class="variable language_">self</span>.hit_streak = <span class="number">0</span>          <span class="comment"># 连续匹配次数</span></span><br><span class="line">        <span class="variable language_">self</span>.time_since_update = <span class="number">0</span>   <span class="comment"># 距上次匹配的帧数</span></span><br><span class="line">        <span class="variable language_">self</span>.age = <span class="number">0</span>                 <span class="comment"># 总存活帧数</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">predict</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>.kf.predict()                     <span class="comment"># 卡尔曼预测</span></span><br><span class="line">        <span class="variable language_">self</span>.age += <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.time_since_update &gt; <span class="number">0</span>:</span><br><span class="line">            <span class="variable language_">self</span>.hit_streak = <span class="number">0</span>               <span class="comment"># 中断连续匹配</span></span><br><span class="line">        <span class="variable language_">self</span>.time_since_update += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.kf.x[:<span class="number">4</span>]                  <span class="comment"># 返回预测框</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">update</span>(<span class="params">self, bbox</span>):</span><br><span class="line">        <span class="variable language_">self</span>.time_since_update = <span class="number">0</span>            <span class="comment"># 重置丢失计数</span></span><br><span class="line">        <span class="variable language_">self</span>.hits += <span class="number">1</span></span><br><span class="line">        <span class="variable language_">self</span>.hit_streak += <span class="number">1</span></span><br><span class="line">        <span class="variable language_">self</span>.kf.update(bbox_to_z(bbox))       <span class="comment"># 卡尔曼更新</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="四、数据关联：IoU-匈牙利算法"><a href="#四、数据关联：IoU-匈牙利算法" class="headerlink" title="四、数据关联：IoU + 匈牙利算法"></a>四、数据关联：IoU + 匈牙利算法</h2><p><img src="/images/SORT%E8%AF%A6%E8%A7%A3/sort_hungarian.png"></p>
+<h3 id="4-1-IoU-代价矩阵"><a href="#4-1-IoU-代价矩阵" class="headerlink" title="4.1 IoU 代价矩阵"></a>4.1 IoU 代价矩阵</h3><p>对 $M$ 个检测框和 $N$ 个预测框，计算两两 IoU，构成 $M \times N$ 代价矩阵：</p>
+<p>$$<br>\text{cost}_{ij} &#x3D; 1 - \text{IoU}(\text{det}_i, \text{pred}_j)<br>$$</p>
+<ul>
+<li>IoU 越大（越重叠）→ cost 越小（越应该匹配）；</li>
+<li>IoU &#x3D; 0（完全不重叠）→ cost &#x3D; 1。</li>
+</ul>
+<blockquote>
+<p><strong>为什么用 IoU 而非欧氏距离？</strong> IoU 同时考虑位置和大小，对框的尺度不敏感；欧氏距离只看中心点，忽略框大小。</p>
+</blockquote>
+<h3 id="4-2-匈牙利算法"><a href="#4-2-匈牙利算法" class="headerlink" title="4.2 匈牙利算法"></a>4.2 匈牙利算法</h3><p>匈牙利算法在代价矩阵上找<strong>全局最优一对一配对</strong>（总 cost 最小），使得：</p>
+<ul>
+<li>每个检测最多配一个预测</li>
+<li>每个预测最多配一个检测</li>
+</ul>
+<p>源码用 <code>scipy.optimize.linear_sum_assignment</code> 实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> scipy.optimize <span class="keyword">import</span> linear_sum_assignment</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">associate</span>(<span class="params">detections, trackers, iou_threshold=<span class="number">0.3</span></span>):</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(trackers) == <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">return</span> [], np.arange(<span class="built_in">len</span>(detections)), []</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 1. 计算 IoU 矩阵 [M检测 × N预测]</span></span><br><span class="line">    iou_matrix = iou_batch(detections, trackers)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 2. 匈牙利算法求最优匹配（最小化 -IoU = 最大化 IoU）</span></span><br><span class="line">    row_indices, col_indices = linear_sum_assignment(-iou_matrix)</span><br><span class="line">    matched_indices = np.array(<span class="built_in">list</span>(<span class="built_in">zip</span>(row_indices, col_indices)))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 3. 过滤 IoU &lt; 阈值的配对</span></span><br><span class="line">    <span class="comment"># 4. 收集未匹配的检测和预测</span></span><br><span class="line">    unmatched_dets = [d <span class="keyword">for</span> d <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(detections)) <span class="keyword">if</span> d <span class="keyword">not</span> <span class="keyword">in</span> matched_indices[:, <span class="number">0</span>]]</span><br><span class="line">    unmatched_trks = [t <span class="keyword">for</span> t <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(trackers)) <span class="keyword">if</span> t <span class="keyword">not</span> <span class="keyword">in</span> matched_indices[:, <span class="number">1</span>]]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 过滤低 IoU 配对</span></span><br><span class="line">    valid = []</span><br><span class="line">    <span class="keyword">for</span> m <span class="keyword">in</span> matched_indices:</span><br><span class="line">        <span class="keyword">if</span> iou_matrix[m[<span class="number">0</span>], m[<span class="number">1</span>]] &lt; iou_threshold:</span><br><span class="line">            unmatched_dets.append(m[<span class="number">0</span>])</span><br><span class="line">            unmatched_trks.append(m[<span class="number">1</span>])</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            valid.append(m)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> valid, unmatched_dets, unmatched_trks</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>为什么用匈牙利而非贪心？</strong> 贪心按 IoU 从大到小逐个配，可能局部最优但全局次优。例如 det1 和 pred1 的 IoU&#x3D;0.8（最高），但 pred1 其实属于 det2（IoU&#x3D;0.7），贪心会配错。匈牙利找全局最优，避免这种冲突。</p>
+</blockquote>
+<h3 id="4-3-IoU-阈值过滤"><a href="#4-3-IoU-阈值过滤" class="headerlink" title="4.3 IoU 阈值过滤"></a>4.3 IoU 阈值过滤</h3><p>匈牙利匹配只是”建议”，IoU 阈值是”判决”–即使匈牙利配对了，IoU &lt; 0.3 也会被拒绝，该检测变未匹配、该轨迹变未匹配。</p>
+<hr>
+<h2 id="五、轨迹管理"><a href="#五、轨迹管理" class="headerlink" title="五、轨迹管理"></a>五、轨迹管理</h2><h3 id="5-1-轨迹状态机"><a href="#5-1-轨迹状态机" class="headerlink" title="5.1 轨迹状态机"></a>5.1 轨迹状态机</h3><p>每个轨迹有 3 个关键计数器：</p>
+<table>
+<thead>
+<tr>
+<th align="left">计数器</th>
+<th align="left">含义</th>
+<th align="left">何时变化</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>hits</code></td>
+<td align="left">总匹配次数</td>
+<td align="left">匹配成功 +1</td>
+</tr>
+<tr>
+<td align="left"><code>hit_streak</code></td>
+<td align="left"><strong>连续</strong>匹配次数</td>
+<td align="left">匹配成功 +1，丢失时归 0</td>
+</tr>
+<tr>
+<td align="left"><code>time_since_update</code></td>
+<td align="left">距上次匹配的帧数</td>
+<td align="left">匹配时归 0，每帧 +1</td>
+</tr>
+<tr>
+<td align="left"><code>age</code></td>
+<td align="left">总存活帧数</td>
+<td align="left">每帧 +1</td>
+</tr>
+</tbody></table>
+<h3 id="5-2-三种情况处理"><a href="#5-2-三种情况处理" class="headerlink" title="5.2 三种情况处理"></a>5.2 三种情况处理</h3><p><strong>① 匹配成功</strong>：用检测框更新卡尔曼滤波（predict → update），<code>time_since_update=0</code>，<code>hit_streak++</code>。</p>
+<p><strong>② 未匹配检测 → 新建轨迹</strong>：初始化新卡尔曼滤波（速度&#x3D;0），分配新 ID，加入轨迹列表。新轨迹需连续匹配 <code>min_hits</code> 次才输出（防误检）。</p>
+<p><strong>③ 未匹配轨迹 → 标记丢失</strong>：<code>time_since_update++</code>。若超过 <code>max_age</code>，从轨迹列表删除。</p>
+<h3 id="5-3-输出条件"><a href="#5-3-输出条件" class="headerlink" title="5.3 输出条件"></a>5.3 输出条件</h3><p>轨迹被输出需满足：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (trk.time_since_update &lt; <span class="number">1</span>) <span class="keyword">and</span> \      <span class="comment"># 当前帧匹配成功</span></span><br><span class="line">   (trk.hit_streak &gt;= <span class="variable language_">self</span>.min_hits <span class="keyword">or</span> \   <span class="comment"># 连续匹配 &gt;= min_hits</span></span><br><span class="line">    <span class="variable language_">self</span>.frame_count &lt;= <span class="variable language_">self</span>.min_hits):    <span class="comment"># 或前 min_hits 帧内（特殊分支）</span></span><br><span class="line">    output.append(trk)</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-4-关键参数"><a href="#5-4-关键参数" class="headerlink" title="5.4 关键参数"></a>5.4 关键参数</h3><table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">默认值</th>
+<th align="left">含义</th>
+<th align="left">调大效果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>max_age</code></td>
+<td align="left">30</td>
+<td align="left">轨迹最多丢失多少帧才删除</td>
+<td align="left">更耐遮挡，但可能残留幽灵轨迹</td>
+</tr>
+<tr>
+<td align="left"><code>min_hits</code></td>
+<td align="left">3</td>
+<td align="left">新轨迹连续匹配多少帧才输出</td>
+<td align="left">更保守（减少误检），但延迟输出</td>
+</tr>
+<tr>
+<td align="left"><code>iou_threshold</code></td>
+<td align="left">0.3</td>
+<td align="left">IoU 低于此值的配对被丢弃</td>
+<td align="left">更严格（减少错误关联），但可能漏匹配</td>
+</tr>
+</tbody></table>
+<h3 id="5-5-源码（Sort-主循环）"><a href="#5-5-源码（Sort-主循环）" class="headerlink" title="5.5 源码（Sort 主循环）"></a>5.5 源码（Sort 主循环）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Sort</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, max_age=<span class="number">30</span>, min_hits=<span class="number">3</span>, iou_threshold=<span class="number">0.3</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.max_age = max_age</span><br><span class="line">        <span class="variable language_">self</span>.min_hits = min_hits</span><br><span class="line">        <span class="variable language_">self</span>.iou_threshold = iou_threshold</span><br><span class="line">        <span class="variable language_">self</span>.trackers = []</span><br><span class="line">        <span class="variable language_">self</span>.frame_count = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">update</span>(<span class="params">self, dets</span>):</span><br><span class="line">        <span class="variable language_">self</span>.frame_count += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 1. 预测：所有轨迹做卡尔曼预测</span></span><br><span class="line">        trks = [t.predict() <span class="keyword">for</span> t <span class="keyword">in</span> <span class="variable language_">self</span>.trackers]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 2. 关联：检测 × 预测 的 IoU 匈牙利匹配</span></span><br><span class="line">        matched, unmatched_dets, unmatched_trks = \</span><br><span class="line">            associate(dets, trks, <span class="variable language_">self</span>.iou_threshold)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 3. 更新匹配成功的轨迹</span></span><br><span class="line">        <span class="keyword">for</span> det_idx, trk_idx <span class="keyword">in</span> matched:</span><br><span class="line">            <span class="variable language_">self</span>.trackers[trk_idx].update(dets[det_idx])</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 4. 为未匹配检测新建轨迹</span></span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> unmatched_dets:</span><br><span class="line">            <span class="variable language_">self</span>.trackers.append(KalmanBoxTracker(dets[i]))</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 5. 输出 + 清理超时轨迹</span></span><br><span class="line">        ret = []</span><br><span class="line">        <span class="keyword">for</span> trk <span class="keyword">in</span> <span class="variable language_">self</span>.trackers:</span><br><span class="line">            <span class="keyword">if</span> trk.time_since_update &lt; <span class="variable language_">self</span>.max_age:              <span class="comment"># 未超时</span></span><br><span class="line">                <span class="keyword">if</span> (trk.hit_streak &gt;= <span class="variable language_">self</span>.min_hits) <span class="keyword">or</span> \</span><br><span class="line">                   (<span class="variable language_">self</span>.frame_count &lt;= <span class="variable language_">self</span>.min_hits):            <span class="comment"># 达输出条件</span></span><br><span class="line">                    ret.append(trk.to_output())</span><br><span class="line">        <span class="comment"># 删除超时轨迹</span></span><br><span class="line">        <span class="variable language_">self</span>.trackers = [t <span class="keyword">for</span> t <span class="keyword">in</span> <span class="variable language_">self</span>.trackers <span class="keyword">if</span> t.time_since_update &lt; <span class="variable language_">self</span>.max_age]</span><br><span class="line">        <span class="keyword">return</span> ret</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、逐帧示例"><a href="#六、逐帧示例" class="headerlink" title="六、逐帧示例"></a>六、逐帧示例</h2><blockquote>
+<p>以下来自剪藏的调试过程，展示完整的循环逻辑。</p>
+</blockquote>
+<p><strong>第 1 帧</strong>：检测到 3 人。轨迹列表空 → 3 个检测全未匹配 → 初始化 3 个卡尔曼滤波（速度&#x3D;0），创建轨迹 1&#x2F;2&#x2F;3。<code>hit_streak=1 &lt; min_hits=3</code>，不输出。</p>
+<p><strong>第 2 帧</strong>：检测 3 人。对 3 个轨迹做卡尔曼预测（位置+&#x3D;速度，但速度&#x3D;0，所以预测≈上帧）→ 3 个预测框。与 3 个检测算 IoU → 匈牙利全匹配 → 用检测更新卡尔曼（此时速度开始被估计出来）。<code>hit_streak=2 &lt; 3</code>，不输出。</p>
+<p><strong>第 3 帧</strong>：同上全匹配。<code>hit_streak=3 ≥ min_hits=3</code> → <strong>输出 3 个轨迹</strong>。</p>
+<p><strong>第 4-11 帧</strong>：稳定跟踪 3 人。</p>
+<p><strong>第 12 帧</strong>：检测 4 人。3 个匹配成功，1 个未匹配检测 → 新建轨迹 4。轨迹 4 <code>hit_streak=1 &lt; 3</code>，不输出。</p>
+<p><strong>第 13 帧</strong>：4 检测 4 预测，全匹配。但轨迹 4 <code>hit_streak=2 &lt; 3</code>，输出仍 3。</p>
+<p><strong>第 14 帧</strong>：轨迹 4 <code>hit_streak=3 ≥ 3</code> → 输出 4 个轨迹。</p>
+<p><strong>第 19 帧</strong>：1 个检测与预测虽被匈牙利匹配，但 IoU&#x3D;0.15 &lt; 阈值 0.3 → 丢弃配对 → 该检测变未匹配（新建轨迹），该轨迹变未匹配（<code>time_since_update++</code>）。</p>
+<blockquote>
+<p><strong>关键</strong>：匈牙利匹配只是”建议”，IoU 阈值是”判决”。即使配对了，IoU 不够也会被拒绝。</p>
+</blockquote>
+<hr>
+<h2 id="七、优缺点与改进方向"><a href="#七、优缺点与改进方向" class="headerlink" title="七、优缺点与改进方向"></a>七、优缺点与改进方向</h2><h3 id="优点-✅"><a href="#优点-✅" class="headerlink" title="优点 ✅"></a>优点 ✅</h3><ol>
+<li><strong>极简</strong>：仅卡尔曼+IoU 匹配，无深度学习外观模型，~200 行代码</li>
+<li><strong>实时</strong>：卡尔曼+匈牙利都是轻量算法，速度瓶颈只在检测器</li>
+<li><strong>在线</strong>：逐帧处理，不需要未来帧</li>
+<li><strong>奠基性</strong>：后续 DeepSORT、ByteTrack、OC-SORT 全部基于 SORT 框架</li>
+</ol>
+<h3 id="局限-❌"><a href="#局限-❌" class="headerlink" title="局限 ❌"></a>局限 ❌</h3><table>
+<thead>
+<tr>
+<th align="left">局限</th>
+<th align="left">原因</th>
+<th align="left">后续改进</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">无外观特征</td>
+<td align="left">只用 IoU，遮挡后 ID 丢失</td>
+<td align="left">DeepSORT 加 ReID 外观特征</td>
+</tr>
+<tr>
+<td align="left">ID 频繁切换</td>
+<td align="left">密集场景 IoU 匹配易混淆</td>
+<td align="left">ByteTrack 用低分检测二次匹配</td>
+</tr>
+<tr>
+<td align="left">不可恢复丢失轨迹</td>
+<td align="left">超 <code>max_age</code> 即删除</td>
+<td align="left">OC-SORT 加”观测为中心恢复”</td>
+</tr>
+<tr>
+<td align="left">依赖检测质量</td>
+<td align="left">漏检→轨迹丢失，误检→虚假轨迹</td>
+<td align="left">ByteTrack 利用低分检测缓解</td>
+</tr>
+<tr>
+<td align="left">匀速运动假设</td>
+<td align="left">转弯&#x2F;变速时预测偏差大</td>
+<td align="left">OCSORT 加”观测为中心”动量修正</td>
+</tr>
+</tbody></table>
+<h3 id="改进路线"><a href="#改进路线" class="headerlink" title="改进路线"></a>改进路线</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">SORT (2016)           基础框架：KF + IoU 匹配</span><br><span class="line">  ↓</span><br><span class="line">DeepSORT (2017)       + 外观特征(ReID) + 马氏距离 → 减少 IDSW</span><br><span class="line">  ↓</span><br><span class="line">ByteTrack (2022)      + 低分检测二次匹配 → 挖掘漏检</span><br><span class="line">  ↓</span><br><span class="line">OC-SORT (2023)        + 观测为中心恢复 → 遮挡后恢复轨迹</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="八、总结"><a href="#八、总结" class="headerlink" title="八、总结"></a>八、总结</h2><p>SORT 的精髓是<strong>把跟踪简化为”预测-匹配-更新”三步循环</strong>：</p>
+<ol>
+<li><strong>卡尔曼滤波预测</strong>：用匀速模型推算每个轨迹在当前帧的位置（状态转移矩阵 F + 协方差传播）；</li>
+<li><strong>IoU 匈牙利匹配</strong>：检测框与预测框算 IoU 代价矩阵，匈牙利算法求全局最优配对，IoU 阈值过滤；</li>
+<li><strong>更新&#x2F;新建&#x2F;删除</strong>：匹配的更新卡尔曼（增益 K 加权融合预测与观测），未匹配检测建新轨迹，未匹配轨迹超 <code>max_age</code> 删除。</li>
+</ol>
+<p>三个参数（<code>max_age</code> &#x2F; <code>min_hits</code> &#x2F; <code>iou_threshold</code>）控制跟踪行为。SORT 证明了”仅靠运动关联就能做实时跟踪”，成为 MOT 领域的起点。</p>
+<hr>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><ul>
+<li>📋 论文原文: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1602.00763">arxiv.org&#x2F;abs&#x2F;1602.00763</a></li>
+<li>📋 官方代码: <a target="_blank" rel="noopener" href="https://github.com/abewley/sort">abewley&#x2F;sort</a>（~200 行 Python）</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;目标跟踪&#x2F;SORT&#x2F;SORT：基于检测的目标跟踪的鼻祖]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;目标跟踪&#x2F;SORT&#x2F;【MOT】详解SORT与卡尔曼滤波算法]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;目标跟踪&#x2F;SORT&#x2F;【SORT算法】系列之深度解读-CSDN博客]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;目标跟踪&#x2F;SORT&#x2F;【多目标跟踪】sort论文理解-CSDN博客]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;目标跟踪&#x2F;SORT&#x2F;多目标跟踪–SORT算法解读]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;目标跟踪&#x2F;SORT&#x2F;多目标跟踪入门篇(1)：SORT算法详解_sort跟踪算法-CSDN博客]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;目标跟踪&#x2F;SORT&#x2F;多目标跟踪算法之SORT]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;目标跟踪&#x2F;SORT&#x2F;论文解读：SORT（目标跟踪）]]</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/08/01/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/SORT%20%E8%AF%A6%E8%A7%A3/">https://www.loveww.top/2026/08/01/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/SORT%20%E8%AF%A6%E8%A7%A3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/">多目标跟踪</a><a class="post-meta__tags" href="/tags/%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2/">卡尔曼滤波</a><a class="post-meta__tags" href="/tags/SORT/">SORT</a><a class="post-meta__tags" href="/tags/%E5%8C%88%E7%89%99%E5%88%A9%E7%AE%97%E6%B3%95/">匈牙利算法</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/" title="RT-DETR 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">RT-DETR 详解</div></div><div class="info-2"><div class="info-item-1">RT-DETR: Real-Time Detection Transformer 论文: DETRs Beat YOLOs on Real-time Object Detection (CVPR 2024)作者: Yian Zhao, Wenyu Lv, Shangliang Xu, et al. (Baidu &#x2F; 百度)代码: PaddlePaddle&#x2F;PP-DETR &#x2F; lyuwenyu&#x2F;RT-DETR   一句话总结：RT-DETR 是第一个实时端到端目标检测器–它用混合编码器（CNN + 稀疏 Transformer）解决 DETR 太慢的问题，用 IoU-aware 查询初始化 + CDN 训练加速收敛，全程无 NMS，在同等速度下超越 YOLOv8。   一、概述1.1 为什么要有 RT-DETRDETR（2020）开创了端到端检测（无 NMS、无 anchor、匈牙利匹配），但有两个致命问题：  太慢：Transformer 编码器处理所有特征图的所有位置，计算量巨大； 收敛慢：从头训需要 500 epoch，远多于 YOLO...</div></div></div></a><a class="pagination-related" href="/2026/07/26/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/ViT%20%E8%AF%A6%E8%A7%A3/" title="VIT 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">VIT 详解</div></div><div class="info-2"><div class="info-item-1">ViT: An Image is Worth 16x16 Words 论文: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (ICLR 2021)作者: Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, Neil Houlsby (Google Research)代码: google-research&#x2F;vision_transformer   一句话总结：ViT 把一张图切成若干 patch，每个 patch 当成一个”词”，喂给标准 Transformer Encoder，用 CLS token 做分类。 它证明了 NLP 的 Transf...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/OC-SORT%20%E8%AF%A6%E8%A7%A3/" title="OC-SORT 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-09</div><div class="info-item-2">OC-SORT 详解</div></div><div class="info-2"><div class="info-item-1">OC-SORT: Observation-Centric SORT 论文: Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking (CVPR 2023)作者: Jinkun Cao, Xinshuo Weng, Rawal Khirodkar, Kris Kitani, Jiangmiao Pang (CMU &#x2F; 商汤)代码: noahcao&#x2F;OC_SORT   一句话总结：OC-SORT 把 SORT 从”以估计为中心”改为”以观测为中心”–当轨迹从遮挡中恢复时，用观测历史修正卡尔曼参数（ORU）；在关联代价中加入观测方向一致性（OCM）；用最后一次观测做二次恢复匹配（OCR）。 无需外观特征，即超越 DeepSORT。   一、背景：SORT 的三个局限 OC-SORT 的出发点是分析 SORT 的三个根本局限，逐一解决。  1.1 局限一：对状态噪声敏感SORT 假设匀速运动，用卡尔曼滤波估计速度。但在高帧率视频中，连续帧间位移很小，噪声与实际位移量级相当，导...</div></div></div></a><a class="pagination-related" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-09</div><div class="info-item-2">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</div></div><div class="info-2"><div class="info-item-1">CARLA + ROS2 + rf-DETR + OC-SORT 感知仿真教程本教程记录从零搭建 CARLA 0.9.16 仿真环境、接入 ROS2 话题、用 rf-DETR (TensorRT) 做目标检测、再用 OC-SORT 做多目标跟踪并绘制移动轨迹的完整过程。最终在 rviz2 中看到带 ID 和轨迹的检测结果。 你将搭建的系统1234567891011CARLA 仿真(带 NPC 交通)   │  RGB 相机 (ROS2 native 接口)   ▼/carla/hero/rgb/image 话题   │  perception_camera 检测节点 (rf-DETR TensorRT + OC-SORT)   ▼/carla/hero/rgb/detection_image  (画框 + ID + 轨迹, 给 rviz2)/carla/hero/detections           (Detection2DArray, track_id 在 id 字段)   │   ▼rviz2 可视化  目录   章节 内容    01 环境准备 系统、GPU&#x2F;...</div></div></div></a><a class="pagination-related" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/06-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA-OC-SORT/" title="CARLA教程-06-目标跟踪(OC-SORT)与移动轨迹"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-09</div><div class="info-item-2">CARLA教程-06-目标跟踪(OC-SORT)与移动轨迹</div></div><div class="info-2"><div class="info-item-1">06 目标跟踪 (OC-SORT) + 移动轨迹检测之后接 OC-SORT 做多目标跟踪，给每个目标分配稳定 ID，并绘制移动轨迹。 6.1 OC-SORT 简介OC-SORT（Observation-Centric SORT）是纯运动模型的多目标跟踪器，输入每帧检测 [x1,y1,x2,y2,score]，输出带 track ID 的轨迹。适合拥挤和非线性运动场景，实时性好。 6.2 依赖OC-SORT 的 kalmanfilter.py 用了 filterpy，装到系统 python： 1/usr/bin/python3 -m pip install filterpy  association.py 的 linear_assignment 有 lap&#x2F;scipy 回退，系统 python 有 scipy 就行，不用装 lap。 6.3 在节点里引入 OC-SORTOC-SORT 仓库不需要 pip install，加路径即可。在 carla_detector.py 顶部： 1234import sysOC_SORT_PATH = &quot;~/models/OC_...</div></div></div></a><a class="pagination-related" href="/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA%E7%BB%BC%E8%BF%B0%E6%A2%B3%E7%90%86/" title="深度学习多目标跟踪综述梳理"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-09</div><div class="info-item-2">深度学习多目标跟踪综述梳理</div></div><div class="info-2"><div class="info-item-1">深度学习多目标跟踪（MOT）综述梳理 本笔记是对综述 Deep Learning-Based Multi-Object Tracking: A Comprehensive Survey from Foundations to State-of-the-Art（arXiv:2506.13457）的系统梳理。原始转换文件见 [[Clippings&#x2F;2506.13457v1.md]]。  一、综述定位与贡献 主题：深度学习驱动的多目标跟踪（MOT），聚焦 2022 年以来的现代方法。 两大范式： Tracking-by-Detection（检测再关联） —— 检测与关联解耦，仍是主流。 End-to-End（端到端） —— 检测与关联联合训练，以 DETR 系（tracking-by-query）为代表。   四大贡献： 系统梳理 2022 年起的现代深度 MOT 方法； 将 tracking-by-detection 划分为 五大类别； 在多基准上跨域对比，并自建加权宏平均基准评估泛化性； 提供详尽背景知识，兼顾不同基础读者。     二、MOT 问题与基础概念2.1 任务...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#SORT-Simple-Online-and-Realtime-Tracking"><span class="toc-number">1.</span> <span class="toc-text">SORT: Simple Online and Realtime Tracking</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%83%8C%E6%99%AF%EF%BC%9A%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA%EF%BC%88MOT%EF%BC%89"><span class="toc-number">1.1.</span> <span class="toc-text">一、背景：多目标跟踪（MOT）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E4%BB%80%E4%B9%88%E6%98%AF-MOT"><span class="toc-number">1.1.1.</span> <span class="toc-text">1.1 什么是 MOT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-Tracking-by-Detection-%E8%8C%83%E5%BC%8F"><span class="toc-number">1.1.2.</span> <span class="toc-text">1.2 Tracking-by-Detection 范式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-MOT-%E8%AF%84%E6%B5%8B%E6%8C%87%E6%A0%87"><span class="toc-number">1.1.3.</span> <span class="toc-text">1.3 MOT 评测指标</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%95%B4%E4%BD%93%E6%B5%81%E7%A8%8B"><span class="toc-number">1.2.</span> <span class="toc-text">二、整体流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2%E8%AF%A6%E8%A7%A3-%E2%AD%90"><span class="toc-number">1.3.</span> <span class="toc-text">三、卡尔曼滤波详解 ⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E7%8A%B6%E6%80%81%E5%90%91%E9%87%8F%E4%B8%8E%E8%A7%82%E6%B5%8B%E5%90%91%E9%87%8F"><span class="toc-number">1.3.1.</span> <span class="toc-text">3.1 状态向量与观测向量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E7%8A%B6%E6%80%81%E8%BD%AC%E7%A7%BB%E7%9F%A9%E9%98%B5-F%EF%BC%88%E5%8C%80%E9%80%9F%E8%BF%90%E5%8A%A8%E6%A8%A1%E5%9E%8B%EF%BC%89"><span class="toc-number">1.3.2.</span> <span class="toc-text">3.2 状态转移矩阵 F（匀速运动模型）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E8%A7%82%E6%B5%8B%E7%9F%A9%E9%98%B5-H"><span class="toc-number">1.3.3.</span> <span class="toc-text">3.3 观测矩阵 H</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E9%A2%84%E6%B5%8B%EF%BC%88Predict%EF%BC%89"><span class="toc-number">1.3.4.</span> <span class="toc-text">3.4 预测（Predict）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-5-%E6%9B%B4%E6%96%B0%EF%BC%88Update%EF%BC%89"><span class="toc-number">1.3.5.</span> <span class="toc-text">3.5 更新（Update）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-6-%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">1.3.6.</span> <span class="toc-text">3.6 初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-7-%E6%BA%90%E7%A0%81%EF%BC%88KalmanBoxTracker%EF%BC%89"><span class="toc-number">1.3.7.</span> <span class="toc-text">3.7 源码（KalmanBoxTracker）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%95%B0%E6%8D%AE%E5%85%B3%E8%81%94%EF%BC%9AIoU-%E5%8C%88%E7%89%99%E5%88%A9%E7%AE%97%E6%B3%95"><span class="toc-number">1.4.</span> <span class="toc-text">四、数据关联：IoU + 匈牙利算法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-IoU-%E4%BB%A3%E4%BB%B7%E7%9F%A9%E9%98%B5"><span class="toc-number">1.4.1.</span> <span class="toc-text">4.1 IoU 代价矩阵</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E5%8C%88%E7%89%99%E5%88%A9%E7%AE%97%E6%B3%95"><span class="toc-number">1.4.2.</span> <span class="toc-text">4.2 匈牙利算法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-IoU-%E9%98%88%E5%80%BC%E8%BF%87%E6%BB%A4"><span class="toc-number">1.4.3.</span> <span class="toc-text">4.3 IoU 阈值过滤</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E8%BD%A8%E8%BF%B9%E7%AE%A1%E7%90%86"><span class="toc-number">1.5.</span> <span class="toc-text">五、轨迹管理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E8%BD%A8%E8%BF%B9%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="toc-number">1.5.1.</span> <span class="toc-text">5.1 轨迹状态机</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E4%B8%89%E7%A7%8D%E6%83%85%E5%86%B5%E5%A4%84%E7%90%86"><span class="toc-number">1.5.2.</span> <span class="toc-text">5.2 三种情况处理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E8%BE%93%E5%87%BA%E6%9D%A1%E4%BB%B6"><span class="toc-number">1.5.3.</span> <span class="toc-text">5.3 输出条件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E5%85%B3%E9%94%AE%E5%8F%82%E6%95%B0"><span class="toc-number">1.5.4.</span> <span class="toc-text">5.4 关键参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-5-%E6%BA%90%E7%A0%81%EF%BC%88Sort-%E4%B8%BB%E5%BE%AA%E7%8E%AF%EF%BC%89"><span class="toc-number">1.5.5.</span> <span class="toc-text">5.5 源码（Sort 主循环）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E9%80%90%E5%B8%A7%E7%A4%BA%E4%BE%8B"><span class="toc-number">1.6.</span> <span class="toc-text">六、逐帧示例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E4%BC%98%E7%BC%BA%E7%82%B9%E4%B8%8E%E6%94%B9%E8%BF%9B%E6%96%B9%E5%90%91"><span class="toc-number">1.7.</span> <span class="toc-text">七、优缺点与改进方向</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E7%82%B9-%E2%9C%85"><span class="toc-number">1.7.1.</span> <span class="toc-text">优点 ✅</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B1%80%E9%99%90-%E2%9D%8C"><span class="toc-number">1.7.2.</span> <span class="toc-text">局限 ❌</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%94%B9%E8%BF%9B%E8%B7%AF%E7%BA%BF"><span class="toc-number">1.7.3.</span> <span class="toc-text">改进路线</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%80%BB%E7%BB%93"><span class="toc-number">1.8.</span> <span class="toc-text">八、总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5"><span class="toc-number">1.9.</span> <span class="toc-text">相关链接</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/01-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87/" title="CARLA教程-01-环境准备">CARLA教程-01-环境准备</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/02-%E6%9E%84%E5%BB%BAUE4%E4%B8%8ECARLA/" title="CARLA教程-02-构建UE4与CARLA">CARLA教程-02-构建UE4与CARLA</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/03-%E8%BF%90%E8%A1%8C%E4%BB%BF%E7%9C%9F/" title="CARLA教程-03-运行仿真">CARLA教程-03-运行仿真</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/04-ROS2%E6%8E%A5%E5%8F%A3%E4%B8%8E%E8%AF%9D%E9%A2%98/" title="CARLA教程-04-ROS2接口与话题">CARLA教程-04-ROS2接口与话题</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>

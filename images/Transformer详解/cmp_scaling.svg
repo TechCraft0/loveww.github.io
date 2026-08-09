@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" font-family="ui-monospace,monospace" font-size="13">
+  <rect width="720" height="420" fill="#2d333b"/>
+  <text x="360" y="28" text-anchor="middle" fill="#adbac7" font-size="16">Attention vs FFN 计算量随 n 的增长</text>
+  <g stroke="#444c56" stroke-width="1">
+    <line x1="60" y1="370" x2="680" y2="370"/>
+    <line x1="60" y1="60" x2="60" y2="370"/>
+  </g>
+  <text x="370" y="395" text-anchor="middle" fill="#adbac7">序列长度 n（log）</text>
+  <text x="20" y="220" fill="#adbac7" transform="rotate(-90 20 220)">FLOPs（log）</text>
+  <g fill="#adbac7" font-size="11">
+    <text x="100" y="385">128</text><text x="200" y="385">512</text>
+    <text x="300" y="385">2k</text><text x="400" y="385">8k</text>
+    <text x="500" y="385">32k</text><text x="600" y="385">128k</text>
+  </g>
+  <path d="M 100 340 L 200 320 L 300 300 L 400 280 L 500 260 L 600 240" stroke="#3fb950" fill="none" stroke-width="2.5"/>
+  <text x="610" y="240" fill="#3fb950">FFN: O(n·d²)</text>
+  <path d="M 100 350 L 200 320 L 300 280 L 400 220 L 500 150 L 600 70" stroke="#f85149" fill="none" stroke-width="2.5"/>
+  <text x="610" y="75" fill="#f85149">Attn: O(n²·d)</text>
+  <line x1="385" y1="60" x2="385" y2="370" stroke="#f0883e" stroke-dasharray="4 4"/>
+  <text x="395" y="80" fill="#f0883e">crossover ≈ d</text>
+  <text x="395" y="95" fill="#f0883e">（d=4096 时 n≈4k）</text>
+  <text x="80" y="80" fill="#768390" font-size="11">短序列 FFN 主导</text>
+  <text x="500" y="350" fill="#768390" font-size="11">长序列 Attn 主导</text>
+</svg>

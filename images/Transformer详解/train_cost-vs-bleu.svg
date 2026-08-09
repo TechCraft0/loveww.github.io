@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 460" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14">
+  <rect width="880" height="460" fill="#2d333b"/>
+  <text x="440" y="30" text-anchor="middle" fill="#adbac7" font-size="18" font-weight="bold">原论文训练成本对比（FLOPs · BLEU）</text>
+
+  <g transform="translate(80, 70)">
+    <line x1="0" y1="320" x2="720" y2="320" stroke="#adbac7"/>
+    <line x1="0" y1="320" x2="0" y2="30" stroke="#adbac7"/>
+    <text x="360" y="350" text-anchor="middle" fill="#adbac7">训练 FLOPs（log）</text>
+    <text x="-55" y="180" fill="#adbac7" transform="rotate(-90 -55 180)">BLEU (En-De)</text>
+
+    <!-- Reference dots -->
+    <!-- ConvS2S: ~1.5e20 FLOPs, BLEU 25.16 -->
+    <circle cx="500" cy="220" r="6" fill="#f0883e"/>
+    <text x="510" y="220" fill="#f0883e" font-size="11">ConvS2S 25.16</text>
+
+    <!-- GNMT: ~2.3e19 FLOPs, BLEU 24.6 -->
+    <circle cx="380" cy="240" r="6" fill="#f85149"/>
+    <text x="290" y="245" fill="#f85149" font-size="11">GNMT 24.6</text>
+
+    <!-- ByteNet: BLEU 23.75 -->
+    <circle cx="450" cy="260" r="6" fill="#a371f7"/>
+    <text x="460" y="265" fill="#a371f7" font-size="11">ByteNet 23.75</text>
+
+    <!-- Transformer base: 3.3e18, BLEU 27.3 -->
+    <circle cx="200" cy="160" r="7" fill="#3fb950"/>
+    <text x="210" y="160" fill="#3fb950" font-size="11">Transformer base 27.3</text>
+
+    <!-- Transformer big: 2.3e19, BLEU 28.4 -->
+    <circle cx="380" cy="120" r="8" fill="#3fb950"/>
+    <text x="395" y="125" fill="#3fb950" font-size="11">Transformer big 28.4</text>
+
+    <!-- 等成本对比箭头 -->
+    <line x1="200" y1="160" x2="380" y2="240" stroke="#388bfd" stroke-dasharray="3 3"/>
+    <text x="280" y="195" fill="#388bfd" font-size="10">同等 BLEU 计算 ↓ 10×</text>
+
+    <!-- x ticks -->
+    <text x="0" y="335" fill="#768390" font-size="10">1e18</text>
+    <text x="200" y="335" fill="#768390" font-size="10">3e18</text>
+    <text x="400" y="335" fill="#768390" font-size="10">2e19</text>
+    <text x="600" y="335" fill="#768390" font-size="10">1e20</text>
+  </g>
+
+  <text x="440" y="430" text-anchor="middle" fill="#3fb950" font-size="12">Transformer 在更低算力下达到更高 BLEU——这是 2017 年论文的核心冲击</text>
+</svg>

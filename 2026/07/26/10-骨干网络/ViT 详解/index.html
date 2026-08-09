@@ -1,0 +1,660 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>VIT 详解 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="ViT: An Image is Worth 16x16 Words 论文: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (ICLR 2021)作者: Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn">
+<meta property="og:type" content="article">
+<meta property="og:title" content="VIT 详解">
+<meta property="og:url" content="https://www.loveww.top/2026/07/26/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/ViT%20%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="ViT: An Image is Worth 16x16 Words 论文: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (ICLR 2021)作者: Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-07-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-09T15:28:31.831Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="计算机视觉">
+<meta property="article:tag" content="ViT">
+<meta property="article:tag" content="分类模型">
+<meta property="article:tag" content="骨干网络">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "VIT 详解",
+  "url": "https://www.loveww.top/2026/07/26/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/ViT%20%E8%AF%A6%E8%A7%A3/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-07-25T16:00:00.000Z",
+  "dateModified": "2026-08-09T15:28:31.831Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/07/26/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/ViT%20%E8%AF%A6%E8%A7%A3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'VIT 详解',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">VIT 详解</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">VIT 详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-07-25T16:00:00.000Z" title="发表于 2026-07-26 00:00:00">2026-07-26</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-08-09T15:28:31.831Z" title="更新于 2026-08-09 23:28:31">2026-08-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/">骨干网络</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">4.3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>17分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="ViT-An-Image-is-Worth-16x16-Words"><a href="#ViT-An-Image-is-Worth-16x16-Words" class="headerlink" title="ViT: An Image is Worth 16x16 Words"></a>ViT: An Image is Worth 16x16 Words</h1><blockquote>
+<p><strong>论文</strong>: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2010.11929">An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</a> (ICLR 2021)<br><strong>作者</strong>: Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, Neil Houlsby (Google Research)<br><strong>代码</strong>: <a target="_blank" rel="noopener" href="https://github.com/google-research/vision_transformer">google-research&#x2F;vision_transformer</a></p>
+</blockquote>
+<blockquote>
+<p>一句话总结：<strong>ViT 把一张图切成若干 patch，每个 patch 当成一个”词”，喂给标准 Transformer Encoder，用 CLS token 做分类。</strong> 它证明了 NLP 的 Transformer 直接搬到 CV 也能work，只要数据够大–从此 ViT 成为视觉领域的通用骨干，支撑了 CLIP、LLaVA 等 VLM、VLA 与多模态模型。</p>
+</blockquote>
+<hr>
+<h2 id="一、背景"><a href="#一、背景" class="headerlink" title="一、背景"></a>一、背景</h2><h3 id="1-1-为什么要有-ViT"><a href="#1-1-为什么要有-ViT" class="headerlink" title="1.1 为什么要有 ViT"></a>1.1 为什么要有 ViT</h3><p>Transformer 在 NLP 取得统治地位后，CV 仍以 CNN（ResNet、EfficientNet）为主。把 Transformer 用到图像的难点在于：图像的”序列”是什么？文本天然是 token 序列，图像是 2D 像素网格，直接把每个像素当 token 会让序列长度爆炸（224×224 图 &#x3D; 5 万 token，attention 是 $O(n^2)$，算不动）。</p>
+<p>早期尝试（iGPT、ViT 前的非局部网络等）效果一般。ViT 的解法很直接：<strong>把图切成 16×16 的 patch，每个 patch 经线性投影成一个 token</strong>–这样 224×224 图只有 $14\times14&#x3D;196$ 个 token，和 NLP 句子长度相当，直接复用 Transformer Encoder。</p>
+<h3 id="1-2-关键结论：数据够大时，Transformer-干掉-CNN"><a href="#1-2-关键结论：数据够大时，Transformer-干掉-CNN" class="headerlink" title="1.2 关键结论：数据够大时，Transformer 干掉 CNN"></a>1.2 关键结论：数据够大时，Transformer 干掉 CNN</h3><p>ViT 论文最核心的实验结论是：</p>
+<ul>
+<li>在中等数据量（ImageNet-1k，1.2M 图）上从头训，ViT <strong>弱于</strong> ResNet–因为 CNN 自带”平移等变 + 局部性”两种归纳偏置，小数据上更省；</li>
+<li>但在超大数据集（JFT-300M，3 亿图 &#x2F; ImageNet-21k，1400 万图）上预训练后，ViT <strong>超越</strong> 同等规模的 CNN，且随规模增大优势扩大。</li>
+</ul>
+<blockquote>
+<p>这说明 CNN 的归纳偏置是”小数据的拐杖”，数据够大时反而成了限制。ViT 用更少的先验换取更强的可扩展性，开启了 CV 的 scaling law 时代。</p>
+</blockquote>
+<h3 id="1-3-广泛影响：视觉通用骨干"><a href="#1-3-广泛影响：视觉通用骨干" class="headerlink" title="1.3 广泛影响：视觉通用骨干"></a>1.3 广泛影响：视觉通用骨干</h3><p>ViT 现在是几乎所有视觉&#x2F;多模态模型的视觉编码器：</p>
+<table>
+<thead>
+<tr>
+<th align="left">领域</th>
+<th align="left">代表</th>
+<th align="left">ViT 的角色</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">视觉-语言模型 (VLM)</td>
+<td align="left">CLIP、LLaVA、InternVL</td>
+<td align="left">图像编码器，把图变成 token 喂给 LLM</td>
+</tr>
+<tr>
+<td align="left">多模态大模型</td>
+<td align="left">GPT-4V、Gemini</td>
+<td align="left">视觉前端</td>
+</tr>
+<tr>
+<td align="left">VLA &#x2F; 机器人</td>
+<td align="left">OpenVLA、π0</td>
+<td align="left">视觉编码器，输入相机图像</td>
+</tr>
+<tr>
+<td align="left">自监督预训练</td>
+<td align="left">MAE、BEiT、DINOv2</td>
+<td align="left">ViT 作骨干</td>
+</tr>
+<tr>
+<td align="left">视频理解</td>
+<td align="left">ViViT、TimeSformer</td>
+<td align="left">时序扩展</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>现代 VLM（如 LLaVA）的本质就是”<strong>ViT 提取图像 token + LLM 处理文本 token + 投影层对齐</strong>“。理解 ViT 是理解整个多模态架构的基础。</p>
+</blockquote>
+<hr>
+<h2 id="二、整体架构"><a href="#二、整体架构" class="headerlink" title="二、整体架构"></a>二、整体架构</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">图像 (H×W×C, 如 224×224×3)</span><br><span class="line">   ↓ 切 patch + 线性投影</span><br><span class="line">[patch_1, patch_2, ..., patch_N]        N = (H/P)×(W/P), P=16 -&gt; N=196</span><br><span class="line">   ↓ 每个 patch -&gt; D 维向量 (D=768)</span><br><span class="line">   ↓ 预置 [CLS] token 在最前</span><br><span class="line">[CLS, patch_1, ..., patch_N]            (N+1, D)</span><br><span class="line">   ↓ + 位置编码 (learned)</span><br><span class="line">[CLS, patch_1, ..., patch_N] + PE       (N+1, D)</span><br><span class="line">   ↓</span><br><span class="line">Transformer Encoder × L (L=12)          标准 Transformer Encoder (MHA + MLP + LN + 残差)</span><br><span class="line">   ↓</span><br><span class="line">取 [CLS] 位置的输出</span><br><span class="line">   ↓</span><br><span class="line">MLP Head (Linear)                        分类 logits</span><br><span class="line">   ↓</span><br><span class="line">Softmax -&gt; 类别概率</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>ViT 本质就是**”标准 Transformer Encoder + 一个 Patch Embedding 前端 + 一个 CLS 分类头”**。Encoder 部分与 NLP 的 Transformer Encoder 完全一致（详见 [[20.notes&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;Transformer 详解|Transformer 详解]] 第四章），创新在于”图像如何变成 token 序列”。</p>
+</blockquote>
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_workflow.gif"></p>
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_architecture.jpg"></p>
+<p>骨架四句话：</p>
+<ol>
+<li><strong>Patch Embedding</strong>：图像切 patch，每个 patch 线性投影成 D 维 token；</li>
+<li><strong>CLS token + 位置编码</strong>：prepend 一个可学习的 [CLS] token，加上可学习位置编码；</li>
+<li><strong>Transformer Encoder</strong>：L 层标准 Encoder（无 causal mask，双向）；</li>
+<li><strong>分类头</strong>：取 [CLS] 输出过 MLP 做分类。</li>
+</ol>
+<hr>
+<h2 id="三、输入处理-⭐"><a href="#三、输入处理-⭐" class="headerlink" title="三、输入处理 ⭐"></a>三、输入处理 ⭐</h2><p>这是 ViT 与 NLP Transformer 最大的不同–图像如何变成模型能吃的 token 序列。</p>
+<h3 id="3-1-Patch-Embedding：图像切块-线性投影"><a href="#3-1-Patch-Embedding：图像切块-线性投影" class="headerlink" title="3.1 Patch Embedding：图像切块 + 线性投影"></a>3.1 Patch Embedding：图像切块 + 线性投影</h3><p>把 $H\times W\times C$ 的图像切成 $N&#x3D;(H&#x2F;P)\times(W&#x2F;P)$ 个 $P\times P\times C$ 的 patch（$P&#x3D;16$），每个 patch 拉平成 $P^2\cdot C$ 维向量，再线性投影到 $D$ 维。</p>
+<p><strong>实现上用 Conv2d 一步完成”切块 + 投影”</strong>（kernel&#x3D;stride&#x3D;patch_size 的卷积等价于不重叠切块再投影）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MoonVisionPatchEmbed</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, out_dim, in_dim=<span class="number">3</span>, patch_size=(<span class="params"><span class="number">14</span>,<span class="number">14</span></span>), pos_emb_height=<span class="number">14</span>, pos_emb_width=<span class="number">14</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.patch_size = patch_size</span><br><span class="line">        <span class="variable language_">self</span>.proj = nn.Conv2d(in_dim, out_dim, kernel_size=patch_size, stride=patch_size)  <span class="comment"># ★ 切块+投影</span></span><br><span class="line">        <span class="variable language_">self</span>.pos_emb = Learnable2DInterpPosEmb(height=pos_emb_height, width=pos_emb_width, dim=out_dim)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, grid_hws</span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.proj(x).view(x.size(<span class="number">0</span>), -<span class="number">1</span>)   <span class="comment"># [N_patches, D]</span></span><br><span class="line">        x = <span class="variable language_">self</span>.pos_emb(x, grid_hws)          <span class="comment"># + 位置编码</span></span><br><span class="line">        <span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>原版 ViT 也可写成 <code>nn.Linear(P*P*C, D)</code> 作用于每个展平的 patch，数学上与 Conv2d 等价，但 Conv2d 更高效。MoonViT（NVIDIA&#x2F;LocateAnything-3B 用的视觉编码器）即采用 Conv2d 写法，patch_size&#x3D;14。</p>
+</blockquote>
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_patch_embed.png"></p>
+<p>以 224×224 图、P&#x3D;16 为例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">224×224×3  --Conv2d(k=16, s=16)--&gt;  14×14×768  --flatten--&gt;  196×768</span><br><span class="line">                                                            (N=196 个 token, D=768)</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-CLS-Token：分类的”汇聚位”"><a href="#3-2-CLS-Token：分类的”汇聚位”" class="headerlink" title="3.2 CLS Token：分类的”汇聚位”"></a>3.2 CLS Token：分类的”汇聚位”</h3><p>prepend 一个<strong>可学习的 [CLS] token</strong>到序列最前面：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[CLS, patch_1, patch_2, ..., patch_196]   (197, 768)</span><br></pre></td></tr></table></figure>
+
+<p>CLS token 本身不对应任何 patch，它的作用是”全局信息的汇聚位”–经过 L 层 self-attention 后，CLS 通过与所有 patch 交互累积整图信息，最后用它做分类。</p>
+<blockquote>
+<p>这继承自 BERT 的 [CLS] 设计。也可不用 CLS，改用对全部 patch 输出做 mean pooling 做分类（GAP），效果相近。</p>
+</blockquote>
+<h3 id="3-3-位置编码：给-patch-注入-2D-顺序"><a href="#3-3-位置编码：给-patch-注入-2D-顺序" class="headerlink" title="3.3 位置编码：给 patch 注入 2D 顺序"></a>3.3 位置编码：给 patch 注入 2D 顺序</h3><p>Patch Embedding 后的 token 序列<strong>本身无顺序感</strong>（打乱 patch 顺序结果不变，同 Transformer 的排列等变性），必须加位置编码。</p>
+<table>
+<thead>
+<tr>
+<th align="left">方式</th>
+<th align="left">说明</th>
+<th align="left">代表</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">可学习 1D PE</td>
+<td align="left">原版 ViT：一张 <code>(N+1, D)</code> 的可学习查表，按 patch 序号取行</td>
+<td align="left">ViT、DeiT</td>
+</tr>
+<tr>
+<td align="left">可学习 2D 插值 PE</td>
+<td align="left">按 (行,列) 2D 网格组织，支持不同分辨率插值</td>
+<td align="left">MoonViT (<code>Learnable2DInterpPosEmb</code>)</td>
+</tr>
+<tr>
+<td align="left">2D RoPE</td>
+<td align="left">把旋转位置编码扩展到 2D，注入 Q&#x2F;K</td>
+<td align="left">MoonViT (<code>Rope2DPosEmb</code>)、NaViT</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>原版 ViT 用<strong>可学习 1D PE</strong>（按 patch 拉平后的序号 0..196 编码）。它虽然不显式利用 2D 网格结构，但实验发现模型自己能学到 2D 邻近性（相邻 patch 的 PE 接近）。</p>
+<p>现代变体多改用 2D 位置编码（2D 插值 PE 或 2D RoPE），更自然地表达图像的 2D 结构，且支持任意分辨率。MoonViT 同时提供了 <code>Learnable2DInterpPosEmb</code> 和 <code>Rope2DPosEmb</code> 两种。</p>
+</blockquote>
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_pos_encoding.png"><br><em>可学习位置编码可视化：位置越接近编码越相似，且呈现行列结构</em></p>
+<p>最终输入 &#x3D; <strong>Patch Embedding + CLS token（prepend）+ 位置编码（相加）</strong>：</p>
+<p>$$<br>\mathbf{z}<em>0 &#x3D; [,\mathbf{x}</em>{cls},;, \mathbf{x}_p^1 \mathbf{E},;, \cdots,;, \mathbf{x}<em>p^N \mathbf{E},] + \mathbf{E}</em>{pos}<br>$$</p>
+<p>其中 $\mathbf{x}<em>p^i$ 是第 $i$ 个展平 patch，$\mathbf{E}$ 是投影矩阵，$\mathbf{x}</em>{cls}$ 是 CLS token，$\mathbf{E}_{pos}$ 是位置编码。</p>
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_cls_pos.png"></p>
+<p><strong>timm 中的组装</strong>（<code>forward_features</code>）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward_features</span>(<span class="params">self, x</span>):</span><br><span class="line">    x = <span class="variable language_">self</span>.patch_embed(x)                          <span class="comment"># (B,C,H,W) -&gt; (B,N,E)</span></span><br><span class="line">    cls_token = <span class="variable language_">self</span>.cls_token.expand(x.shape[<span class="number">0</span>], -<span class="number">1</span>, -<span class="number">1</span>)</span><br><span class="line">    x = torch.cat((cls_token, x), dim=<span class="number">1</span>)             <span class="comment"># (B,N,E) -&gt; (B,1+N,E)  预置 CLS</span></span><br><span class="line">    x = <span class="variable language_">self</span>.pos_drop(x + <span class="variable language_">self</span>.pos_embed)            <span class="comment"># + 可学习位置编码, 再 dropout</span></span><br><span class="line">    x = <span class="variable language_">self</span>.blocks(x)                               <span class="comment"># L 层 Encoder Block</span></span><br><span class="line">    x = <span class="variable language_">self</span>.norm(x)</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">self</span>.pre_logits(x[:, <span class="number">0</span>])                  <span class="comment"># 取 [CLS] 位置的输出</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="四、Transformer-Encoder"><a href="#四、Transformer-Encoder" class="headerlink" title="四、Transformer Encoder"></a>四、Transformer Encoder</h2><p>Encoder 部分与 NLP Transformer 完全一致，L 层堆叠，每层两个子层 + 残差 + LayerNorm：</p>
+<p>$$<br>\begin{aligned}<br>\mathbf{z}’<em>\ell &amp;&#x3D; \text{MSA}(\text{LN}(\mathbf{z}</em>{\ell-1})) + \mathbf{z}<em>{\ell-1} \<br>\mathbf{z}</em>\ell  &amp;&#x3D; \text{MLP}(\text{LN}(\mathbf{z}’<em>\ell)) + \mathbf{z}’</em>\ell<br>\end{aligned}<br>\quad \ell&#x3D;1\ldots L<br>$$</p>
+<ul>
+<li><strong>MSA</strong>：Multi-Head Self-Attention（双向，无 causal mask）；</li>
+<li><strong>MLP</strong>：两层线性 + GELU，中间升维 4×；</li>
+<li><strong>Pre-LN</strong>：ViT 用 Pre-LN（LN 在子层前），比原 Transformer 的 Post-LN 更稳定；</li>
+<li><strong>无降采样</strong>：ViT 全程保持 patch 数 N 不变（不像 CNN 那样逐层降分辨率），所有 token 在同一分辨率交互。</li>
+</ul>
+<blockquote>
+<p>细节详见 [[20.notes&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;Transformer 详解|Transformer 详解]] 第四章（自注意力、多头、FFN、Add&amp;Norm）。MoonViT 的 <code>MoonVitEncoderLayer</code> 额外用了 QKV packed + Flash Attention + 2D RoPE，是工程优化版。</p>
+</blockquote>
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_multihead.jpg"><br><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_scaled_dot_product.png"></p>
+<p><strong>timm 标准实现</strong>（<code>Attention</code> + <code>Block</code>，Pre-LN）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Attention</span>(nn.Module):                       <span class="comment"># 多头注意力</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, dim, num_heads=<span class="number">8</span>, qkv_bias=<span class="literal">False</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.num_heads = num_heads</span><br><span class="line">        <span class="variable language_">self</span>.scale = (dim // num_heads) ** -<span class="number">0.5</span></span><br><span class="line">        <span class="variable language_">self</span>.qkv = nn.Linear(dim, dim * <span class="number">3</span>, bias=qkv_bias)   <span class="comment"># QKV packed 一次投影</span></span><br><span class="line">        <span class="variable language_">self</span>.proj = nn.Linear(dim, dim)</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):                         <span class="comment"># x: (B, N, C)</span></span><br><span class="line">        B, N, C = x.shape</span><br><span class="line">        qkv = <span class="variable language_">self</span>.qkv(x).reshape(B, N, <span class="number">3</span>, <span class="variable language_">self</span>.num_heads, C // <span class="variable language_">self</span>.num_heads).permute(<span class="number">2</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">4</span>)</span><br><span class="line">        q, k, v = qkv.unbind(<span class="number">0</span>)                   <span class="comment"># 各 (B, num_heads, N, head_dim)</span></span><br><span class="line">        attn = (q @ k.transpose(-<span class="number">2</span>, -<span class="number">1</span>)) * <span class="variable language_">self</span>.scale</span><br><span class="line">        attn = attn.softmax(dim=-<span class="number">1</span>)</span><br><span class="line">        x = (attn @ v).transpose(<span class="number">1</span>, <span class="number">2</span>).reshape(B, N, C)</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.proj(x)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Block</span>(nn.Module):                           <span class="comment"># Encoder Block (Pre-LN)</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, dim, num_heads, mlp_ratio=<span class="number">4.</span>, drop_path=<span class="number">0.</span>, ...</span>):</span><br><span class="line">        <span class="variable language_">self</span>.norm1 = nn.LayerNorm(dim)</span><br><span class="line">        <span class="variable language_">self</span>.attn = Attention(dim, num_heads, ...)</span><br><span class="line">        <span class="variable language_">self</span>.drop_path = DropPath(drop_path) <span class="keyword">if</span> drop_path &gt; <span class="number">0</span> <span class="keyword">else</span> nn.Identity()</span><br><span class="line">        <span class="variable language_">self</span>.norm2 = nn.LayerNorm(dim)</span><br><span class="line">        <span class="variable language_">self</span>.mlp = Mlp(in_features=dim, hidden_features=<span class="built_in">int</span>(dim * mlp_ratio), act_layer=nn.GELU)</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = x + <span class="variable language_">self</span>.drop_path(<span class="variable language_">self</span>.attn(<span class="variable language_">self</span>.norm1(x)))   <span class="comment"># MHA + 残差</span></span><br><span class="line">        x = x + <span class="variable language_">self</span>.drop_path(<span class="variable language_">self</span>.mlp(<span class="variable language_">self</span>.norm2(x)))    <span class="comment"># MLP + 残差</span></span><br><span class="line">        <span class="keyword">return</span> x</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Mlp</span>(nn.Module):                           <span class="comment"># Position-wise FFN</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, in_features, hidden_features=<span class="literal">None</span>, act_layer=nn.GELU, drop=<span class="number">0.</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.fc1 = nn.Linear(in_features, hidden_features <span class="keyword">or</span> in_features)</span><br><span class="line">        <span class="variable language_">self</span>.act = act_layer()</span><br><span class="line">        <span class="variable language_">self</span>.fc2 = nn.Linear(hidden_features <span class="keyword">or</span> in_features, in_features)</span><br><span class="line">        <span class="variable language_">self</span>.drop = nn.Dropout(drop)</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.drop(<span class="variable language_">self</span>.act(<span class="variable language_">self</span>.fc1(x)))   <span class="comment"># 升维 4× + GELU</span></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.drop(<span class="variable language_">self</span>.fc2(x))          <span class="comment"># 降回原维度</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_encoder_block.png"><br><em>Encoder Block（Pre-LN）：LN-&gt;MHA-&gt;残差-&gt;LN-&gt;MLP-&gt;残差</em></p>
+<blockquote>
+<p><strong>Drop Path（随机深度）</strong>：ViT 用 DropPath 替代部分 Dropout–按概率随机跳过整个 Block（该层输出置零），相当于训练时随机”删掉”一层，起正则与加深鲁棒性作用。<code>drop_path_rate</code> 通常随层线性递增。</p>
+</blockquote>
+<p>ViT-Base 配置：</p>
+<table>
+<thead>
+<tr>
+<th align="left">超参</th>
+<th align="left">值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Layers (L)</td>
+<td align="left">12</td>
+</tr>
+<tr>
+<td align="left">Hidden size (D)</td>
+<td align="left">768</td>
+</tr>
+<tr>
+<td align="left">MLP size</td>
+<td align="left">3072 (4×D)</td>
+</tr>
+<tr>
+<td align="left">Heads (h)</td>
+<td align="left">12</td>
+</tr>
+<tr>
+<td align="left">Patch size (P)</td>
+<td align="left">16</td>
+</tr>
+<tr>
+<td align="left">Params</td>
+<td align="left">~86M</td>
+</tr>
+</tbody></table>
+<p>（另有 ViT-Large: L&#x3D;24&#x2F;D&#x3D;1024&#x2F;<del>307M；ViT-Huge: L&#x3D;32&#x2F;D&#x3D;1280&#x2F;</del>632M）</p>
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_models_table.png"><br><em>论文 Table 1：ViT-Base &#x2F; Large &#x2F; Huge 三档配置（Layers &#x2F; Hidden Size &#x2F; MLP Size &#x2F; Heads）</em></p>
+<hr>
+<h2 id="五、分类头"><a href="#五、分类头" class="headerlink" title="五、分类头"></a>五、分类头</h2><p>取最后一层 <strong>[CLS] 位置的输出</strong> $\mathbf{z}_L^0$，过一层 Linear 投影到类别数：</p>
+<p>$$<br>y &#x3D; \text{LN}(\mathbf{z}<em>L^0), W</em>{\text{head}}<br>$$</p>
+<ul>
+<li>预训练时通常用更复杂的头（MLP），fine-tune 时换成单层 Linear；</li>
+<li>推理时对 $y$ 过 softmax 得类别概率。</li>
+</ul>
+<blockquote>
+<p>不用 CLS 的话，可对全部 patch 输出做 mean pooling 再分类（GAP），效果相近且无需 CLS token。</p>
+</blockquote>
+<hr>
+<h2 id="六、训练"><a href="#六、训练" class="headerlink" title="六、训练"></a>六、训练</h2><h3 id="6-1-数据是关键"><a href="#6-1-数据是关键" class="headerlink" title="6.1 数据是关键"></a>6.1 数据是关键</h3><p>ViT 几乎不带归纳偏置，<strong>严重依赖大数据</strong>：</p>
+<table>
+<thead>
+<tr>
+<th align="left">预训练数据</th>
+<th align="left">规模</th>
+<th align="left">ImageNet fine-tune 后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">ImageNet-1k</td>
+<td align="left">1.2M</td>
+<td align="left">ViT 弱于 ResNet（数据不够）</td>
+</tr>
+<tr>
+<td align="left">ImageNet-21k</td>
+<td align="left">14M</td>
+<td align="left">ViT 持平&#x2F;略超 CNN</td>
+</tr>
+<tr>
+<td align="left">JFT-300M</td>
+<td align="left">300M</td>
+<td align="left">ViT 显著超越 CNN</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>这正是 ViT 论文的核心卖点：<strong>数据够大时，更少先验的 Transformer 反而更强</strong>。小数据从头训 ViT 会过拟合、打不过 CNN。</p>
+</blockquote>
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_results.png"><br><em>ViT vs ResNet vs Hybrid：训练 epoch 少时 Hybrid 占优，epoch 增大后 ViT 反超</em></p>
+<p><img src="/images/ViT%E8%AF%A6%E8%A7%A3/vit_accuracy.png"><br><em>ViT 迁移学习指标：ImageNet 88.55%、ImageNet-ReaL 90.72%、CIFAR-100 94.55% 等</em></p>
+<h3 id="6-2-训练范式"><a href="#6-2-训练范式" class="headerlink" title="6.2 训练范式"></a>6.2 训练范式</h3><ol>
+<li><strong>大数据预训练</strong>（JFT-300M &#x2F; ImageNet-21k）：图像分类任务，学通用视觉表示；</li>
+<li><strong>小数据 fine-tune</strong>（ImageNet-1k 等）：换分类头，用更小学习率精调。</li>
+</ol>
+<h3 id="6-3-优化细节"><a href="#6-3-优化细节" class="headerlink" title="6.3 优化细节"></a>6.3 优化细节</h3><ul>
+<li>Adam (β₁&#x3D;0.9, β₂&#x3D;0.999)；</li>
+<li>大量数据增强（rand augmentment、mixup、cutmix）；</li>
+<li>学习率 warmup + cosine 衰减；</li>
+<li>高分辨率 fine-tune（如 384，比预训练的 224 更高）。</li>
+</ul>
+<hr>
+<h2 id="七、与-CNN-对比-优缺点"><a href="#七、与-CNN-对比-优缺点" class="headerlink" title="七、与 CNN 对比 &#x2F; 优缺点"></a>七、与 CNN 对比 &#x2F; 优缺点</h2><h3 id="7-1-vs-CNN"><a href="#7-1-vs-CNN" class="headerlink" title="7.1 vs CNN"></a>7.1 vs CNN</h3><table>
+<thead>
+<tr>
+<th align="left">维度</th>
+<th align="left">CNN (ResNet)</th>
+<th align="left">ViT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">归纳偏置</td>
+<td align="left">平移等变 + 局部性（强先验）</td>
+<td align="left">几乎无（全局 attention）</td>
+</tr>
+<tr>
+<td align="left">小数据表现</td>
+<td align="left">✅ 好（先验帮忙）</td>
+<td align="left">❌ 差（易过拟合）</td>
+</tr>
+<tr>
+<td align="left">大数据表现</td>
+<td align="left">增长放缓</td>
+<td align="left">✅ 持续受益，反超 CNN</td>
+</tr>
+<tr>
+<td align="left">感受野</td>
+<td align="left">需堆层才扩到全局</td>
+<td align="left">第一层就全局</td>
+</tr>
+<tr>
+<td align="left">可扩展性</td>
+<td align="left">中</td>
+<td align="left">✅ 强（scaling law 友好）</td>
+</tr>
+<tr>
+<td align="left">计算复杂度</td>
+<td align="left">O(n)（局部卷积）</td>
+<td align="left">O(n²)（attention，n&#x3D;patch 数）</td>
+</tr>
+</tbody></table>
+<h3 id="7-2-优点-✅"><a href="#7-2-优点-✅" class="headerlink" title="7.2 优点 ✅"></a>7.2 优点 ✅</h3><ol>
+<li><strong>可扩展性强</strong>：随数据&#x2F;参数&#x2F;算力增大持续受益，scaling law 友好；</li>
+<li><strong>全局建模</strong>：第一层就全局感受野，长程依赖强；</li>
+<li><strong>统一架构</strong>：与 NLP 同一套 Transformer，便于多模态融合（VLM 的基础）；</li>
+<li><strong>少先验</strong>：不依赖手工设计的卷积核，更通用。</li>
+</ol>
+<h3 id="7-3-局限-❌"><a href="#7-3-局限-❌" class="headerlink" title="7.3 局限 ❌"></a>7.3 局限 ❌</h3><ol>
+<li><strong>数据 hungry</strong>：小数据从头训打不过 CNN，需大数据预训练；</li>
+<li><strong>O(n²) 复杂度</strong>：高分辨率图 patch 多，计算&#x2F;显存大（同 Transformer，详见 [[20.notes&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;Transformer 详解|Transformer 详解]] 第八章）；</li>
+<li><strong>缺少 2D 归纳偏置</strong>：平移&#x2F;局部性需从数据学，效率低；</li>
+<li><strong>变长分辨率处理</strong>：原版位置编码固定 N，换分辨率需插值。</li>
+</ol>
+<hr>
+<h2 id="八、变体与影响"><a href="#八、变体与影响" class="headerlink" title="八、变体与影响"></a>八、变体与影响</h2><p>ViT 之后涌现大量改进，主要方向一览：</p>
+<table>
+<thead>
+<tr>
+<th align="left">变体</th>
+<th align="left">改进点</th>
+<th align="left">代表</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>DeiT</strong></td>
+<td align="left">数据高效：强增强 + 蒸馏，ImageNet-1k 从头训也能打</td>
+<td align="left">DeiT</td>
+</tr>
+<tr>
+<td align="left"><strong>Swin Transformer</strong></td>
+<td align="left">层级结构 + 移窗 attention，引入 CNN 式多尺度，降复杂度</td>
+<td align="left">Swin</td>
+</tr>
+<tr>
+<td align="left"><strong>BEiT &#x2F; MAE</strong></td>
+<td align="left">自监督预训练（掩码 patch 重建），摆脱对标注的依赖</td>
+<td align="left">MAE、BEiT、DINOv2</td>
+</tr>
+<tr>
+<td align="left"><strong>NaViT</strong></td>
+<td align="left">原生支持任意分辨率&#x2F;宽高比（patch packing）</td>
+<td align="left">NaViT</td>
+</tr>
+<tr>
+<td align="left"><strong>SigLIP</strong></td>
+<td align="left">sigmoid 损失替代 softmax 的对比学习视觉编码器</td>
+<td align="left">SigLIP</td>
+</tr>
+<tr>
+<td align="left"><strong>MoonViT</strong></td>
+<td align="left">2D RoPE + Flash Attention + Patch Merger，现代 VLM 视觉编码器</td>
+<td align="left">LocateAnything-3B</td>
+</tr>
+</tbody></table>
+<h3 id="8-1-DeiT：让-ViT-摆脱大数据依赖"><a href="#8-1-DeiT：让-ViT-摆脱大数据依赖" class="headerlink" title="8.1 DeiT：让 ViT 摆脱大数据依赖"></a>8.1 DeiT：让 ViT 摆脱大数据依赖</h3><p>原版 ViT 需 JFT-300M 级数据才能打过 CNN，普通实验室玩不转。DeiT 的贡献是<strong>在 ImageNet-1k（1.2M）上从头训 ViT 也能达到 SOTA</strong>，靠三件事：</p>
+<ul>
+<li><strong>强数据增强</strong>：RandAugment + Mixup + CutMix + Random Erasing，弥补小数据；</li>
+<li><strong>知识蒸馏</strong>：以 CNN teacher（RegNet）作监督，额外引入一个 <strong>distillation token</strong>（与 CLS token 并列），向 teacher 学 CNN 的归纳偏置；</li>
+<li><strong>推理融合</strong>：CLS 头与 distill 头的预测取平均。</li>
+</ul>
+<blockquote>
+<p>timm 代码里的 <code>dist_token</code> 即 DeiT 的蒸馏 token（<code>forward_features</code> 中 <code>dist_token is None</code> 分支对应原版 ViT，非 None 对应 DeiT）。效果：ImageNet-1k 从头训达 80%+ top-1。</p>
+</blockquote>
+<h3 id="8-2-Swin-Transformer：层级-移窗，支持密集预测"><a href="#8-2-Swin-Transformer：层级-移窗，支持密集预测" class="headerlink" title="8.2 Swin Transformer：层级 + 移窗，支持密集预测"></a>8.2 Swin Transformer：层级 + 移窗，支持密集预测</h3><p>ViT 全局 attention 是 $O(n^2)$，高分辨率算不动；且无多尺度结构（CNN 的特征金字塔对检测&#x2F;分割很重要）。Swin 的两个关键设计：</p>
+<ul>
+<li><strong>层级结构（Hierarchical）</strong>：通过 Patch Merging 逐层 2× 降采样（类似 CNN 的 stride-2 下采样），形成多尺度特征金字塔，适合检测&#x2F;分割等密集预测任务；</li>
+<li><strong>移窗注意力（Shifted Window MSA）</strong>：attention 只在局部窗口（如 7×7 patch）内计算，复杂度从 $O(n^2)$ 降到 $O(n)$；相邻层窗口错位（shifted），让信息跨窗口流通。</li>
+</ul>
+<blockquote>
+<p>效果：线性复杂度 + 多尺度，成为 Swin-Object 等检测&#x2F;分割模型的骨干。ViT 是”单尺度全局 attention”，Swin 是”多尺度局部+移窗”。</p>
+</blockquote>
+<h3 id="8-3-MAE：自监督预训练，摆脱标注依赖"><a href="#8-3-MAE：自监督预训练，摆脱标注依赖" class="headerlink" title="8.3 MAE：自监督预训练，摆脱标注依赖"></a>8.3 MAE：自监督预训练，摆脱标注依赖</h3><p>ViT 依赖大量标注数据。MAE（Masked Autoencoders）用<strong>自监督</strong>方式预训练：</p>
+<ul>
+<li><strong>随机 mask 掉 75% 的 patch</strong>，只编码可见的 25%；</li>
+<li>用轻量 decoder 重建被 mask patch 的<strong>像素值</strong>；</li>
+<li><strong>高 mask 比例是关键</strong>：75% 才能去掉图像冗余、让任务有意义（mask 太少任务太简单）；</li>
+<li>encoder 只处理可见 patch（省算力），decoder 处理全量。</li>
+</ul>
+<blockquote>
+<p>效果：自监督预训练的 ViT 在 ImageNet fine-tune 后超越有监督 ViT，且 linear probing 与下游检测&#x2F;分割大幅提升。意义：让 ViT 摆脱对标注的依赖，成为自监督视觉表示主力（同期 BEiT 用预测 token、DINOv2 用自监督+蒸馏，思路相近）。</p>
+</blockquote>
+<h3 id="8-4-其他现代变体"><a href="#8-4-其他现代变体" class="headerlink" title="8.4 其他现代变体"></a>8.4 其他现代变体</h3><ul>
+<li><strong>NaViT</strong>：原生支持任意分辨率&#x2F;宽高比（patch packing，把不同尺寸图的 patch 打包进一个 batch），打破 ViT 固定 224 的限制；</li>
+<li><strong>SigLIP</strong>：对比学习视觉编码器，用 sigmoid 损失（独立二分类）替代 InfoNCE 的 softmax，更易扩展 batch；</li>
+<li><strong>DINOv2</strong>：自监督 + 自蒸馏，产出强通用视觉特征，无需 fine-tune 即可用于检索&#x2F;分类&#x2F;分割；</li>
+<li><strong>MoonViT</strong>（你的代码）：2D RoPE + Flash Attention + Patch Merger，面向现代 VLM 的视觉编码器。</li>
+</ul>
+<blockquote>
+<p><strong>趋势</strong>：从”固定分辨率分类骨干”走向”任意分辨率 + 自监督 + 高效 attention”的通用视觉前端，服务于 VLM&#x2F;VLA。</p>
+</blockquote>
+<hr>
+<h2 id="九、总结"><a href="#九、总结" class="headerlink" title="九、总结"></a>九、总结</h2><p>ViT 的精髓是<strong>把图像当成一句话</strong>：切 patch 当词、加位置编码、喂 Transformer Encoder、用 CLS 分类。它牺牲了 CNN 的归纳偏置，换来了更强的可扩展性与跨模态统一性–在大数据预训练下超越 CNN，并成为 CLIP、LLaVA 等 VLM&#x2F;VLA 的视觉骨干。</p>
+<p>理解 ViT 的关键三件事：① <strong>Patch Embedding</strong>（Conv2d 切块+投影，把图变 token 序列）；② <strong>CLS token + 位置编码</strong>（汇聚全局 + 注入顺序）；③ <strong>标准 Transformer Encoder</strong>（与 NLP 一致，靠大数据撑起无先验架构）。</p>
+<hr>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><ul>
+<li>📝 [[20.notes&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;Transformer 详解|Transformer 详解]] - ViT 的 Encoder 部分即标准 Transformer Encoder</li>
+<li>📋 论文原文: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2010.11929">arxiv.org&#x2F;abs&#x2F;2010.11929</a></li>
+<li>📋 官方代码: <a target="_blank" rel="noopener" href="https://github.com/google-research/vision_transformer">google-research&#x2F;vision_transformer</a></li>
+<li>📋 Jay Alammar 图解 ViT: <a target="_blank" rel="noopener" href="https://jalammar.github.io/illustrated-vit/">jalammar.github.io&#x2F;illustrated-vit</a></li>
+<li>📦 实现参考: <code>deeplearning/annotations/LocateAnything-3B/modeling_vit.py</code> (MoonViT，含 Patch Embedding &#x2F; 2D RoPE &#x2F; Patch Merger)</li>
+</ul>
+<p><strong>剪藏来源（10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;ViT&#x2F;）：</strong></p>
+<ul>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;ViT&#x2F;Transformer_CV Vision Transformer(ViT)重點筆記]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;ViT&#x2F;ViT( Vision Transformer)]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;ViT&#x2F;ViT解读 — 深入浅出PyTorch]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;ViT&#x2F;ViT（Vision Transformer）解析]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;ViT&#x2F;Visual Transformer (ViT)模型详解-CSDN博客]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;ViT&#x2F;全网最强ViT (Vision Transformer)原理及代码解析]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;ViT&#x2F;神经网络算法 - 一文搞懂ViT（Vision Transformer）]]</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;ViT&#x2F;神经网络算法 – 一文搞懂ViT（Vision Transformer） – 人工智能 – 白盒子]]</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/07/26/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/ViT%20%E8%AF%A6%E8%A7%A3/">https://www.loveww.top/2026/07/26/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/ViT%20%E8%AF%A6%E8%A7%A3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89/">计算机视觉</a><a class="post-meta__tags" href="/tags/ViT/">ViT</a><a class="post-meta__tags" href="/tags/%E5%88%86%E7%B1%BB%E6%A8%A1%E5%9E%8B/">分类模型</a><a class="post-meta__tags" href="/tags/%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/">骨干网络</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/08/01/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/SORT%20%E8%AF%A6%E8%A7%A3/" title="SORT 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">SORT 详解</div></div><div class="info-2"><div class="info-item-1">SORT: Simple Online and Realtime Tracking 论文: Simple Online and Realtime Tracking (ICIP 2016)作者: Alex Bewley, Zongyuan Ge, Lionel Ott, Fabio Ramos, Ben Upcroft代码: abewley&#x2F;sort（~200 行 Python）   一句话总结：SORT 用”卡尔曼滤波预测 + IoU 匈牙利匹配”三步循环实现多目标跟踪，极简但奠基–后续 DeepSORT、ByteTrack、OC-SORT 全部基于此框架。   一、背景：多目标跟踪（MOT）1.1 什么是 MOT多目标跟踪（MOT）：在视频每一帧检测出所有物体后，还要保持每个物体跨帧的身份（ID）–”第 1 帧的人 A，在第 2 帧还是 A，不是 B”。 1.2 Tracking-by-Detection 范式SORT 采用 tracking-by-detection：先用检测器（YOLO&#x2F;Faster R-CNN）逐帧出框，再用跟踪算法把相邻帧的框关联起来...</div></div></div></a><a class="pagination-related" href="/2026/07/25/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/Transformer%20%E8%AF%A6%E8%A7%A3/" title="Transformer： 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">Transformer： 详解</div></div><div class="info-2"><div class="info-item-1">Transformer: Attention Is All You Need 论文: Attention Is All You Need (NeurIPS 2017)作者: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, Illia Polosukhin (Google Brain)代码: tensor2tensor 官方实现   一、背景 把《Attention Is All You Need》放回 2017 年的语境，理解它当时要解决什么问题、采用了哪些关键设计，有助于更准确地把握后续架构细节。  1.1 2017 年的世界：Transformer 诞生时的 NLP 图景2017 年 6 月这篇论文出现时，NLP 学术圈与工业界的图景是这样的：  机器翻译是 NLP 的旗舰任务。Google Translate 在 2016 年 9 月把生产环境从短语统计 MT（PBMT）切到神经 MT（GNMT），翻译质量显著提升，...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/FCOS%20%E8%AF%A6%E8%A7%A3/" title="FCOS 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-19</div><div class="info-item-2">FCOS 详解</div></div><div class="info-2"><div class="info-item-1">FCOS: Fully Convolutional One-Stage Object Detection 论文: FCOS: Fully Convolutional One-Stage Object Detection (ICCV 2019)作者: Zhi Tian, Chunhua Shen, Hao Chen, Tong He ( Adelaide &#x2F; 商汤 )代码: tianzhi0549&#x2F;FCOS &#x2F; AdelaiDet   一句话总结：FCOS 抛弃 anchor，把目标检测变成”逐像素预测”–特征图上每个位置直接回归到所在 GT 框四条边的距离 (l, t, r, b)。 它证明了只要配合 FPN 多级预测 + center-ness，anchor-free 检测器就能追平甚至超过 anchor-based。   一、概述：为什么要有 anchor-free主流检测器（RetinaNet &#x2F; SSD &#x2F; YOLOv2+ &#x2F; Faster R-CNN）都依赖预设 anchor。anchor 的问题：  超参敏感...</div></div></div></a><a class="pagination-related" href="/2026/08/01/08-2D%E6%A3%80%E6%B5%8B/RT-DETR%20%E8%AF%A6%E8%A7%A3/" title="RT-DETR 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-01</div><div class="info-item-2">RT-DETR 详解</div></div><div class="info-2"><div class="info-item-1">RT-DETR: Real-Time Detection Transformer 论文: DETRs Beat YOLOs on Real-time Object Detection (CVPR 2024)作者: Yian Zhao, Wenyu Lv, Shangliang Xu, et al. (Baidu &#x2F; 百度)代码: PaddlePaddle&#x2F;PP-DETR &#x2F; lyuwenyu&#x2F;RT-DETR   一句话总结：RT-DETR 是第一个实时端到端目标检测器–它用混合编码器（CNN + 稀疏 Transformer）解决 DETR 太慢的问题，用 IoU-aware 查询初始化 + CDN 训练加速收敛，全程无 NMS，在同等速度下超越 YOLOv8。   一、概述1.1 为什么要有 RT-DETRDETR（2020）开创了端到端检测（无 NMS、无 anchor、匈牙利匹配），但有两个致命问题：  太慢：Transformer 编码器处理所有特征图的所有位置，计算量巨大； 收敛慢：从头训需要 500 epoch，远多于 YOLO...</div></div></div></a><a class="pagination-related" href="/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/RetinaNet%20%E8%AF%A6%E8%A7%A3/" title="RetinaNet 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-19</div><div class="info-item-2">RetinaNet 详解</div></div><div class="info-2"><div class="info-item-1">RetinaNet: Focal Loss for Dense Object Detection 论文: Focal Loss for Dense Object Detection (ICCV 2017, best paper)作者: Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, Piotr Dollár (FAIR)代码: facebookresearch&#x2F;Detectron   一句话总结：这篇论文找到了”一阶段检测器精度不如两阶段”的根因–类别极度不平衡导致训练被大量易分负样本主导–并用 Focal Loss 一举解决，使 RetinaNet 成为第一个精度超越两阶段的一阶段检测器。 ⚠️ 论文的主角其实是 Focal Loss，RetinaNet 网络本身只是”顺便”提出、用来验证损失函数有效性的载体–结构上并无颠覆性创新（ResNet + FPN + anchor 双头都是已有组件）。   一、背景与动机：一阶段为什么打不过两阶段？12345两阶段 (Faster R-CNN 等):  RPN 筛选...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/" title="YOLO 核心概念"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 核心概念</div></div><div class="info-2"><div class="info-item-1">🧠 YOLO 核心概念详解1. 目标检测基础什么是目标检测 同时解决两个问题：物体在哪里（定位）+ 物体是什么（分类）  输出形式： 1(x, y, w, h, confidence, class_probs...)  Two-Stage vs One-Stage   方法 流程 代表 特点    Two-Stage 提取候选区 → 分类回归 R-CNN, Faster R-CNN 精度高，速度慢   One-Stage 一步到位直接预测 YOLO, SSD 速度快，端到端    YOLO 的本质：把检测变成回归问题，整张图输入，一次性输出所有预测。   2. 核心机制2.1 Grid Cell（网格划分）12输入图像 448×448 → 划分为 S×S 网格 (v1: S=7)每个网格负责预测中心点落在该网格内的目标  v1 例子：  7×7 &#x3D; 49 个网格 每个网格预测 2 个 bounding box 每个 box: (x, y, w, h, confidence) &#x3D; 5 个值 每个网格预测 C 个类别 (VOC: 20) 输出张量: 7×7×(5...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E7%B3%BB%E5%88%97%E6%80%BB%E8%A7%88/" title="YOLO 系列总览"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 系列总览</div></div><div class="info-2"><div class="info-item-1">🎯 YOLO 系列目标检测算法总览一句话理解 YOLO You Only Look Once —— 只需看一次，就能完成目标检测。 把目标检测从”先找候选区再分类”的两阶段，变成了”一步到位”的回归问题。   版本演进时间线   版本 年份 作者&#x2F;机构 核心创新 论文&#x2F;状态    v1 2016 Joseph Redmon 单阶段检测、Grid Cell 划分 1506.02640   v2 2017 Redmon &amp; Farhadi Anchor Box、BN、Darknet-19、细粒度特征 1612.08242   v3 2018 Redmon &amp; Farhadi Darknet-53、多尺度预测(FPN)、逻辑分类器 1804.02767   v4 2020 Alexey Bochkovskiy CSPDarknet53、PAN、Mosaic增强、BoF&#x2F;BoS 2004.10934   v5 2020 Ultralytics PyTorch实现、工程化、CSPNet+PAN ❌ 无论文   v6 2022 美团 工业级部署...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO26%20%E8%AF%A6%E8%A7%A3/" title="YOLO26 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO26 详解</div></div><div class="info-2"><div class="info-item-1">YOLO26: 魔改终结者, 边缘端到端 状态: 🚧 开发中 (Ultralytics YOLO Vision 2025 预览)作者: Ultralytics定位: 专为边缘和低功耗设备设计   设计哲学 不是堆砌模块，而是精简 + 针对性创新：  Simple: 原生端到端，无需 NMS Efficient: CPU 推理提速 43% Innovative: LLM 训练技术跨界引入 CV    三大设计原则1. 简单 (Simple): 原生端到端12345678传统 YOLO:  模型 → NMS 后处理 → 最终输出              ↑        必须的额外步骤YOLO26:  模型 → 直接输出!         (无 DFL, 无 NMS)   继承 v10 的 NMS-Free 理念，进一步简化 移除 DFL (Distribution Focal Loss) 模块：虽然有效，但使导出和硬件兼容复杂化  2. 部署效率 (Deployment Efficiency)1234567传统流程:  预处理 → Backbone → Neck → Head ...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#ViT-An-Image-is-Worth-16x16-Words"><span class="toc-number">1.</span> <span class="toc-text">ViT: An Image is Worth 16x16 Words</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%83%8C%E6%99%AF"><span class="toc-number">1.1.</span> <span class="toc-text">一、背景</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%9C%89-ViT"><span class="toc-number">1.1.1.</span> <span class="toc-text">1.1 为什么要有 ViT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E5%85%B3%E9%94%AE%E7%BB%93%E8%AE%BA%EF%BC%9A%E6%95%B0%E6%8D%AE%E5%A4%9F%E5%A4%A7%E6%97%B6%EF%BC%8CTransformer-%E5%B9%B2%E6%8E%89-CNN"><span class="toc-number">1.1.2.</span> <span class="toc-text">1.2 关键结论：数据够大时，Transformer 干掉 CNN</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-%E5%B9%BF%E6%B3%9B%E5%BD%B1%E5%93%8D%EF%BC%9A%E8%A7%86%E8%A7%89%E9%80%9A%E7%94%A8%E9%AA%A8%E5%B9%B2"><span class="toc-number">1.1.3.</span> <span class="toc-text">1.3 广泛影响：视觉通用骨干</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84"><span class="toc-number">1.2.</span> <span class="toc-text">二、整体架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E8%BE%93%E5%85%A5%E5%A4%84%E7%90%86-%E2%AD%90"><span class="toc-number">1.3.</span> <span class="toc-text">三、输入处理 ⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-Patch-Embedding%EF%BC%9A%E5%9B%BE%E5%83%8F%E5%88%87%E5%9D%97-%E7%BA%BF%E6%80%A7%E6%8A%95%E5%BD%B1"><span class="toc-number">1.3.1.</span> <span class="toc-text">3.1 Patch Embedding：图像切块 + 线性投影</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-CLS-Token%EF%BC%9A%E5%88%86%E7%B1%BB%E7%9A%84%E2%80%9D%E6%B1%87%E8%81%9A%E4%BD%8D%E2%80%9D"><span class="toc-number">1.3.2.</span> <span class="toc-text">3.2 CLS Token：分类的”汇聚位”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81%EF%BC%9A%E7%BB%99-patch-%E6%B3%A8%E5%85%A5-2D-%E9%A1%BA%E5%BA%8F"><span class="toc-number">1.3.3.</span> <span class="toc-text">3.3 位置编码：给 patch 注入 2D 顺序</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81Transformer-Encoder"><span class="toc-number">1.4.</span> <span class="toc-text">四、Transformer Encoder</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%88%86%E7%B1%BB%E5%A4%B4"><span class="toc-number">1.5.</span> <span class="toc-text">五、分类头</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E8%AE%AD%E7%BB%83"><span class="toc-number">1.6.</span> <span class="toc-text">六、训练</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E6%95%B0%E6%8D%AE%E6%98%AF%E5%85%B3%E9%94%AE"><span class="toc-number">1.6.1.</span> <span class="toc-text">6.1 数据是关键</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E8%AE%AD%E7%BB%83%E8%8C%83%E5%BC%8F"><span class="toc-number">1.6.2.</span> <span class="toc-text">6.2 训练范式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E4%BC%98%E5%8C%96%E7%BB%86%E8%8A%82"><span class="toc-number">1.6.3.</span> <span class="toc-text">6.3 优化细节</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E4%B8%8E-CNN-%E5%AF%B9%E6%AF%94-%E4%BC%98%E7%BC%BA%E7%82%B9"><span class="toc-number">1.7.</span> <span class="toc-text">七、与 CNN 对比 &#x2F; 优缺点</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-vs-CNN"><span class="toc-number">1.7.1.</span> <span class="toc-text">7.1 vs CNN</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E4%BC%98%E7%82%B9-%E2%9C%85"><span class="toc-number">1.7.2.</span> <span class="toc-text">7.2 优点 ✅</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-3-%E5%B1%80%E9%99%90-%E2%9D%8C"><span class="toc-number">1.7.3.</span> <span class="toc-text">7.3 局限 ❌</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%8F%98%E4%BD%93%E4%B8%8E%E5%BD%B1%E5%93%8D"><span class="toc-number">1.8.</span> <span class="toc-text">八、变体与影响</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-DeiT%EF%BC%9A%E8%AE%A9-ViT-%E6%91%86%E8%84%B1%E5%A4%A7%E6%95%B0%E6%8D%AE%E4%BE%9D%E8%B5%96"><span class="toc-number">1.8.1.</span> <span class="toc-text">8.1 DeiT：让 ViT 摆脱大数据依赖</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-Swin-Transformer%EF%BC%9A%E5%B1%82%E7%BA%A7-%E7%A7%BB%E7%AA%97%EF%BC%8C%E6%94%AF%E6%8C%81%E5%AF%86%E9%9B%86%E9%A2%84%E6%B5%8B"><span class="toc-number">1.8.2.</span> <span class="toc-text">8.2 Swin Transformer：层级 + 移窗，支持密集预测</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-3-MAE%EF%BC%9A%E8%87%AA%E7%9B%91%E7%9D%A3%E9%A2%84%E8%AE%AD%E7%BB%83%EF%BC%8C%E6%91%86%E8%84%B1%E6%A0%87%E6%B3%A8%E4%BE%9D%E8%B5%96"><span class="toc-number">1.8.3.</span> <span class="toc-text">8.3 MAE：自监督预训练，摆脱标注依赖</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-4-%E5%85%B6%E4%BB%96%E7%8E%B0%E4%BB%A3%E5%8F%98%E4%BD%93"><span class="toc-number">1.8.4.</span> <span class="toc-text">8.4 其他现代变体</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E6%80%BB%E7%BB%93"><span class="toc-number">1.9.</span> <span class="toc-text">九、总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5"><span class="toc-number">1.10.</span> <span class="toc-text">相关链接</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/01-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87/" title="CARLA教程-01-环境准备">CARLA教程-01-环境准备</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/02-%E6%9E%84%E5%BB%BAUE4%E4%B8%8ECARLA/" title="CARLA教程-02-构建UE4与CARLA">CARLA教程-02-构建UE4与CARLA</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/03-%E8%BF%90%E8%A1%8C%E4%BB%BF%E7%9C%9F/" title="CARLA教程-03-运行仿真">CARLA教程-03-运行仿真</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/04-ROS2%E6%8E%A5%E5%8F%A3%E4%B8%8E%E8%AF%9D%E9%A2%98/" title="CARLA教程-04-ROS2接口与话题">CARLA教程-04-ROS2接口与话题</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>

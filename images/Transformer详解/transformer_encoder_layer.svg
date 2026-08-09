@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 480" font-family="ui-monospace,monospace" font-size="12">
+  <rect width="700" height="480" fill="#2d333b"/>
+  <text x="350" y="28" text-anchor="middle" fill="#adbac7" font-size="16">Encoder Layer 内部（单层放大）</text>
+  <rect x="100" y="60" width="500" height="380" fill="none" stroke="#3fb950" stroke-dasharray="6 4" rx="6"/>
+  <g>
+    <rect x="200" y="380" width="300" height="30" fill="none" stroke="#adbac7" rx="4"/>
+    <text x="350" y="400" text-anchor="middle" fill="#adbac7">x ∈ ℝ^(n×d)  (输入)</text>
+
+    <rect x="200" y="320" width="300" height="36" fill="none" stroke="#388bfd" rx="4"/>
+    <text x="350" y="343" text-anchor="middle" fill="#388bfd">Multi-Head Self-Attention</text>
+    <text x="510" y="343" fill="#768390" font-size="10">QKV 来自同一 x</text>
+
+    <rect x="200" y="270" width="300" height="32" fill="none" stroke="#a371f7" rx="4"/>
+    <text x="350" y="291" text-anchor="middle" fill="#a371f7">+ Residual, then LayerNorm</text>
+
+    <rect x="200" y="210" width="300" height="36" fill="none" stroke="#f0883e" rx="4"/>
+    <text x="350" y="233" text-anchor="middle" fill="#f0883e">Feed Forward: Linear→ReLU→Linear</text>
+    <text x="510" y="233" fill="#768390" font-size="10">d → 4d → d</text>
+
+    <rect x="200" y="160" width="300" height="32" fill="none" stroke="#a371f7" rx="4"/>
+    <text x="350" y="181" text-anchor="middle" fill="#a371f7">+ Residual, then LayerNorm</text>
+
+    <rect x="200" y="100" width="300" height="30" fill="none" stroke="#adbac7" rx="4"/>
+    <text x="350" y="120" text-anchor="middle" fill="#adbac7">x' ∈ ℝ^(n×d)  (输出，传给下一层)</text>
+  </g>
+  <g stroke="#adbac7">
+    <line x1="350" y1="380" x2="350" y2="356" marker-end="url(#a2)"/>
+    <line x1="350" y1="320" x2="350" y2="302" marker-end="url(#a2)"/>
+    <line x1="350" y1="270" x2="350" y2="246" marker-end="url(#a2)"/>
+    <line x1="350" y1="210" x2="350" y2="192" marker-end="url(#a2)"/>
+    <line x1="350" y1="160" x2="350" y2="130" marker-end="url(#a2)"/>
+  </g>
+  <path d="M 180 395 L 160 395 L 160 286 L 180 286" stroke="#a371f7" fill="none" stroke-dasharray="3 2"/>
+  <path d="M 180 225 L 160 225 L 160 176 L 180 176" stroke="#a371f7" fill="none" stroke-dasharray="3 2"/>
+  <text x="125" y="335" fill="#a371f7" font-size="10" transform="rotate(-90 125 335)">residual #1</text>
+  <text x="125" y="205" fill="#a371f7" font-size="10" transform="rotate(-90 125 205)">residual #2</text>
+  <defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#adbac7"/></marker></defs>
+  <text x="350" y="455" text-anchor="middle" fill="#768390" font-size="11">关键：注意是 Post-LN（论文版本）；今天大模型多用 Pre-LN</text>
+</svg>

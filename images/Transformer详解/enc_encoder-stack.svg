@@ -1,0 +1,88 @@
+<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" fill="#2d333b"/>
+  
+  <!-- Title -->
+  <text x="400" y="30" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="18" fill="#cdd9e5" text-anchor="middle" font-weight="bold">Encoder 6 层堆叠与数据流</text>
+  
+  <!-- Input Embedding + PE -->
+  <rect x="330" y="520" width="140" height="35" fill="#388bfd" stroke="#cdd9e5" stroke-width="1.5" rx="3"/>
+  <text x="400" y="542" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#2d333b" text-anchor="middle" font-weight="bold">Input Embed + PE</text>
+  
+  <!-- Arrow up -->
+  <path d="M 400 520 L 400 490" stroke="#adbac7" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+  <!-- Layer 1 -->
+  <g transform="translate(0, 0)">
+    <rect x="250" y="410" width="300" height="70" fill="none" stroke="#768390" stroke-width="1" stroke-dasharray="5,5" rx="5"/>
+    <text x="255" y="425" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#768390">Layer 1</text>
+    
+    <rect x="270" y="435" width="120" height="30" fill="#3fb950" stroke="#cdd9e5" stroke-width="1" rx="2"/>
+    <text x="330" y="455" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#2d333b" text-anchor="middle">Multi-Head Attn</text>
+    
+    <path d="M 390 450 L 410 450" stroke="#adbac7" stroke-width="1.5" fill="none"/>
+    
+    <rect x="410" y="435" width="120" height="30" fill="#f0883e" stroke="#cdd9e5" stroke-width="1" rx="2"/>
+    <text x="470" y="455" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#2d333b" text-anchor="middle">FFN</text>
+  </g>
+  
+  <!-- Arrow -->
+  <path d="M 400 410 L 400 390" stroke="#adbac7" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+  <!-- Layer 2 -->
+  <g transform="translate(0, -100)">
+    <rect x="250" y="410" width="300" height="70" fill="none" stroke="#768390" stroke-width="1" stroke-dasharray="5,5" rx="5"/>
+    <text x="255" y="425" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consitas, monospace" font-size="11" fill="#768390">Layer 2</text>
+    
+    <rect x="270" y="435" width="120" height="30" fill="#3fb950" stroke="#cdd9e5" stroke-width="1" rx="2"/>
+    <text x="330" y="455" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#2d333b" text-anchor="middle">Multi-Head Attn</text>
+    
+    <path d="M 390 450 L 410 450" stroke="#adbac7" stroke-width="1.5" fill="none"/>
+    
+    <rect x="410" y="435" width="120" height="30" fill="#f0883e" stroke="#cdd9e5" stroke-width="1" rx="2"/>
+    <text x="470" y="455" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#2d333b" text-anchor="middle">FFN</text>
+  </g>
+  
+  <!-- Dots (Layer 3-5) -->
+  <text x="400" y="255" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24" fill="#768390" text-anchor="middle">⋮</text>
+  
+  <!-- Arrow -->
+  <path d="M 400 230 L 400 210" stroke="#adbac7" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+  <!-- Layer 6 -->
+  <g transform="translate(0, -290)">
+    <rect x="250" y="410" width="300" height="70" fill="none" stroke="#768390" stroke-width="1" stroke-dasharray="5,5" rx="5"/>
+    <text x="255" y="425" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#768390">Layer 6</text>
+    
+    <rect x="270" y="435" width="120" height="30" fill="#3fb950" stroke="#cdd9e5" stroke-width="1" rx="2"/>
+    <text x="330" y="455" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#2d333b" text-anchor="middle">Multi-Head Attn</text>
+    
+    <path d="M 390 450 L 410 450" stroke="#adbac7" stroke-width="1.5" fill="none"/>
+    
+    <rect x="410" y="435" width="120" height="30" fill="#f0883e" stroke="#cdd9e5" stroke-width="1" rx="2"/>
+    <text x="470" y="455" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#2d333b" text-anchor="middle">FFN</text>
+  </g>
+  
+  <!-- Arrow up -->
+  <path d="M 400 120 L 400 85" stroke="#adbac7" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  
+  <!-- Output -->
+  <rect x="330" y="50" width="140" height="35" fill="#a371f7" stroke="#cdd9e5" stroke-width="1.5" rx="3"/>
+  <text x="400" y="72" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" fill="#2d333b" text-anchor="middle" font-weight="bold">Encoder Output</text>
+  
+  <!-- Side annotations -->
+  <text x="600" y="450" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#768390" text-anchor="start">每层：</text>
+  <text x="600" y="470" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#adbac7" text-anchor="start">1. Multi-Head Self-Attn</text>
+  <text x="600" y="485" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#adbac7" text-anchor="start">2. Add &amp; Norm</text>
+  <text x="600" y="500" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#adbac7" text-anchor="start">3. FFN</text>
+  <text x="600" y="515" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#adbac7" text-anchor="start">4. Add &amp; Norm</text>
+  
+  <text x="600" y="540" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="11" fill="#768390" text-anchor="start">特征：</text>
+  <text x="600" y="560" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10" fill="#adbac7" text-anchor="start">双向 attention（无 mask）</text>
+  
+  <!-- Arrowhead marker -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#adbac7"/>
+    </marker>
+  </defs>
+</svg>

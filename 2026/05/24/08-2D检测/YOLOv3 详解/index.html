@@ -1,0 +1,827 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>YOLOv3 详解 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="YOLOv3: An Incremental Improvement 论文: YOLOv3: An Incremental Improvement (2018)作者: Joseph Redmon, Ali Farhadi代码: pjreddie.com&#x2F;darknet&#x2F;yolo   论文标题就叫 “An Incremental Improvement”（一点小改进），作者自嘲”">
+<meta property="og:type" content="article">
+<meta property="og:title" content="YOLOv3 详解">
+<meta property="og:url" content="https://www.loveww.top/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv3%20%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="YOLOv3: An Incremental Improvement 论文: YOLOv3: An Incremental Improvement (2018)作者: Joseph Redmon, Ali Farhadi代码: pjreddie.com&#x2F;darknet&#x2F;yolo   论文标题就叫 “An Incremental Improvement”（一点小改进），作者自嘲”">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-05-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-09T15:28:31.280Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="YOLO">
+<meta property="article:tag" content="目标检测">
+<meta property="article:tag" content="计算机视觉">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "YOLOv3 详解",
+  "url": "https://www.loveww.top/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv3%20%E8%AF%A6%E8%A7%A3/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-05-23T16:00:00.000Z",
+  "dateModified": "2026-08-09T15:28:31.280Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv3%20%E8%AF%A6%E8%A7%A3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'YOLOv3 详解',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">YOLOv3 详解</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">YOLOv3 详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-05-23T16:00:00.000Z" title="发表于 2026-05-24 00:00:00">2026-05-24</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-08-09T15:28:31.280Z" title="更新于 2026-08-09 23:28:31">2026-08-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/2D%E6%A3%80%E6%B5%8B/">2D检测</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">4.9k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>18分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="YOLOv3-An-Incremental-Improvement"><a href="#YOLOv3-An-Incremental-Improvement" class="headerlink" title="YOLOv3: An Incremental Improvement"></a>YOLOv3: An Incremental Improvement</h1><blockquote>
+<p><strong>论文</strong>: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1804.02767">YOLOv3: An Incremental Improvement</a> (2018)<br><strong>作者</strong>: Joseph Redmon, Ali Farhadi<br><strong>代码</strong>: <a target="_blank" rel="noopener" href="https://pjreddie.com/darknet/yolo/">pjreddie.com&#x2F;darknet&#x2F;yolo</a></p>
+</blockquote>
+<blockquote>
+<p>论文标题就叫 “An Incremental Improvement”（一点小改进），作者自嘲”没做啥特别的研究，就是把它做得更好了”。但这篇”技术报告”在工程界大受欢迎，成为后续 v4&#x2F;v5&#x2F;v7 的基础，也是 Redmon 关于 YOLO 的最后一篇（2020 年因反对将 YOLO 用于军事&#x2F;隐私而停止更新）。</p>
+</blockquote>
+<hr>
+<h2 id="一、概述：v3-改了什么"><a href="#一、概述：v3-改了什么" class="headerlink" title="一、概述：v3 改了什么"></a>一、概述：v3 改了什么</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">YOLOv3 = v2 的底座 + 三大新组件:</span><br><span class="line">  ① Darknet-53       ← 残差骨干网，53 层纯卷积，无池化无全连接</span><br><span class="line">  ② FPN 多尺度        ← 3 个尺度同时预测，大幅提升小目标</span><br><span class="line">  ③ Logistic 分类器   ← 多标签，BCE 损失，替代 Softmax</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-1-v1-→-v2-→-v3-演进对比"><a href="#1-1-v1-→-v2-→-v3-演进对比" class="headerlink" title="1.1 v1 → v2 → v3 演进对比"></a>1.1 v1 → v2 → v3 演进对比</h3><table>
+<thead>
+<tr>
+<th align="left">维度</th>
+<th align="left">YOLOv1</th>
+<th align="left">YOLOv2</th>
+<th align="left">YOLOv3</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Backbone</td>
+<td align="left">类 GoogLeNet (24层)</td>
+<td align="left">Darknet-19 (19层)</td>
+<td align="left"><strong>Darknet-53 (53层 + 残差)</strong></td>
+</tr>
+<tr>
+<td align="left">下采样</td>
+<td align="left">Max Pooling</td>
+<td align="left">Max Pooling</td>
+<td align="left"><strong>步长&#x3D;2 卷积 (无池化)</strong></td>
+</tr>
+<tr>
+<td align="left">检测尺度</td>
+<td align="left">1 个 (7×7)</td>
+<td align="left">1 个 (13×13)</td>
+<td align="left"><strong>3 个 (13×13, 26×26, 52×52)</strong></td>
+</tr>
+<tr>
+<td align="left">Anchor 数</td>
+<td align="left">无 (直接回归)</td>
+<td align="left">5 (K-means)</td>
+<td align="left"><strong>9 (3 尺度 × 3 Anchor)</strong></td>
+</tr>
+<tr>
+<td align="left">分类器</td>
+<td align="left">Softmax</td>
+<td align="left">Softmax</td>
+<td align="left"><strong>Sigmoid (多标签, BCE)</strong></td>
+</tr>
+<tr>
+<td align="left">置信度目标</td>
+<td align="left">IoU (动态)</td>
+<td align="left">IoU &#x2F; 1 (rescore)</td>
+<td align="left"><strong>1 (二分类)</strong></td>
+</tr>
+<tr>
+<td align="left">每格预测框</td>
+<td align="left">2</td>
+<td align="left">5</td>
+<td align="left"><strong>3 (每尺度)</strong></td>
+</tr>
+<tr>
+<td align="left">总预测框</td>
+<td align="left">98</td>
+<td align="left">845</td>
+<td align="left"><strong>10647</strong></td>
+</tr>
+<tr>
+<td align="left">mAP (COCO)</td>
+<td align="left">-</td>
+<td align="left">21.6</td>
+<td align="left"><strong>33.0</strong></td>
+</tr>
+</tbody></table>
+<h3 id="1-2-保留自-v2-的特性"><a href="#1-2-保留自-v2-的特性" class="headerlink" title="1.2 保留自 v2 的特性"></a>1.2 保留自 v2 的特性</h3><ul>
+<li><strong>端到端训练</strong>，一个 loss 搞定，统一为回归问题</li>
+<li>每个卷积层后接 <strong>BN + LeakyReLU</strong></li>
+<li><strong>Anchor Box 机制 + 维度聚类</strong> (K-means，距离用 1-IoU)</li>
+<li><strong>边框解码公式</strong>（同 v2，见 [[YOLOv2 详解]]）</li>
+<li><strong>多尺度训练</strong>（每 10 batch 随机换输入尺寸）</li>
+</ul>
+<hr>
+<h2 id="二、网络架构：Darknet-53"><a href="#二、网络架构：Darknet-53" class="headerlink" title="二、网络架构：Darknet-53"></a>二、网络架构：Darknet-53</h2><h3 id="2-1-三个基本单元"><a href="#2-1-三个基本单元" class="headerlink" title="2.1 三个基本单元"></a>2.1 三个基本单元</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">CBL      = Conv2D + BatchNorm + LeakyReLU            ← 最小组件</span><br><span class="line"></span><br><span class="line">Res unit = CBL(1×1) -&gt; CBL(3×3) -&gt; add(输入)          ← 残差单元</span><br><span class="line">           借鉴 ResNet: 输出 = F(x) + x, 解决深层梯度消失</span><br><span class="line"></span><br><span class="line">ResX     = ZeroPad + CBL(3×3, stride=2) + X个Res unit ← 残差块组</span><br><span class="line">           每个 ResX 的第一个 CBL 负责 2× 下采样</span><br><span class="line">           5 个 ResX 实现 32× 总下采样: 416 -&gt; 13</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>基础操作辨析</strong>：<code>Concat</code>（张量拼接，通道叠加，扩充维度，对应 cfg 的 <code>route</code>）vs <code>add</code>（张量相加，维度不变，对应 cfg 的 <code>shortcut</code>，即残差连接）。v3 的 FPN 融合用 <strong>Concat</strong>，残差块内部用 <strong>add</strong>。</p>
+</blockquote>
+<h3 id="2-2-骨干网结构（5-个-ResX）"><a href="#2-2-骨干网结构（5-个-ResX）" class="headerlink" title="2.2 骨干网结构（5 个 ResX）"></a>2.2 骨干网结构（5 个 ResX）</h3><p>输入 416×416×3 经过 5 次步长&#x3D;2 的卷积下采样，逐级缩小到 13×13：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">输入 416×416×3</span><br><span class="line">   ↓ CBL 32×3×3</span><br><span class="line">416×416×32</span><br><span class="line">   ↓ Res1 (×1)   CBL 64/s2  + 1×Res    →  208×208×64</span><br><span class="line">   ↓ Res2 (×2)   CBL 128/s2 + 2×Res    →  104×104×128</span><br><span class="line">   ↓ Res8 (×8)   CBL 256/s2 + 8×Res    →  52×52×256    ★ Y3 源特征</span><br><span class="line">   ↓ Res8 (×8)   CBL 512/s2 + 8×Res    →  26×26×512    ★ Y2 源特征</span><br><span class="line">   ↓ Res4 (×4)   CBL 1024/s2 + 4×Res   →  13×13×1024   ★ Y1 源特征</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-3-完整架构（骨干-FPN-颈部-检测头）"><a href="#2-3-完整架构（骨干-FPN-颈部-检测头）" class="headerlink" title="2.3 完整架构（骨干 + FPN 颈部 + 检测头）"></a>2.3 完整架构（骨干 + FPN 颈部 + 检测头）</h3><p><img src="/images/YOLOv3%E8%AF%A6%E8%A7%A3/output_tensor.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">13×13×1024 ──→ 5×CBL ──→ 输出 Y1 (13×13×255)   大目标</span><br><span class="line">     │                    ↑ 3×(4+1+80)=255</span><br><span class="line">     ├── CBL(1×1) → 上采样(×2) → 26×26×256</span><br><span class="line">     │                       ↓</span><br><span class="line">     │                  Concat ← 26×26×512 (Res8 源特征)</span><br><span class="line">     │                       ↓</span><br><span class="line">     │                  5×CBL ──→ 输出 Y2 (26×26×255)  中目标</span><br><span class="line">     │                       │</span><br><span class="line">     │                       ├── CBL(1×1) → 上采样(×2) → 52×52×128</span><br><span class="line">     │                       │                       ↓</span><br><span class="line">     │                       │                  Concat ← 52×52×256 (Res8 源特征)</span><br><span class="line">     │                       │                       ↓</span><br><span class="line">     │                       │                  5×CBL ──→ 输出 Y3 (52×52×255)  小目标</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>关键设计</strong>：</p>
+<ul>
+<li><strong>无池化层、无全连接层</strong>：所有下采样通过 conv stride&#x3D;2 实现，保留更多空间信息；也正因全卷积，才能支持任意尺寸输入与多尺度训练。</li>
+<li>每个卷积层后都接 <strong>BN + LeakyReLU</strong>。</li>
+<li><strong>53 层怎么数</strong>：<code>1 + (1+1×2) + (1+2×2) + (1+8×2) + (1+8×2) + (1+4×2) = 52</code> 个卷积层 + 1 个全连接（分类版）&#x3D; 53。检测版去掉全连接，实际约 52 个卷积层 + 检测头。</li>
+</ul>
+</blockquote>
+<h3 id="2-4-与-Darknet-19-对比"><a href="#2-4-与-Darknet-19-对比" class="headerlink" title="2.4 与 Darknet-19 对比"></a>2.4 与 Darknet-19 对比</h3><table>
+<thead>
+<tr>
+<th align="left">特性</th>
+<th align="left">Darknet-19 (v2)</th>
+<th align="left">Darknet-53 (v3)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">下采样</td>
+<td align="left">5× MaxPooling</td>
+<td align="left"><strong>5× Conv stride&#x3D;2</strong></td>
+</tr>
+<tr>
+<td align="left">残差连接</td>
+<td align="left">❌ 无</td>
+<td align="left">✅ 5 组 Res block</td>
+</tr>
+<tr>
+<td align="left">卷积层数</td>
+<td align="left">19</td>
+<td align="left"><strong>53</strong></td>
+</tr>
+<tr>
+<td align="left">ImageNet Top-1</td>
+<td align="left">72.9%</td>
+<td align="left"><strong>77.2%</strong></td>
+</tr>
+<tr>
+<td align="left">ImageNet Top-5</td>
+<td align="left">91.2%</td>
+<td align="left"><strong>93.8%</strong></td>
+</tr>
+<tr>
+<td align="left">计算量 (224×224)</td>
+<td align="left">55.8 亿次</td>
+<td align="left">65.9 亿次</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>层数翻了近 3 倍，计算量只增加 18%。残差结构使深层网络训练成为可能；Darknet-53 比 ResNet-101&#x2F;152 更高效，且更好地利用了 GPU。</p>
+</blockquote>
+<hr>
+<h2 id="三、多尺度预测：FPN-思想-🔥"><a href="#三、多尺度预测：FPN-思想-🔥" class="headerlink" title="三、多尺度预测：FPN 思想 🔥"></a>三、多尺度预测：FPN 思想 🔥</h2><blockquote>
+<p>v3 最重要的改进。借鉴 FPN（Feature Pyramid Networks），用 3 个尺度的特征图同时预测，一举扭转了 YOLO 在小目标上的劣势。</p>
+</blockquote>
+<h3 id="3-1-为什么需要多尺度？"><a href="#3-1-为什么需要多尺度？" class="headerlink" title="3.1 为什么需要多尺度？"></a>3.1 为什么需要多尺度？</h3><p><img src="/images/YOLOv3%E8%AF%A6%E8%A7%A3/multiscale_overview.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">v2 只在 13×13 一层做预测:</span><br><span class="line">  13×13 特征图 → 一个网格覆盖 32×32 像素</span><br><span class="line">  → 小鸟可能只有 10×10 像素 → 小于一个网格 → 检测不到!</span><br><span class="line"></span><br><span class="line">v3 在 3 层同时预测:</span><br><span class="line">  13×13 (stride 32): 大感受野 → 汽车、人</span><br><span class="line">  26×26 (stride 16): 中感受野 → 书本、猫</span><br><span class="line">  52×52 (stride 8):  小感受野 → 小鸟、瓶盖</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-FPN-背景：四种特征金字塔方案"><a href="#3-2-FPN-背景：四种特征金字塔方案" class="headerlink" title="3.2 FPN 背景：四种特征金字塔方案"></a>3.2 FPN 背景：四种特征金字塔方案</h3><p>理解 v3 的多尺度，先看 FPN 论文总结的四种多尺度方案：</p>
+<table>
+<thead>
+<tr>
+<th align="left">方案</th>
+<th align="left">做法</th>
+<th align="left">缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">(a) 图像金字塔</td>
+<td align="left">原图多次缩放成金字塔，每级分别算特征</td>
+<td align="left">算力&#x2F;内存巨大，训练测试不一致</td>
+</tr>
+<tr>
+<td align="left">(b) 单层特征</td>
+<td align="left">只取最后一层特征（Fast&#x2F;Faster R-CNN 默认）</td>
+<td align="left">高分辨率层语义弱，不利于识别；低分辨率不利于小目标</td>
+</tr>
+<tr>
+<td align="left">(c) SSD 式</td>
+<td align="left">从不同层各取特征图组金字塔</td>
+<td align="left">仅用深层，丢失高分辨率特征，小目标不利</td>
+</tr>
+<tr>
+<td align="left">(d) <strong>FPN</strong></td>
+<td align="left">单输入 + 自上而下上采样 + 横向连接融合</td>
+<td align="left">— ✅ v3 采用</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>FPN 核心思想：<strong>低层特征位置准但语义弱；高层特征语义强但位置粗</strong>。通过自上而下上采样 + 横向连接，把深层语义注入浅层，让所有层都兼具强语义与高分辨率。</p>
+</blockquote>
+<h3 id="3-3-FPN-融合过程"><a href="#3-3-FPN-融合过程" class="headerlink" title="3.3 FPN 融合过程"></a>3.3 FPN 融合过程</h3><p><img src="/images/YOLOv3%E8%AF%A6%E8%A7%A3/cross_scale.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">深层特征 (13×13)  ← 语义强、位置粗 → 适合大目标</span><br><span class="line">     ↓ 上采样 2×</span><br><span class="line">     + 中层特征 (26×26) ← 位置较准 → 适合中目标</span><br><span class="line">         ↓ 上采样 2×</span><br><span class="line">         + 浅层特征 (52×52) ← 位置最准 → 适合小目标</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>⚠️ v3 的 FPN 融合用 <strong>Concat（通道拼接）</strong> 而非 <strong>Add（逐元素相加）</strong>。</p>
+<ul>
+<li>Concat 会扩充通道数（如 256+512→768），保留更多原始信息，源于 DenseNet 思路；</li>
+<li>Add 维度不变，是 ResNet&#x2F;Faster R-CNN 风格。</li>
+</ul>
+<p>上采样用最近邻插值（不改变通道数），将小特征图放大到与目标层同尺寸后拼接。</p>
+</blockquote>
+<h3 id="3-4-三个尺度与-9-个-Anchor"><a href="#3-4-三个尺度与-9-个-Anchor" class="headerlink" title="3.4 三个尺度与 9 个 Anchor"></a>3.4 三个尺度与 9 个 Anchor</h3><p><img src="/images/YOLOv3%E8%AF%A6%E8%A7%A3/grid_scales.png"></p>
+<table>
+<thead>
+<tr>
+<th align="left">尺度</th>
+<th align="left">特征图</th>
+<th align="left">下采样</th>
+<th align="left">Anchor 尺寸 (COCO)</th>
+<th align="left">检测目标</th>
+<th align="left">预测框数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Y1</strong></td>
+<td align="left">13×13</td>
+<td align="left">32×</td>
+<td align="left">(116×90), (156×198), (373×326)</td>
+<td align="left">大物体</td>
+<td align="left">13²×3 &#x3D; 507</td>
+</tr>
+<tr>
+<td align="left"><strong>Y2</strong></td>
+<td align="left">26×26</td>
+<td align="left">16×</td>
+<td align="left">(30×61), (62×45), (59×119)</td>
+<td align="left">中物体</td>
+<td align="left">26²×3 &#x3D; 2028</td>
+</tr>
+<tr>
+<td align="left"><strong>Y3</strong></td>
+<td align="left">52×52</td>
+<td align="left">8×</td>
+<td align="left">(10×13), (16×30), (33×23)</td>
+<td align="left">小物体</td>
+<td align="left">52²×3 &#x3D; 8112</td>
+</tr>
+<tr>
+<td align="left"><strong>合计</strong></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">9 种 Anchor</td>
+<td align="left"></td>
+<td align="left"><strong>10647 框</strong></td>
+</tr>
+</tbody></table>
+<p><img src="/images/YOLOv3%E8%AF%A6%E8%A7%A3/anchor_distribution.png"></p>
+<blockquote>
+<p>9 个 Anchor 由 K-means 聚类得到（同 v2 方法，距离用 1-IoU），按尺寸从大到小均分给 3 个尺度。<strong>大 Anchor 配小特征图，小 Anchor 配大特征图</strong>——因为层数越深，特征图对小尺寸物体响应越弱，所以小目标交给高分辨率的浅层特征图 + 小 Anchor。</p>
+</blockquote>
+<hr>
+<h2 id="四、检测头与输出张量"><a href="#四、检测头与输出张量" class="headerlink" title="四、检测头与输出张量"></a>四、检测头与输出张量</h2><p>每个尺度经过 5×CBL 后接一个 1×1 卷积输出预测张量。以 COCO（80 类）为例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">255 = 3 × (4 + 1 + 80)</span><br><span class="line"></span><br><span class="line">每个网格有 3 个 Anchor, 每个 Anchor 预测:</span><br><span class="line">  tx, ty, tw, th   ← 4 个坐标偏移</span><br><span class="line">  to (objectness)  ← 1 个目标置信度</span><br><span class="line">  p1 ... p80       ← 80 个类别概率</span><br><span class="line"></span><br><span class="line">三个尺度的输出张量:</span><br><span class="line">  Y1: 13 × 13 × 255   (大目标)</span><br><span class="line">  Y2: 26 × 26 × 255   (中目标)</span><br><span class="line">  Y3: 52 × 52 × 255   (小目标)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>总预测框数：$(13^2 + 26^2 + 52^2) \times 3 &#x3D; 10647$。一张图产生上万个框，绝大多数是背景，靠置信度阈值 + NMS 筛选（见第九节）。</p>
+</blockquote>
+<hr>
+<h2 id="五、边界框预测与解码"><a href="#五、边界框预测与解码" class="headerlink" title="五、边界框预测与解码"></a>五、边界框预测与解码</h2><h3 id="5-1-网络预测的四个偏移量"><a href="#5-1-网络预测的四个偏移量" class="headerlink" title="5.1 网络预测的四个偏移量"></a>5.1 网络预测的四个偏移量</h3><p>网络并不直接输出框的绝对坐标，而是输出相对于网格和先验框的偏移量 $t_x, t_y, t_w, t_h$。设：</p>
+<ul>
+<li>$(c_x, c_y)$：该网格左上角距图像左上角的格子数；</li>
+<li>$(p_w, p_h)$：先验框（Anchor）的宽高；</li>
+<li>$\sigma$：sigmoid 函数。</li>
+</ul>
+<h3 id="5-2-解码公式"><a href="#5-2-解码公式" class="headerlink" title="5.2 解码公式"></a>5.2 解码公式</h3><p><img src="/images/YOLOv3%E8%AF%A6%E8%A7%A3/bbox_prediction.png"></p>
+<p>$$<br>b_x &#x3D; \sigma(t_x) + c_x, \quad b_y &#x3D; \sigma(t_y) + c_y<br>$$<br>$$<br>b_w &#x3D; p_w , e^{t_w}, \quad b_h &#x3D; p_h , e^{t_h}<br>$$</p>
+<ul>
+<li><strong>中心点</strong> $(b_x, b_y)$：sigmoid 把偏移压在 $[0,1]$，保证中心不会跑出当前网格；</li>
+<li><strong>宽高</strong> $(b_w, b_h)$：以先验框为基准做指数缩放，$e^{t_w}$ 是放大倍数。训练时对宽高取 log 还原成 $t_w &#x3D; \log(G_w&#x2F;p_w)$，取 log 是为了让训练更稳定。</li>
+</ul>
+<blockquote>
+<p>训练用平方误差：若真实框对应 $\hat{t}<em>*$，则梯度为 $\hat{t}</em>* - t_*$，真实值可由上式反解得到。</p>
+</blockquote>
+<h3 id="5-3-为什么-x-y-用-sigmoid-而非线性？"><a href="#5-3-为什么-x-y-用-sigmoid-而非线性？" class="headerlink" title="5.3 为什么 x, y 用 sigmoid 而非线性？"></a>5.3 为什么 x, y 用 sigmoid 而非线性？</h3><p>作者尝试过用线性激活直接预测 $(x,y)$，导致 mAP 下降、模型不稳定。sigmoid 将中心约束在网格内，是必要的稳定性保证（见第十一节”失败的尝试”）。</p>
+<hr>
+<h2 id="六、多标签分类：Sigmoid-替代-Softmax"><a href="#六、多标签分类：Sigmoid-替代-Softmax" class="headerlink" title="六、多标签分类：Sigmoid 替代 Softmax"></a>六、多标签分类：Sigmoid 替代 Softmax</h2><h3 id="6-1-为什么要改？"><a href="#6-1-为什么要改？" class="headerlink" title="6.1 为什么要改？"></a>6.1 为什么要改？</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Softmax 的问题: 假设类别互斥</span><br><span class="line">  输入 → Softmax → [猫=0.6, 狗=0.3, 人=0.1] → 总和=1</span><br><span class="line">  问题: 一个物体可能同时属于多个类!</span><br><span class="line">        比如 &quot;女人&quot; 既是 &quot;Person&quot; 也是 &quot;Woman&quot;</span><br><span class="line">        Softmax 只能选一个, 必然丢信息</span><br><span class="line"></span><br><span class="line">Sigmoid 的解决: 每个类别独立判断</span><br><span class="line">  输入 → 80 个 Sigmoid → [Person=0.9, Woman=0.85, Cat=0.01, ...]</span><br><span class="line">  → 不要求和为 1, 每个类独立做二分类</span><br><span class="line">  → 完美支持多标签场景 (如 Open Images 数据集)</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-2-损失函数跟着改"><a href="#6-2-损失函数跟着改" class="headerlink" title="6.2 损失函数跟着改"></a>6.2 损失函数跟着改</h3><table>
+<thead>
+<tr>
+<th align="left">组件</th>
+<th align="left">v1&#x2F;v2</th>
+<th align="left">v3</th>
+<th align="left">为什么改</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">类别损失</td>
+<td align="left">Softmax + SSE</td>
+<td align="left"><strong>Sigmoid + BCE</strong></td>
+<td align="left">多标签 + 交叉熵更合理</td>
+</tr>
+<tr>
+<td align="left">置信度损失</td>
+<td align="left">SSE</td>
+<td align="left"><strong>Sigmoid + BCE</strong></td>
+<td align="left">二分类用交叉熵</td>
+</tr>
+<tr>
+<td align="left">定位损失 (x,y)</td>
+<td align="left">SSE</td>
+<td align="left"><strong>Sigmoid + BCE</strong></td>
+<td align="left">中心坐标也改为 BCE</td>
+</tr>
+<tr>
+<td align="left">定位损失 (w,h)</td>
+<td align="left">SSE</td>
+<td align="left"><strong>SSE</strong>（保留）</td>
+<td align="left">宽高仍是连续回归</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>⚠️ v3 论文<strong>没有给出完整的损失函数公式</strong>，以上基于 Keras 源码（qqwweee&#x2F;keras-yolo3）和社区分析总结。</p>
+</blockquote>
+<hr>
+<h2 id="七、训练：标签分配与损失函数"><a href="#七、训练：标签分配与损失函数" class="headerlink" title="七、训练：标签分配与损失函数"></a>七、训练：标签分配与损失函数</h2><h3 id="7-1-框分配机制（同-v2，参数有变）"><a href="#7-1-框分配机制（同-v2，参数有变）" class="headerlink" title="7.1 框分配机制（同 v2，参数有变）"></a>7.1 框分配机制（同 v2，参数有变）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">分配流程:</span><br><span class="line">  物体中心落在哪个网格 → 该网格的 3 个 Anchor 中</span><br><span class="line">  → 与 GT IoU 最大者当选 Responsible Anchor（正样本, 1:1 分配）</span><br><span class="line"></span><br><span class="line">与 v2 的关键参数差异:</span><br><span class="line">  ┌──────────────┬──────────┬──────────┐</span><br><span class="line">  │ 参数          │ v2       │ v3       │</span><br><span class="line">  ├──────────────┼──────────┼──────────┤</span><br><span class="line">  │ ignore_thresh │ 0.6      │ 0.5      │  ← v3 更严格</span><br><span class="line">  │ 置信度 target │ IoU(动态) │ 1(固定)   │  ← v3 最大的改动!</span><br><span class="line">  │ rescore       │ 1(默认)  │ 无此参数  │</span><br><span class="line">  └──────────────┴──────────┴──────────┘</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>v3 把置信度从”回归”改为”二分类”</strong>——常被忽略但很重要：</p>
+<ul>
+<li>v2：<code>target = IoU(预测框, GT)</code>，网络要学”框得有多准”。小物体 IoU 始终很小，confidence 学不上去，Recall 低。</li>
+<li>v3：<code>target = 1（正）/ 0（负）</code>，网络只学”这个 Anchor 有没有负责物体”，不受 IoU 大小影响。代价是定位质量不再体现在 confidence 中（这是后续版本改进方向）。</li>
+</ul>
+</blockquote>
+<h3 id="7-2-三类样本"><a href="#7-2-三类样本" class="headerlink" title="7.2 三类样本"></a>7.2 三类样本</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">正样本 (Positive): 与 GT IoU 最大的 Anchor（每个 GT 仅 1 个）</span><br><span class="line">  → 计算定位损失 + 置信度损失(target=1) + 类别损失</span><br><span class="line"></span><br><span class="line">忽略样本 (Ignore): IoU &gt; 0.5 但不是最大的 Anchor</span><br><span class="line">  → 不计算任何损失（预测得还行，不惩罚也不奖励）</span><br><span class="line"></span><br><span class="line">负样本 (Negative): IoU &lt; 0.5 的 Anchor</span><br><span class="line">  → 只计算置信度损失（target=0）</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>1:1 严格分配</strong>是 YOLOv3 与其他检测器的区别：Faster R-CNN &#x2F; RetinaNet 会把 IoU&gt;0.7 的多个 anchor 都算正样本，YOLOv3 只选 1 个最佳。好处是训练目标明确不打架，代价是可能收敛慢。</p>
+</blockquote>
+<h3 id="7-3-Ignore-Mask：10647-个框里只有几个”好人”"><a href="#7-3-Ignore-Mask：10647-个框里只有几个”好人”" class="headerlink" title="7.3 Ignore Mask：10647 个框里只有几个”好人”"></a>7.3 Ignore Mask：10647 个框里只有几个”好人”</h3><p>一张 COCO 训练图（假设 5 个 GT）的实际分布：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">正样本:    5 个        (每个 GT 选 1 个最佳 Anchor)</span><br><span class="line">忽略样本:  ~50 个       (IoU &gt; 0.5 但不够格, 不参与损失)</span><br><span class="line">负样本:    ~10592 个    (IoU &lt; 0.5, 全被判&quot;没物体&quot;)</span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么需要 Ignore Mask？</strong> 多尺度下同一物体可能在多个尺度都被检测到：若把那些”也检测到了、IoU&gt;0.5”的框强行压向 0，会反向传播大量错误梯度，三个尺度互相打架，训练不收敛。Ignore 让它们”自由发挥”——既不惩罚也不鼓励。</p>
+<p><strong>为什么 YOLOv3 不需要 Hard Negative Mining？</strong></p>
+<ul>
+<li>置信度用 BCE（二分类），负样本梯度比多分类 Softmax 小得多；</li>
+<li>ignore_mask 已过滤掉”说得过去”的框，剩下的负样本是真·背景；</li>
+<li>正负比例虽悬殊（~5:10592），但 BCE 天然不会让负样本主导梯度方向。</li>
+</ul>
+<h3 id="7-4-跨尺度标签分配"><a href="#7-4-跨尺度标签分配" class="headerlink" title="7.4 跨尺度标签分配"></a>7.4 跨尺度标签分配</h3><p>一个中尺寸物体（如中等大小的狗）可能在多个尺度同时匹配：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Y2 (26×26) 某 Anchor IoU=0.75 → 正样本（唯一!）</span><br><span class="line">Y1 (13×13) 某 Anchor IoU=0.65 → IoU&gt;0.5 → 忽略!</span><br><span class="line">Y3 (52×52) 某 Anchor IoU=0.35 → 负样本</span><br></pre></td></tr></table></figure>
+
+<p>有了跨尺度 ignore，三个尺度和平共处，不会互相抑制。</p>
+<h3 id="7-5-损失函数（基于-Keras-源码）"><a href="#7-5-损失函数（基于-Keras-源码）" class="headerlink" title="7.5 损失函数（基于 Keras 源码）"></a>7.5 损失函数（基于 Keras 源码）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 定位损失 - 中心坐标用 BCE, 宽高用 MSE</span></span><br><span class="line">xy_loss = object_mask * box_loss_scale * K.binary_crossentropy(</span><br><span class="line">    raw_true_xy, raw_pred[..., <span class="number">0</span>:<span class="number">2</span>], from_logits=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">wh_loss = object_mask * box_loss_scale * <span class="number">0.5</span> * K.square(</span><br><span class="line">    raw_true_wh - raw_pred[..., <span class="number">2</span>:<span class="number">4</span>])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 置信度损失 - 全用 BCE (二分类), 负样本乘 ignore_mask</span></span><br><span class="line">confidence_loss = (</span><br><span class="line">    object_mask * K.binary_crossentropy(object_mask, raw_pred[..., <span class="number">4</span>:<span class="number">5</span>], from_logits=<span class="literal">True</span>) +</span><br><span class="line">    (<span class="number">1</span> - object_mask) * K.binary_crossentropy(object_mask, raw_pred[..., <span class="number">4</span>:<span class="number">5</span>], from_logits=<span class="literal">True</span>) * ignore_mask</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 类别损失 - BCE (多标签二分类)</span></span><br><span class="line">class_loss = object_mask * K.binary_crossentropy(</span><br><span class="line">    true_class_probs, raw_pred[..., <span class="number">5</span>:], from_logits=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>除 <strong>w, h 仍用平方误差</strong>外，其余部分（xy、置信度、类别）均用 <strong>二元交叉熵 BCE</strong>，最后相加。</p>
+</blockquote>
+<h3 id="7-6-损失函数权重"><a href="#7-6-损失函数权重" class="headerlink" title="7.6 损失函数权重"></a>7.6 损失函数权重</h3><table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">含义</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>box_loss_scale</strong></td>
+<td align="left">定位损失缩放</td>
+<td align="left"><code>2 - w_gt × h_gt</code>，小框获得更大权重（同 v2）</td>
+</tr>
+<tr>
+<td align="left"><strong>object_mask</strong></td>
+<td align="left">正样本掩码</td>
+<td align="left">Responsible Anchor &#x3D; 1, 其余 &#x3D; 0</td>
+</tr>
+<tr>
+<td align="left"><strong>ignore_mask</strong></td>
+<td align="left">忽略掩码</td>
+<td align="left">IoU &gt; 0.5 但不负责的框 &#x3D; 0，不参与置信度损失</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="八、训练配置"><a href="#八、训练配置" class="headerlink" title="八、训练配置"></a>八、训练配置</h2><h3 id="8-1-两阶段训练"><a href="#8-1-两阶段训练" class="headerlink" title="8.1 两阶段训练"></a>8.1 两阶段训练</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">第一阶段: ImageNet 分类预训练</span><br><span class="line">  网络: Darknet-53 (分类版)   数据: ImageNet 1000类   输入: 256×256</span><br><span class="line">  结果: Top-1 77.2%, Top-5 93.8%</span><br><span class="line"></span><br><span class="line">第二阶段: 检测训练</span><br><span class="line">  网络修改: 去掉分类头 → 加 FPN 颈部 + 3 个检测头</span><br><span class="line">  数据: COCO train2014   输入: 多尺度 320~608</span><br><span class="line">  Epochs: 270   学习率: 初始 1e-3, 分段衰减</span><br><span class="line">  优化器: SGD + Momentum 0.9   权重衰减: 0.0005   Batch Size: 64</span><br><span class="line">  Anchor 数: 9 (3×3)   ignore_thresh: 0.5</span><br><span class="line">  数据增强: 随机裁剪、翻转、HSV 色彩抖动</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>论文强调：在<strong>完整图像</strong>上训练，<strong>没有硬负样本挖掘</strong>，使用多尺度训练 + 大量数据增强 + BN——都是”标准操作”。</p>
+</blockquote>
+<h3 id="8-2-多尺度训练"><a href="#8-2-多尺度训练" class="headerlink" title="8.2 多尺度训练"></a>8.2 多尺度训练</h3><p>同 v2：每 10 batch 随机切换输入尺寸 ∈ {320, 352, …, 608}（32 的倍数）。全卷积架构（无 FC）使其成为可能，让模型对不同分辨率鲁棒。</p>
+<hr>
+<h2 id="九、预测流程：阈值过滤-NMS"><a href="#九、预测流程：阈值过滤-NMS" class="headerlink" title="九、预测流程：阈值过滤 + NMS"></a>九、预测流程：阈值过滤 + NMS</h2><p>网络输出 10647 个预测框后，需筛出最终结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">① 置信度过滤</span><br><span class="line">   score = confidence × class_prob   (类别置信度 = 目标置信度 × 类别概率)</span><br><span class="line">   → 丢弃 score &lt; 阈值 的框（去掉大部分背景框）</span><br><span class="line"></span><br><span class="line">② 非极大值抑制 (NMS)</span><br><span class="line">   → 同一物体只保留 score 最高的框, 去除重复框</span><br></pre></td></tr></table></figure>
+
+<p><strong>NMS 流程</strong>（以保留 A、D 为例）：</p>
+<ol>
+<li>按类别概率排序剩余框，如 A &gt; D &gt; B &gt; F &gt; E &gt; C；</li>
+<li>取概率最大的 A，计算其余框与 A 的 IoU，<strong>IoU &gt; 阈值者丢弃</strong>（B、C 与 A 重叠大被丢弃），保留 A；</li>
+<li>从剩余框中再取最大的 D，重复上一步，保留 D；</li>
+<li>直到所有框处理完，最终保留 A、D。</li>
+</ol>
+<blockquote>
+<p>⚠️ NMS 的局限：若两个不同物体重叠很大（如狗压在自行车上），自行车的框可能因与狗框 IoU 过大被误删。改进方案有 Soft-NMS 等。</p>
+</blockquote>
+<hr>
+<h2 id="十、性能表现"><a href="#十、性能表现" class="headerlink" title="十、性能表现"></a>十、性能表现</h2><p><img src="/images/YOLOv3%E8%AF%A6%E8%A7%A3/performance_chart.png"></p>
+<h3 id="10-1-COCO-数据集"><a href="#10-1-COCO-数据集" class="headerlink" title="10.1 COCO 数据集"></a>10.1 COCO 数据集</h3><table>
+<thead>
+<tr>
+<th align="left">模型</th>
+<th align="left"><a href="mailto:&#x6d;&#x41;&#80;&#64;&#48;&#46;&#x35;">mAP@0.5</a></th>
+<th align="left">mAP@[0.5:0.95]</th>
+<th align="left">推理时间</th>
+<th align="left">FPS</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>YOLOv3-320</strong></td>
+<td align="left">51.5</td>
+<td align="left">28.2</td>
+<td align="left">22 ms</td>
+<td align="left">45</td>
+</tr>
+<tr>
+<td align="left"><strong>YOLOv3-416</strong></td>
+<td align="left">55.3</td>
+<td align="left">31.0</td>
+<td align="left">29 ms</td>
+<td align="left">35</td>
+</tr>
+<tr>
+<td align="left"><strong>YOLOv3-608</strong></td>
+<td align="left"><strong>57.9</strong></td>
+<td align="left"><strong>33.0</strong></td>
+<td align="left">51 ms</td>
+<td align="left">20</td>
+</tr>
+<tr>
+<td align="left">SSD321</td>
+<td align="left">45.4</td>
+<td align="left">28.0</td>
+<td align="left">61 ms</td>
+<td align="left">16</td>
+</tr>
+<tr>
+<td align="left">SSD513</td>
+<td align="left">50.4</td>
+<td align="left">31.2</td>
+<td align="left">125 ms</td>
+<td align="left">8</td>
+</tr>
+<tr>
+<td align="left">RetinaNet-50-500</td>
+<td align="left">50.9</td>
+<td align="left">32.5</td>
+<td align="left">73 ms</td>
+<td align="left">14</td>
+</tr>
+<tr>
+<td align="left">RetinaNet-101-800</td>
+<td align="left"><strong>57.5</strong></td>
+<td align="left">37.8</td>
+<td align="left">198 ms</td>
+<td align="left">5</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>YOLOv3-608 与 RetinaNet-101 精度相当，速度快 <strong>3.8 倍</strong>；320 轻量版精度逼近 SSD513，速度快 <strong>5.7 倍</strong>。</p>
+<p>注意：YOLOv3 在旧指标 <a href="mailto:&#109;&#x41;&#80;&#x40;&#48;&#46;&#x35;">mAP@0.5</a> 上极强，但 mAP@[0.5:0.95] 随 IoU 阈值升高下降明显——说明它擅长”框出大概位置”，但框与目标精确对齐的能力较弱。</p>
+</blockquote>
+<h3 id="10-2-消融实验"><a href="#10-2-消融实验" class="headerlink" title="10.2 消融实验"></a>10.2 消融实验</h3><table>
+<thead>
+<tr>
+<th align="left">配置</th>
+<th align="left">mAP</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">YOLOv2 baseline</td>
+<td align="left">21.6</td>
+<td align="left">COCO 基准</td>
+</tr>
+<tr>
+<td align="left">+ Darknet-53</td>
+<td align="left">+2.2</td>
+<td align="left">残差骨干</td>
+</tr>
+<tr>
+<td align="left">+ FPN 多尺度</td>
+<td align="left">+3.1</td>
+<td align="left">三尺度检测</td>
+</tr>
+<tr>
+<td align="left">+ 9 Anchor</td>
+<td align="left">+0.8</td>
+<td align="left">更多先验框</td>
+</tr>
+<tr>
+<td align="left">+ Logistic 分类</td>
+<td align="left">+0.5</td>
+<td align="left">多标签</td>
+</tr>
+</tbody></table>
+<h3 id="10-3-不同目标大小的表现"><a href="#10-3-不同目标大小的表现" class="headerlink" title="10.3 不同目标大小的表现"></a>10.3 不同目标大小的表现</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">                    AP_small   AP_medium   AP_large</span><br><span class="line">YOLOv2              5.0        22.4        35.5</span><br><span class="line">YOLOv3              18.3  ✅   35.4  ✅    41.9  ✅</span><br><span class="line">                    (小目标提升最显著, 3.7×!)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>FPN 三尺度使小目标 AP 从 5.0 → 18.3，是 v3 最大亮点；但中大目标提升不如小目标显著。</p>
+</blockquote>
+<hr>
+<h2 id="十一、论文中”失败”的尝试"><a href="#十一、论文中”失败”的尝试" class="headerlink" title="十一、论文中”失败”的尝试"></a>十一、论文中”失败”的尝试</h2><blockquote>
+<p>YOLOv3 论文的独特之处——作者诚实地记录了几个尝试了但没用的方法：</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th align="left">尝试</th>
+<th align="left">结果</th>
+<th align="left">原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">预测 $(x,y)$ 与 $(w,h)$ 的线性关系</td>
+<td align="left">不稳定</td>
+<td align="left">非线性关系更强</td>
+</tr>
+<tr>
+<td align="left">用线性激活替代 sigmoid 预测 $(x,y)$</td>
+<td align="left">mAP ↓</td>
+<td align="left">sigmoid 约束是必要的</td>
+</tr>
+<tr>
+<td align="left">使用 Focal Loss</td>
+<td align="left">mAP ↓ ~2</td>
+<td align="left">YOLO 的正负样本比例和 RetinaNet 不同，已有独立 objectness 预测</td>
+</tr>
+<tr>
+<td align="left">双 IoU 阈值分配（仿 Faster R-CNN）</td>
+<td align="left">效果不好</td>
+<td align="left">当前 1:1 分配已是局部最优</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="十二、优缺点与总结"><a href="#十二、优缺点与总结" class="headerlink" title="十二、优缺点与总结"></a>十二、优缺点与总结</h2><h3 id="优点-✅"><a href="#优点-✅" class="headerlink" title="优点 ✅"></a>优点 ✅</h3><ol>
+<li><strong>速度-精度最佳平衡</strong>：30 FPS @ 55 mAP，实际部署首选</li>
+<li><strong>小目标大幅改善</strong>：FPN 三尺度使小目标 AP 从 5.0 → 18.3</li>
+<li><strong>多标签支持</strong>：Sigmoid + BCE，贴合真实场景</li>
+<li><strong>全卷积无池化</strong>：更灵活、保留更多空间信息，支持任意尺寸输入</li>
+<li><strong>残差骨干可深可浅</strong>：Darknet-53 比 ResNet-101&#x2F;152 更高效</li>
+<li><strong>工程生态成熟</strong>：Darknet(C)、PyTorch、Keras 多框架实现</li>
+</ol>
+<h3 id="局限-❌"><a href="#局限-❌" class="headerlink" title="局限 ❌"></a>局限 ❌</h3><ol>
+<li><strong>论文像”技术报告”</strong>：没有完整损失函数公式，需读源码</li>
+<li><strong>Anchor 分配粒度粗</strong>：1 GT → 1 Anchor，密集场景有提升空间（v4&#x2F;v5 改进）</li>
+<li><strong>置信度丢失 IoU 信息</strong>：改为二分类后，框质量无法从 confidence 区分（高质量框与低质量框 confidence 都是 1）</li>
+<li><strong>无数据增强创新</strong>：复用了 v2 的增强策略</li>
+<li><strong>大目标检测饱和</strong>：AP_large 从 35.5 → 41.9，提升不如小目标显著</li>
+<li><strong>高 IoU 阈值下精度下降</strong>：框对齐能力弱，mAP@[0.5:0.95] 不占优</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>YOLOv3 的成功不靠单一突破，而是”融合经典方法 + 针对性优化”：架构上用”全卷积 + 残差连接”解决深层训练难题；检测逻辑上用”多尺度特征融合 + 9 种先验框”覆盖不同大小目标；预测逻辑上用”Logistic 激活”支持多标签。这些设计使其成为目标检测的经典基准，至今仍被广泛用于自动驾驶、安防、工业检测，也为 v4&#x2F;v5 奠定基础。</p>
+<hr>
+<h2 id="十三、相关链接"><a href="#十三、相关链接" class="headerlink" title="十三、相关链接"></a>十三、相关链接</h2><ul>
+<li>📝 [[YOLO 系列总览]] - 版本对比总览</li>
+<li>📝 [[YOLO 核心概念]] - Grid&#x2F;Anchor&#x2F;IoU&#x2F;NMS 详解</li>
+<li>📝 [[YOLOv1 详解]] - v1 基础</li>
+<li>📝 [[YOLOv2 详解]] - v2 锚框 + BN 改进</li>
+<li>📝 [[YOLOv4 详解]] - v4 在 v3 基础上的优化</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLO&#x2F;YOLO学习笔记3——YOLOv3详解]] - 知乎原文 (rtfff, 含 FPN 详解)</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLO&#x2F;【YOLO系列】YOLOv3论文超详细解读（翻译 ＋学习笔记）-阿里云开发者社区]] - 论文翻译+精读</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLO&#x2F;Yolov3算法详解]] - 博客园 (奥辰, 含 NMS 详解)</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;2D检测&#x2F;单阶段&#x2F;YOLO&#x2F;YOLOv3 详解：核心改进、网络架构与目标检测实践_目标检测_2201_75691511-九章云极普惠算力]] - 核心改进总结</li>
+<li>📦 [[30.resources&#x2F;yolo-master&#x2F;docs&#x2F;Pytorch_YoLo_From_Scratch&#x2F;v3&#x2F;README|v3 From Scratch]]</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv3%20%E8%AF%A6%E8%A7%A3/">https://www.loveww.top/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv3%20%E8%AF%A6%E8%A7%A3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/YOLO/">YOLO</a><a class="post-meta__tags" href="/tags/%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/">目标检测</a><a class="post-meta__tags" href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89/">计算机视觉</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv5%20%E8%AF%A6%E8%A7%A3/" title="YOLOv5 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">YOLOv5 详解</div></div><div class="info-2"><div class="info-item-1">YOLOv5: PyTorch 工程化的里程碑 代码: github.com&#x2F;ultralytics&#x2F;yolov5作者: Ultralytics (Glenn Jocher)特点: ❌ 无正式论文，但代码、文档、生态最完善   历史意义 v5 没有革命性创新，但它通过 PyTorch 重写 + 极致工程化 + 完善生态，让 YOLO 真正走入大众。  12v4: darknet(C 语言) → 研究者友好但部署难v5: PyTorch → 人人可用，pip install 即可   网络架构整体结构 (与 v4 相似但更优化)12345678910111213141516171819202122输入 640×640×3      ↓┌─────────────────────────┐│  Backbone: 改进CSPDarknet53     ││  ├─ Focus (切片下采样)            ││  ├─ Conv + C3 (CSP Bottleneck)   ││  └─ SPPF (Fast 金字塔池化)        │└──────...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv12%20%E8%AF%A6%E8%A7%A3/" title="YOLOv12 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">YOLOv12 详解</div></div><div class="info-2"><div class="info-item-1">YOLOv12: 注意力中心的实时目标检测 论文: YOLOv12: Attention-Centric Real-Time Object Detectors (2025)作者: SUNY Buffalo (纽约州立大学布法罗分校) + 中国科学院大学代码: github.com&#x2F;sunsmarterjie&#x2F;yolov12   历史性跨越: CNN → Attention YOLO 系列首个完全基于注意力机制的实时检测器！ 同时保持了对实时推理至关重要的速度（208 FPS）。   为什么不是之前就用 Attention？CNN vs Attention 的困境   方案 优势 劣势    CNN 计算高效，硬件友好 感受野有限   ViT &#x2F; DETR 全局感受野，精度高 计算量大，实时性差   YOLOv12 ✅ 两者兼备 —   YOLOv12 如何做到？通过三项创新让 Attention 在实时检测器中可行：  区域注意力 (A²) — 大幅降低计算成本 R-ELAN — 解决大模型注意力架构的优化困难 架构精简 — 去除不必要的部分   核...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/" title="YOLO 核心概念"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 核心概念</div></div><div class="info-2"><div class="info-item-1">🧠 YOLO 核心概念详解1. 目标检测基础什么是目标检测 同时解决两个问题：物体在哪里（定位）+ 物体是什么（分类）  输出形式： 1(x, y, w, h, confidence, class_probs...)  Two-Stage vs One-Stage   方法 流程 代表 特点    Two-Stage 提取候选区 → 分类回归 R-CNN, Faster R-CNN 精度高，速度慢   One-Stage 一步到位直接预测 YOLO, SSD 速度快，端到端    YOLO 的本质：把检测变成回归问题，整张图输入，一次性输出所有预测。   2. 核心机制2.1 Grid Cell（网格划分）12输入图像 448×448 → 划分为 S×S 网格 (v1: S=7)每个网格负责预测中心点落在该网格内的目标  v1 例子：  7×7 &#x3D; 49 个网格 每个网格预测 2 个 bounding box 每个 box: (x, y, w, h, confidence) &#x3D; 5 个值 每个网格预测 C 个类别 (VOC: 20) 输出张量: 7×7×(5...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E7%B3%BB%E5%88%97%E6%80%BB%E8%A7%88/" title="YOLO 系列总览"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 系列总览</div></div><div class="info-2"><div class="info-item-1">🎯 YOLO 系列目标检测算法总览一句话理解 YOLO You Only Look Once —— 只需看一次，就能完成目标检测。 把目标检测从”先找候选区再分类”的两阶段，变成了”一步到位”的回归问题。   版本演进时间线   版本 年份 作者&#x2F;机构 核心创新 论文&#x2F;状态    v1 2016 Joseph Redmon 单阶段检测、Grid Cell 划分 1506.02640   v2 2017 Redmon &amp; Farhadi Anchor Box、BN、Darknet-19、细粒度特征 1612.08242   v3 2018 Redmon &amp; Farhadi Darknet-53、多尺度预测(FPN)、逻辑分类器 1804.02767   v4 2020 Alexey Bochkovskiy CSPDarknet53、PAN、Mosaic增强、BoF&#x2F;BoS 2004.10934   v5 2020 Ultralytics PyTorch实现、工程化、CSPNet+PAN ❌ 无论文   v6 2022 美团 工业级部署...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO26%20%E8%AF%A6%E8%A7%A3/" title="YOLO26 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO26 详解</div></div><div class="info-2"><div class="info-item-1">YOLO26: 魔改终结者, 边缘端到端 状态: 🚧 开发中 (Ultralytics YOLO Vision 2025 预览)作者: Ultralytics定位: 专为边缘和低功耗设备设计   设计哲学 不是堆砌模块，而是精简 + 针对性创新：  Simple: 原生端到端，无需 NMS Efficient: CPU 推理提速 43% Innovative: LLM 训练技术跨界引入 CV    三大设计原则1. 简单 (Simple): 原生端到端12345678传统 YOLO:  模型 → NMS 后处理 → 最终输出              ↑        必须的额外步骤YOLO26:  模型 → 直接输出!         (无 DFL, 无 NMS)   继承 v10 的 NMS-Free 理念，进一步简化 移除 DFL (Distribution Focal Loss) 模块：虽然有效，但使导出和硬件兼容复杂化  2. 部署效率 (Deployment Efficiency)1234567传统流程:  预处理 → Backbone → Neck → Head ...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv10%20%E8%AF%A6%E8%A7%A3/" title="YOLOv10 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLOv10 详解</div></div><div class="info-2"><div class="info-item-1">YOLOv10: 实时端到端目标检测 论文: YOLOv10: Real-Time End-to-End Object Detection (2024)作者: 清华大学 (王敖等)代码: github.com&#x2F;THU-MIG&#x2F;yolov10   革命性贡献: NMS-Free! YOLOv10 是首个真正消除 NMS 后处理的 YOLO 版本，实现端到端推理。   核心创新1. 一致双重分配 (Consistent Dual Assignments)这是实现 NMS-Free 的关键。 1234567891011121314训练阶段:  ┌─────────────────────┐  │ One-to-Many Head    │ → 每个目标 → 多个预测 (丰富监督)  │ (一对多)            │  ├─────────────────────┤  │ One-to-One Head     │ → 每个目标 → 唯一最佳预测 (模拟推理)  │ (一对一)            │  └─────────────────────┘    ...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv1%20%E8%AF%A6%E8%A7%A3/" title="YOLOv1 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLOv1 详解</div></div><div class="info-2"><div class="info-item-1">YOLOv1: You Only Look Once 论文: You Only Look Once: Unified, Real-Time Object Detection (CVPR 2016)作者: Joseph Redmon, Santosh Divvala, Ross Girshick, Ali Farhadi   一、核心思想1.1 什么样的任务是”回归问题”？ 一句话：输出连续数值的是回归，输出离散标签的是分类。  123456789┌─────────────────────────────────────────────────────────────┐│  分类问题 (Classification)                                    ││    输入一张图 → 输出: &quot;猫&quot; (0或1，离散标签)                    ││    例: 这张图里有猫吗？ → 有/没有                             ││                                ...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv11%20%E8%AF%A6%E8%A7%A3/" title="YOLOv11 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLOv11 详解</div></div><div class="info-2"><div class="info-item-1">YOLOv11 &#x2F; YOLO11: 更少参数, 更高精度 代码: github.com&#x2F;ultralytics&#x2F;ultralytics作者: Ultralytics (2024年9月)特点: ❌ 无正式论文，但性能和效率显著提升   一句话总结 YOLO11m 比 YOLOv8m 参数少 22%，精度更高。架构微调 + 训练的胜利。   核心架构改进1. C3k2 模块 (替代 C2f)1234567C2f (v8):  Conv → split → Bottleneck×N → concat → Conv                               ↓                           标准 BottleneckC3k2 (v11): Conv → split → **C3k Bottleneck** → concat → Conv                               ↓                   CSP + **两个小卷积替代一个大卷积**  C3k 块细节: 1234传统 Bo...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#YOLOv3-An-Incremental-Improvement"><span class="toc-number">1.</span> <span class="toc-text">YOLOv3: An Incremental Improvement</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0%EF%BC%9Av3-%E6%94%B9%E4%BA%86%E4%BB%80%E4%B9%88"><span class="toc-number">1.1.</span> <span class="toc-text">一、概述：v3 改了什么</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-v1-%E2%86%92-v2-%E2%86%92-v3-%E6%BC%94%E8%BF%9B%E5%AF%B9%E6%AF%94"><span class="toc-number">1.1.1.</span> <span class="toc-text">1.1 v1 → v2 → v3 演进对比</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E4%BF%9D%E7%95%99%E8%87%AA-v2-%E7%9A%84%E7%89%B9%E6%80%A7"><span class="toc-number">1.1.2.</span> <span class="toc-text">1.2 保留自 v2 的特性</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E7%BD%91%E7%BB%9C%E6%9E%B6%E6%9E%84%EF%BC%9ADarknet-53"><span class="toc-number">1.2.</span> <span class="toc-text">二、网络架构：Darknet-53</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E4%B8%89%E4%B8%AA%E5%9F%BA%E6%9C%AC%E5%8D%95%E5%85%83"><span class="toc-number">1.2.1.</span> <span class="toc-text">2.1 三个基本单元</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%93%E6%9E%84%EF%BC%885-%E4%B8%AA-ResX%EF%BC%89"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.2 骨干网结构（5 个 ResX）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E5%AE%8C%E6%95%B4%E6%9E%B6%E6%9E%84%EF%BC%88%E9%AA%A8%E5%B9%B2-FPN-%E9%A2%88%E9%83%A8-%E6%A3%80%E6%B5%8B%E5%A4%B4%EF%BC%89"><span class="toc-number">1.2.3.</span> <span class="toc-text">2.3 完整架构（骨干 + FPN 颈部 + 检测头）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-%E4%B8%8E-Darknet-19-%E5%AF%B9%E6%AF%94"><span class="toc-number">1.2.4.</span> <span class="toc-text">2.4 与 Darknet-19 对比</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%A4%9A%E5%B0%BA%E5%BA%A6%E9%A2%84%E6%B5%8B%EF%BC%9AFPN-%E6%80%9D%E6%83%B3-%F0%9F%94%A5"><span class="toc-number">1.3.</span> <span class="toc-text">三、多尺度预测：FPN 思想 🔥</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%A4%9A%E5%B0%BA%E5%BA%A6%EF%BC%9F"><span class="toc-number">1.3.1.</span> <span class="toc-text">3.1 为什么需要多尺度？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-FPN-%E8%83%8C%E6%99%AF%EF%BC%9A%E5%9B%9B%E7%A7%8D%E7%89%B9%E5%BE%81%E9%87%91%E5%AD%97%E5%A1%94%E6%96%B9%E6%A1%88"><span class="toc-number">1.3.2.</span> <span class="toc-text">3.2 FPN 背景：四种特征金字塔方案</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-FPN-%E8%9E%8D%E5%90%88%E8%BF%87%E7%A8%8B"><span class="toc-number">1.3.3.</span> <span class="toc-text">3.3 FPN 融合过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E4%B8%89%E4%B8%AA%E5%B0%BA%E5%BA%A6%E4%B8%8E-9-%E4%B8%AA-Anchor"><span class="toc-number">1.3.4.</span> <span class="toc-text">3.4 三个尺度与 9 个 Anchor</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%A3%80%E6%B5%8B%E5%A4%B4%E4%B8%8E%E8%BE%93%E5%87%BA%E5%BC%A0%E9%87%8F"><span class="toc-number">1.4.</span> <span class="toc-text">四、检测头与输出张量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E8%BE%B9%E7%95%8C%E6%A1%86%E9%A2%84%E6%B5%8B%E4%B8%8E%E8%A7%A3%E7%A0%81"><span class="toc-number">1.5.</span> <span class="toc-text">五、边界框预测与解码</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E7%BD%91%E7%BB%9C%E9%A2%84%E6%B5%8B%E7%9A%84%E5%9B%9B%E4%B8%AA%E5%81%8F%E7%A7%BB%E9%87%8F"><span class="toc-number">1.5.1.</span> <span class="toc-text">5.1 网络预测的四个偏移量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E8%A7%A3%E7%A0%81%E5%85%AC%E5%BC%8F"><span class="toc-number">1.5.2.</span> <span class="toc-text">5.2 解码公式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E4%B8%BA%E4%BB%80%E4%B9%88-x-y-%E7%94%A8-sigmoid-%E8%80%8C%E9%9D%9E%E7%BA%BF%E6%80%A7%EF%BC%9F"><span class="toc-number">1.5.3.</span> <span class="toc-text">5.3 为什么 x, y 用 sigmoid 而非线性？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%A4%9A%E6%A0%87%E7%AD%BE%E5%88%86%E7%B1%BB%EF%BC%9ASigmoid-%E6%9B%BF%E4%BB%A3-Softmax"><span class="toc-number">1.6.</span> <span class="toc-text">六、多标签分类：Sigmoid 替代 Softmax</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E6%94%B9%EF%BC%9F"><span class="toc-number">1.6.1.</span> <span class="toc-text">6.1 为什么要改？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%E8%B7%9F%E7%9D%80%E6%94%B9"><span class="toc-number">1.6.2.</span> <span class="toc-text">6.2 损失函数跟着改</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E8%AE%AD%E7%BB%83%EF%BC%9A%E6%A0%87%E7%AD%BE%E5%88%86%E9%85%8D%E4%B8%8E%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0"><span class="toc-number">1.7.</span> <span class="toc-text">七、训练：标签分配与损失函数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-%E6%A1%86%E5%88%86%E9%85%8D%E6%9C%BA%E5%88%B6%EF%BC%88%E5%90%8C-v2%EF%BC%8C%E5%8F%82%E6%95%B0%E6%9C%89%E5%8F%98%EF%BC%89"><span class="toc-number">1.7.1.</span> <span class="toc-text">7.1 框分配机制（同 v2，参数有变）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E4%B8%89%E7%B1%BB%E6%A0%B7%E6%9C%AC"><span class="toc-number">1.7.2.</span> <span class="toc-text">7.2 三类样本</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-3-Ignore-Mask%EF%BC%9A10647-%E4%B8%AA%E6%A1%86%E9%87%8C%E5%8F%AA%E6%9C%89%E5%87%A0%E4%B8%AA%E2%80%9D%E5%A5%BD%E4%BA%BA%E2%80%9D"><span class="toc-number">1.7.3.</span> <span class="toc-text">7.3 Ignore Mask：10647 个框里只有几个”好人”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-4-%E8%B7%A8%E5%B0%BA%E5%BA%A6%E6%A0%87%E7%AD%BE%E5%88%86%E9%85%8D"><span class="toc-number">1.7.4.</span> <span class="toc-text">7.4 跨尺度标签分配</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-5-%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%EF%BC%88%E5%9F%BA%E4%BA%8E-Keras-%E6%BA%90%E7%A0%81%EF%BC%89"><span class="toc-number">1.7.5.</span> <span class="toc-text">7.5 损失函数（基于 Keras 源码）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-6-%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0%E6%9D%83%E9%87%8D"><span class="toc-number">1.7.6.</span> <span class="toc-text">7.6 损失函数权重</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E8%AE%AD%E7%BB%83%E9%85%8D%E7%BD%AE"><span class="toc-number">1.8.</span> <span class="toc-text">八、训练配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-%E4%B8%A4%E9%98%B6%E6%AE%B5%E8%AE%AD%E7%BB%83"><span class="toc-number">1.8.1.</span> <span class="toc-text">8.1 两阶段训练</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-%E5%A4%9A%E5%B0%BA%E5%BA%A6%E8%AE%AD%E7%BB%83"><span class="toc-number">1.8.2.</span> <span class="toc-text">8.2 多尺度训练</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E9%A2%84%E6%B5%8B%E6%B5%81%E7%A8%8B%EF%BC%9A%E9%98%88%E5%80%BC%E8%BF%87%E6%BB%A4-NMS"><span class="toc-number">1.9.</span> <span class="toc-text">九、预测流程：阈值过滤 + NMS</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E6%80%A7%E8%83%BD%E8%A1%A8%E7%8E%B0"><span class="toc-number">1.10.</span> <span class="toc-text">十、性能表现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#10-1-COCO-%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="toc-number">1.10.1.</span> <span class="toc-text">10.1 COCO 数据集</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-2-%E6%B6%88%E8%9E%8D%E5%AE%9E%E9%AA%8C"><span class="toc-number">1.10.2.</span> <span class="toc-text">10.2 消融实验</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-3-%E4%B8%8D%E5%90%8C%E7%9B%AE%E6%A0%87%E5%A4%A7%E5%B0%8F%E7%9A%84%E8%A1%A8%E7%8E%B0"><span class="toc-number">1.10.3.</span> <span class="toc-text">10.3 不同目标大小的表现</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E8%AE%BA%E6%96%87%E4%B8%AD%E2%80%9D%E5%A4%B1%E8%B4%A5%E2%80%9D%E7%9A%84%E5%B0%9D%E8%AF%95"><span class="toc-number">1.11.</span> <span class="toc-text">十一、论文中”失败”的尝试</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%BA%8C%E3%80%81%E4%BC%98%E7%BC%BA%E7%82%B9%E4%B8%8E%E6%80%BB%E7%BB%93"><span class="toc-number">1.12.</span> <span class="toc-text">十二、优缺点与总结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E7%82%B9-%E2%9C%85"><span class="toc-number">1.12.1.</span> <span class="toc-text">优点 ✅</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B1%80%E9%99%90-%E2%9D%8C"><span class="toc-number">1.12.2.</span> <span class="toc-text">局限 ❌</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.12.3.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%89%E3%80%81%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5"><span class="toc-number">1.13.</span> <span class="toc-text">十三、相关链接</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/01-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87/" title="CARLA教程-01-环境准备">CARLA教程-01-环境准备</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/02-%E6%9E%84%E5%BB%BAUE4%E4%B8%8ECARLA/" title="CARLA教程-02-构建UE4与CARLA">CARLA教程-02-构建UE4与CARLA</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/03-%E8%BF%90%E8%A1%8C%E4%BB%BF%E7%9C%9F/" title="CARLA教程-03-运行仿真">CARLA教程-03-运行仿真</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/04-ROS2%E6%8E%A5%E5%8F%A3%E4%B8%8E%E8%AF%9D%E9%A2%98/" title="CARLA教程-04-ROS2接口与话题">CARLA教程-04-ROS2接口与话题</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>

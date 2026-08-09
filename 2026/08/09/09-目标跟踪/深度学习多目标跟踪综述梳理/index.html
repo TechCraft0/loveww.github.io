@@ -1,0 +1,780 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>深度学习多目标跟踪综述梳理 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="深度学习多目标跟踪（MOT）综述梳理 本笔记是对综述 Deep Learning-Based Multi-Object Tracking: A Comprehensive Survey from Foundations to State-of-the-Art（arXiv:2506.13457）的系统梳理。原始转换文件见 [[Clippings&#x2F;2506.13457v1.md]]。  一、">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深度学习多目标跟踪综述梳理">
+<meta property="og:url" content="https://www.loveww.top/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA%E7%BB%BC%E8%BF%B0%E6%A2%B3%E7%90%86/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="深度学习多目标跟踪（MOT）综述梳理 本笔记是对综述 Deep Learning-Based Multi-Object Tracking: A Comprehensive Survey from Foundations to State-of-the-Art（arXiv:2506.13457）的系统梳理。原始转换文件见 [[Clippings&#x2F;2506.13457v1.md]]。  一、">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-08-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-09T15:28:30.545Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="多目标跟踪">
+<meta property="article:tag" content="MOT">
+<meta property="article:tag" content="综述">
+<meta property="article:tag" content="tracking-by-detection">
+<meta property="article:tag" content="端到端跟踪">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "深度学习多目标跟踪综述梳理",
+  "url": "https://www.loveww.top/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA%E7%BB%BC%E8%BF%B0%E6%A2%B3%E7%90%86/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-08-08T16:00:00.000Z",
+  "dateModified": "2026-08-09T15:28:30.545Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA%E7%BB%BC%E8%BF%B0%E6%A2%B3%E7%90%86/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '深度学习多目标跟踪综述梳理',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">深度学习多目标跟踪综述梳理</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">深度学习多目标跟踪综述梳理</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-08-08T16:00:00.000Z" title="发表于 2026-08-09 00:00:00">2026-08-09</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-08-09T15:28:30.545Z" title="更新于 2026-08-09 23:28:30">2026-08-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/">目标跟踪</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">3.3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>12分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="深度学习多目标跟踪（MOT）综述梳理"><a href="#深度学习多目标跟踪（MOT）综述梳理" class="headerlink" title="深度学习多目标跟踪（MOT）综述梳理"></a>深度学习多目标跟踪（MOT）综述梳理</h1><blockquote>
+<p>本笔记是对综述 <em>Deep Learning-Based Multi-Object Tracking: A Comprehensive Survey from Foundations to State-of-the-Art</em>（arXiv:2506.13457）的系统梳理。原始转换文件见 [[Clippings&#x2F;2506.13457v1.md]]。</p>
+</blockquote>
+<h2 id="一、综述定位与贡献"><a href="#一、综述定位与贡献" class="headerlink" title="一、综述定位与贡献"></a>一、综述定位与贡献</h2><ul>
+<li><strong>主题</strong>：深度学习驱动的多目标跟踪（MOT），聚焦 2022 年以来的现代方法。</li>
+<li><strong>两大范式</strong>：<ol>
+<li><strong>Tracking-by-Detection（检测再关联）</strong> —— 检测与关联解耦，仍是主流。</li>
+<li><strong>End-to-End（端到端）</strong> —— 检测与关联联合训练，以 DETR 系（tracking-by-query）为代表。</li>
+</ol>
+</li>
+<li><strong>四大贡献</strong>：<ol>
+<li>系统梳理 2022 年起的现代深度 MOT 方法；</li>
+<li>将 tracking-by-detection 划分为 <strong>五大类别</strong>；</li>
+<li>在多基准上跨域对比，并自建<strong>加权宏平均基准</strong>评估泛化性；</li>
+<li>提供详尽背景知识，兼顾不同基础读者。</li>
+</ol>
+</li>
+</ul>
+<hr>
+<h2 id="二、MOT-问题与基础概念"><a href="#二、MOT-问题与基础概念" class="headerlink" title="二、MOT 问题与基础概念"></a>二、MOT 问题与基础概念</h2><h3 id="2-1-任务定义"><a href="#2-1-任务定义" class="headerlink" title="2.1 任务定义"></a>2.1 任务定义</h3><ul>
+<li>在视频中<strong>检测</strong>给定类别的对象，并跨帧<strong>关联</strong>（赋予唯一 ID），输出每个对象的轨迹 τ。</li>
+<li><strong>核心难点</strong>：频繁遮挡（导致 ID 切换&#x2F;丢失）、外观相似（难区分）、运动不可预测。</li>
+<li><strong>应用</strong>：自动驾驶、体育分析、零售、机器人、生物、监控等。</li>
+</ul>
+<h3 id="2-2-通用流水线"><a href="#2-2-通用流水线" class="headerlink" title="2.2 通用流水线"></a>2.2 通用流水线</h3><p>输入视频帧 → 输出每帧的边界框（坐标、类别、ID）。关联发生在检测之后。</p>
+<h3 id="2-3-错误类型"><a href="#2-3-错误类型" class="headerlink" title="2.3 错误类型"></a>2.3 错误类型</h3><table>
+<thead>
+<tr>
+<th>类别</th>
+<th>错误</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>关联错误</strong></td>
+<td>FP track &#x2F; FN track &#x2F; ID switch</td>
+<td>虚假轨迹、漏轨迹、ID 混淆</td>
+</tr>
+<tr>
+<td><strong>检测错误</strong></td>
+<td>FP detection &#x2F; FN detection &#x2F; 定位误差</td>
+<td>假阳性检测、漏检、框偏移</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>术语区分：<strong>match</strong> 指评测时预测与真值配对；<strong>association</strong> 指推理时轨迹与检测配对。</p>
+</blockquote>
+<hr>
+<h2 id="三、评估指标"><a href="#三、评估指标" class="headerlink" title="三、评估指标"></a>三、评估指标</h2><table>
+<thead>
+<tr>
+<th>指标</th>
+<th>匹配层级</th>
+<th>侧重</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MOTA</strong></td>
+<td>检测级</td>
+<td>检测为主</td>
+<td>1 − (FP+FN+IDSW)&#x2F;gtDet，受检测性能影响大，范围为 −∞~1</td>
+</tr>
+<tr>
+<td><strong>MOTP</strong></td>
+<td>检测级</td>
+<td>定位精度</td>
+<td>匹配对的平均相似度</td>
+</tr>
+<tr>
+<td><strong>IDF1</strong></td>
+<td>轨迹级</td>
+<td>关联为主</td>
+<td>对 ID 切换敏感，偏向关联性能</td>
+</tr>
+<tr>
+<td><strong>HOTA</strong></td>
+<td>检测级</td>
+<td><strong>检测+关联平衡</strong></td>
+<td>DetA 与 AssA 的几何平均；多阈值（0.05~0.95）平均，是基准<strong>主指标</strong></td>
+</tr>
+<tr>
+<td><strong>IDSW</strong></td>
+<td>—</td>
+<td>—</td>
+<td>ID 切换总次数，越低越好</td>
+</tr>
+</tbody></table>
+<ul>
+<li>DetA &#x3D; Jaccard 指数（TP&#x2F;(TP+FP+FN)）；AssA 评估匹配检测的轨迹对齐质量。</li>
+<li>匹配通过<strong>匈牙利算法</strong>求解二部图最优指派，相似度用 IoU（2D 框）。</li>
+</ul>
+<hr>
+<h2 id="四、基准数据集"><a href="#四、基准数据集" class="headerlink" title="四、基准数据集"></a>四、基准数据集</h2><table>
+<thead>
+<tr>
+<th>数据集</th>
+<th>场景</th>
+<th>帧数</th>
+<th>特点</th>
+<th>主要挑战</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MOT17</strong></td>
+<td>14</td>
+<td>14,235</td>
+<td>非静态相机、行人、线性运动</td>
+<td>拥挤、遮挡</td>
+</tr>
+<tr>
+<td><strong>MOT20</strong></td>
+<td>8</td>
+<td>13,410</td>
+<td>静态相机、极拥挤（1.65M 框）</td>
+<td>重度拥挤</td>
+</tr>
+<tr>
+<td><strong>DanceTrack</strong></td>
+<td>100</td>
+<td>105,855</td>
+<td>舞者、外观相似、<strong>非线性运动</strong></td>
+<td>复杂运动</td>
+</tr>
+<tr>
+<td><strong>SportsMOT</strong></td>
+<td>240</td>
+<td>150,379</td>
+<td>篮球&#x2F;排球&#x2F;足球、高速多变</td>
+<td>极端运动多样性</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>关键洞察</strong>：单数据集评测无法体现泛化性。MOTChallenge 运动可预测但拥挤；DanceTrack&#x2F;SportsMOT 强调运动多样性与外观相似性。</p>
+</blockquote>
+<hr>
+<h2 id="五、深度学习目标检测模型（三大族）"><a href="#五、深度学习目标检测模型（三大族）" class="headerlink" title="五、深度学习目标检测模型（三大族）"></a>五、深度学习目标检测模型（三大族）</h2><p>Tracking-by-detection 的检测器基础，分三类：</p>
+<table>
+<thead>
+<tr>
+<th>族</th>
+<th>代表</th>
+<th>特点</th>
+<th>NMS 依赖</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Proposal-based（两阶段）</strong></td>
+<td>R-CNN → Fast&#x2F;Faster R-CNN → Mask R-CNN</td>
+<td>区域提议+分类回归，精度高、速度慢</td>
+<td>是</td>
+</tr>
+<tr>
+<td><strong>Grid-based（单阶段）</strong></td>
+<td>YOLO 系列、<strong>YOLOX</strong>（anchor-free）</td>
+<td>实时、回归式；YOLOX 为 MOT 基准默认检测器</td>
+<td>是（anchorless 仍需）</td>
+</tr>
+<tr>
+<td><strong>Query-based</strong></td>
+<td>DETR、DAB-DETR、DINO、RT-DETR</td>
+<td>集合预测、匈牙利二部匹配、<strong>无需 NMS</strong>、端到端；收敛慢、小目标弱</td>
+<td>否</td>
+</tr>
+</tbody></table>
+<ul>
+<li>DETR 是端到端跟踪方法（MOTR 系）的基石。</li>
+</ul>
+<hr>
+<h2 id="六、Tracking-by-Detection-范式（核心）"><a href="#六、Tracking-by-Detection-范式（核心）" class="headerlink" title="六、Tracking-by-Detection 范式（核心）"></a>六、Tracking-by-Detection 范式（核心）</h2><blockquote>
+<p><strong>核心论断</strong>：所有 tracking-by-detection 算法本质上都是 SORT 的变体。检测与关联解耦，模块化、灵活、可独立优化。</p>
+</blockquote>
+<h3 id="6-1-两大基线"><a href="#6-1-两大基线" class="headerlink" title="6.1 两大基线"></a>6.1 两大基线</h3><h4 id="SORT（先驱）"><a href="#SORT（先驱）" class="headerlink" title="SORT（先驱）"></a>SORT（先驱）</h4><p>三大组件 + 轨迹管理：</p>
+<ul>
+<li><strong>检测</strong>：仅保留高置信度框，对检测分数阈值 <code>detτ</code> 极敏感。</li>
+<li><strong>运动模型</strong>：卡尔曼滤波（KF），<strong>线性匀速</strong>假设；状态 <code>[x, y, s, r, ẋ, ẏ, ṡ]</code>。</li>
+<li><strong>关联</strong>：匈牙利算法，代价 &#x3D; 负 IoU，设 IoU 门控阈值。</li>
+<li><strong>轨迹管理</strong>：四状态 <code>active / lost / deleted / new</code>；试用期（默认 3 帧）、<code>T_lost=1</code>（<strong>不处理长时遮挡</strong>）。</li>
+<li><strong>缺点</strong>：ID 切换频繁（运动模型精度低，遮挡累积误差）。</li>
+</ul>
+<h4 id="Deep-SORT"><a href="#Deep-SORT" class="headerlink" title="Deep SORT"></a>Deep SORT</h4><ul>
+<li>在 SORT 基础上<strong>融合外观</strong>：CNN（ReID 模型）提取外观嵌入，余弦距离比较。</li>
+<li>轨迹维护外观特征<strong>缓冲区</strong>，用最近邻距离做相似度。</li>
+<li>ReID 训练：分类模式（Deep SORT）vs <strong>度量学习</strong>（JDE，更契合 MOT）；混合最优。</li>
+</ul>
+<h3 id="6-2-五大方法分类"><a href="#6-2-五大方法分类" class="headerlink" title="6.2 五大方法分类"></a>6.2 五大方法分类</h3><table>
+<thead>
+<tr>
+<th>类别</th>
+<th>核心思想</th>
+<th>代表方法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>① Joint Detection &amp; Embedding (JDE)</strong></td>
+<td>单模型同时做检测+外观提取（one-shot）</td>
+<td>JDE、FairMOT、TransTrack</td>
+</tr>
+<tr>
+<td><strong>② Heuristic-based</strong></td>
+<td>仅靠关联启发式，无模型改进（基于 SDE）</td>
+<td>ByteTrack、BoT-SORT、ImprAsso、SparseTrack、C-BIoU、Hybrid-SORT、BoostTrack(++)</td>
+</tr>
+<tr>
+<td><strong>③ Motion-based</strong></td>
+<td>改进&#x2F;替换运动模型以处理非线性运动</td>
+<td>OC-SORT、Deep OC-SORT、MotionTrack、ETTrack、MoveSORT、DeepMoveSORT、UCMCTrack</td>
+</tr>
+<tr>
+<td><strong>④ Affinity learning</strong></td>
+<td>学习几何&#x2F;运动&#x2F;外观相似度函数</td>
+<td>StrongSORT++(AFLink)、TWIX、SMILETrack、QDTrack</td>
+</tr>
+<tr>
+<td><strong>⑤ Offline</strong></td>
+<td>全局关联（所有检测先获取），基于 GNN</td>
+<td>MPNTrack、SUSHI、CoNo-Link</td>
+</tr>
+</tbody></table>
+<h3 id="6-3-各类方法要点"><a href="#6-3-各类方法要点" class="headerlink" title="6.3 各类方法要点"></a>6.3 各类方法要点</h3><h4 id="①-JDE-类"><a href="#①-JDE-类" class="headerlink" title="① JDE 类"></a>① JDE 类</h4><ul>
+<li><strong>JDE</strong>：检测+ReID 联合，one-shot，比 Deep SORT 快约 4×，但精度略低；用外观特征<strong>滑动平均</strong>而非缓冲区；度量学习。</li>
+<li><strong>FairMOT</strong>：解决检测&#x2F;ReID 任务不平衡，用 anchor-free CenterNet + 低维 ReID 特征。</li>
+<li><strong>TransTrack</strong>：介于两范式之间，DETR + 额外 track decoder，track query 基于历史；仍需 IoU 关联（非全端到端）。</li>
+</ul>
+<h4 id="②-Heuristic-类（”现代-SORT”）"><a href="#②-Heuristic-类（”现代-SORT”）" class="headerlink" title="② Heuristic 类（”现代 SORT”）"></a>② Heuristic 类（”现代 SORT”）</h4><ul>
+<li><strong>ByteTrack</strong>：最具影响力。<strong>Byte 关联</strong>——两层级联：①高分检测关联 active&#x2F;lost 轨迹（运动+外观）；②低分检测关联剩余 active 轨迹（仅运动，因遮挡框外观差）。对 <code>detτ</code> 更鲁棒；配 YOLOX。</li>
+<li><strong>BoT-SORT</strong>：ByteTrack + bag-of-tricks——自适应 KF（噪声随框尺寸）、<strong>相机运动补偿 CMC (GMC)</strong>、更强 ReID（BoT-SBS50）、新关联代价（含 proximity 门控）。</li>
+<li><strong>ImprAsso</strong>：combined matching，高低分检测<strong>单步</strong>关联（低分距离乘缩放因子 β）；遮挡感知初始化。</li>
+<li><strong>SparseTrack</strong>：基于伪深度（框垂直位置）分层级联关联，拥挤场景强、无需 ReID。</li>
+<li><strong>C-BIoU &#x2F; Deep-EIoU</strong>：框形状缓冲（扩张 BIoU），级联多级扩张，对非线性运动鲁棒。</li>
+<li><strong>Hybrid-SORT</strong>：tracklet 置信度建模 + HMIoU（高度调制 IoU）。</li>
+<li><strong>BoostTrack(++)</strong>：丰富启发式集合——置信度增强、Mahalanobis 距离（softmax 归一化）+ IoU + 形状距离，极拥挤场景（MOT20）强。</li>
+<li><strong>Tracktor</strong>：无额外训练，直接复用 Faster R-CNN 的回归器对齐轨迹框。</li>
+</ul>
+<h4 id="③-Motion-类"><a href="#③-Motion-类" class="headerlink" title="③ Motion 类"></a>③ Motion 类</h4><blockquote>
+<p>线性 KF 在 MOTChallenge（线性运动）SOTA，但在 DanceTrack&#x2F;SportsMOT（非线性）失效。</p>
+</blockquote>
+<ul>
+<li><strong>OC-SORT</strong>：观察中心化——ORU（遮挡后插值重更新 KF 修正累积误差）、OCM（动量作相似度）、OCR（用最后观测位置关联）。</li>
+<li><strong>Deep OC-SORT</strong>：+ CMC + ReID + <strong>动态外观</strong>（动量随检测分数变化）。</li>
+<li><strong>深度运动模型</strong>：MotionTrack（Transformer + 交互建模）、ETTrack（Transformer+TCN，动量校正损失）、MoveSORT（深度滤波器替代 KF，Bayesian&#x2F;端到端两族）、DeepMoveSORT（+ ReID，SOTA on 非线性数据集）。</li>
+<li><strong>UCMCTrack</strong>：投到<strong>地平面</strong>做点跟踪，无需 CMC&#x2F;ReID 即强；但需手动调相机参数（限制泛化）。</li>
+</ul>
+<h4 id="④-Affinity-learning-类"><a href="#④-Affinity-learning-类" class="headerlink" title="④ Affinity learning 类"></a>④ Affinity learning 类</h4><ul>
+<li><strong>StrongSORT++</strong>：AFLink 模块全局链轨迹（仅用坐标轨迹，1D CNN+MLP 预测连通性）+ GPR 插值；不能修 ID 切换。</li>
+<li><strong>TWIX &#x2F; C-TWIX</strong>：对比学习检测同对象轨迹对，Transformer 编码，<strong>无需 IoU&#x2F;外观</strong>即达 SOTA。</li>
+<li><strong>SMILETrack</strong>：SLM 模块（ViT）预测外观相似度替代标准 ReID。</li>
+<li><strong>QDTrack</strong>：准稠密对比采样，纯外观，可从静态图学习，BDD100K SOTA。</li>
+</ul>
+<h4 id="⑤-Offline-类（GNN）"><a href="#⑤-Offline-类（GNN）" class="headerlink" title="⑤ Offline 类（GNN）"></a>⑤ Offline 类（GNN）</h4><ul>
+<li><strong>MPNTrack</strong>：检测为节点、关系为边，消息传递网络（MPN）迭代更新；时间感知；图随视频长度指数增长需剪枝（保留 top-50 近邻）。</li>
+<li><strong>SUSHI</strong>：层次化图，逐级扩展轨迹长度（2→4→…→512），权重共享；+ 运动特征。</li>
+<li><strong>CoNo-Link</strong>：NodeNet（Transformer）建模关联似然，剪枝保留关键边（5~10），含 det-det&#x2F;det-track&#x2F;track-track 边；最复杂但多数据集最强。</li>
+</ul>
+<h3 id="6-4-范式讨论"><a href="#6-4-范式讨论" class="headerlink" title="6.4 范式讨论"></a>6.4 范式讨论</h3><ul>
+<li><strong>优点</strong>：模块化，各组件可独立替换（检测器&#x2F;运动模型&#x2F;关联）。</li>
+<li><strong>缺点</strong>：<strong>依赖数据集特定启发式</strong>；KF 需调参且不适非线性；过度工程化（如 DeepMoveSORT 牺牲简洁性）。</li>
+<li><strong>作者观点</strong>：<strong>Affinity learning（含 offline GNN）是 tracking-by-detection 最自然的演进方向</strong>——可从数据学习，又保留模块化。</li>
+</ul>
+<hr>
+<h2 id="七、End-to-End-范式"><a href="#七、End-to-End-范式" class="headerlink" title="七、End-to-End 范式"></a>七、End-to-End 范式</h2><blockquote>
+<p><strong>定义</strong>：检测与关联联合训练，关联后无需后处理，仅保留轨迹管理逻辑。多为 DETR 扩展（tracking-by-query）。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>核心机制</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MOTR</strong></td>
+<td>DETR + <strong>track query</strong>（编码历史）+ TAN（时序聚合）迭代更新</td>
+<td>先驱；检测弱（新生对象监督少）</td>
+</tr>
+<tr>
+<td><strong>TrackFormer</strong></td>
+<td>类 MOTR，依赖 NMS、无 TAN</td>
+<td>非完全端到端</td>
+</tr>
+<tr>
+<td><strong>MOTRv2</strong></td>
+<td>引入 YOLOX 生成提案作 anchor</td>
+<td>性能强，但<strong>引入独立检测器，非真端到端</strong></td>
+</tr>
+<tr>
+<td><strong>MOTRv3</strong></td>
+<td>改二部匹配（自动平衡 track&#x2F;detect query）+ YOLOX 伪标签蒸馏（仅训练）+ track group query</td>
+<td>与 MOTRv2 持平且保持端到端</td>
+</tr>
+<tr>
+<td><strong>MeMOT</strong></td>
+<td>时空<strong>记忆缓冲区</strong>（短&#x2F;长期）+ memory aggregator</td>
+<td>预测 objectness&#x2F;uniqueness</td>
+</tr>
+<tr>
+<td><strong>MeMOTR</strong></td>
+<td>长期记忆嵌入（decoder 输出滑动平均）作 key</td>
+<td>类 MeMOT</td>
+</tr>
+<tr>
+<td><strong>MOTIP</strong></td>
+<td><strong>MOT as ID Prediction</strong>：用轨迹历史作 KV，检测作 query 分类 ID；可学习 ID 字典</td>
+<td>与 affinity learning 相似；与最佳 tracking-by-query 持平</td>
+</tr>
+</tbody></table>
+<p><strong>讨论</strong>：完全可微、可联合优化、泛化性好；但<strong>算力需求大</strong>（多 GPU 高显存）、<strong>推理慢</strong>（难实时）、<strong>极拥挤场景弱</strong>（DETR 小目标密集检测差）。</p>
+<hr>
+<h2 id="八、方法对比与实验结论"><a href="#八、方法对比与实验结论" class="headerlink" title="八、方法对比与实验结论"></a>八、方法对比与实验结论</h2><h3 id="8-1-总体性能演进（2022→2024，HOTA）"><a href="#8-1-总体性能演进（2022→2024，HOTA）" class="headerlink" title="8.1 总体性能演进（2022→2024，HOTA）"></a>8.1 总体性能演进（2022→2024，HOTA）</h3><ul>
+<li><strong>MOT17</strong>：63.1%（ByteTrack）→ 67.1%（CoNo-Link），+4.0%</li>
+<li><strong>MOT20</strong>：61.3% → 66.4%（BoostTrack++），+5.1%</li>
+<li><strong>DanceTrack</strong>：53.6% → 73.4%（MOTRv2），<strong>+19.8%</strong>（端到端驱动）</li>
+</ul>
+<h3 id="8-2-各数据集结论"><a href="#8-2-各数据集结论" class="headerlink" title="8.2 各数据集结论"></a>8.2 各数据集结论</h3><table>
+<thead>
+<tr>
+<th>数据集</th>
+<th>最优范式</th>
+<th>关键发现</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MOT17&#x2F;MOT20</strong>（拥挤+线性）</td>
+<td><strong>启发式 TbD</strong></td>
+<td>BoostTrack++&#x2F;ImprAsso&#x2F;CoNo-Link Pareto 最优；端到端明显落后；<strong>KF 足够</strong>，可学习运动模型反而次优；<strong>CMC 关键</strong>（+1.0<del>1.5% HOTA on MOT17）；ReID 作用小（+0.4</del>0.7%）</td>
+</tr>
+<tr>
+<td><strong>DanceTrack</strong>（非线性）</td>
+<td><strong>端到端</strong></td>
+<td>MOTRv2 最优（73.4%）；连最弱端到端 MeMOTR 也超最佳 TbD 4.7%；<strong>可学习运动模型+强 ReID</strong> 对 TbD 至关重要（DeepMoveSORT +9.4%）</td>
+</tr>
+<tr>
+<td><strong>SportsMOT</strong>（极端运动）</td>
+<td>TbD（检测器优势）</td>
+<td>DeepMoveSORT 78.7% HOTA 最优；TbD 超端到端达 6.8%（但检测器训练集不同，不完全公平）；BoT-SORT(+ReID) 超 ByteTrack 4.6%；框扩张启发式有效</td>
+</tr>
+</tbody></table>
+<h3 id="8-3-关联组件有效性（因域而异）"><a href="#8-3-关联组件有效性（因域而异）" class="headerlink" title="8.3 关联组件有效性（因域而异）"></a>8.3 关联组件有效性（因域而异）</h3><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>MOTChallenge（线性&#x2F;拥挤）</th>
+<th>DanceTrack&#x2F;SportsMOT（非线性）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>运动模型</td>
+<td>KF 足够，深度模型<strong>无益甚至有害</strong></td>
+<td><strong>深度运动模型关键</strong>（+最高 4.8%）</td>
+</tr>
+<tr>
+<td>ReID 模型</td>
+<td>作用小（+0.4~0.7%）</td>
+<td><strong>重要</strong>（+最高 5.2%）</td>
+</tr>
+<tr>
+<td>CMC</td>
+<td><strong>关键</strong>（MOT17，+1~1.5%）</td>
+<td>次要（运动&#x2F;ReID 模型可替代）</td>
+</tr>
+<tr>
+<td>启发式</td>
+<td><strong>极有效</strong>（拥挤核心）</td>
+<td>有益，但不如运动&#x2F;ReID；框扩张有效</td>
+</tr>
+</tbody></table>
+<h3 id="8-4-跨域泛化（加权宏平均基准）"><a href="#8-4-跨域泛化（加权宏平均基准）" class="headerlink" title="8.4 跨域泛化（加权宏平均基准）"></a>8.4 跨域泛化（加权宏平均基准）</h3><ul>
+<li><strong>Table 7</strong>（MOT17&#x2F;20 + DanceTrack）：范式排序 <strong>端到端 &gt; offline &gt; TbD</strong>；MOTRv2 最优（67.4% HOTA），ByteTrack MOTA 最优（85.7%）。</li>
+<li><strong>Table 8</strong>（+SportsMOT）：DeepMoveSORT 最优（67.9% HOTA），ByteTrack MOTA 最优（89.1%）。</li>
+<li><strong>局限</strong>：很多方法只在 1~2 域评测，难以充分评估泛化性；真端到端在 MOT20 缺结果（推测 DETR 拥挤小目标差）。</li>
+</ul>
+<hr>
+<h2 id="九、核心结论与启示"><a href="#九、核心结论与启示" class="headerlink" title="九、核心结论与启示"></a>九、核心结论与启示</h2><ol>
+<li><p><strong>没有通用最优解，因域而异</strong>：</p>
+<ul>
+<li>拥挤 + 线性运动 → <strong>启发式 TbD</strong>（BoostTrack++、ImprAsso、CoNo-Link）。</li>
+<li>复杂非线性运动 → <strong>深度学习关联</strong>（端到端 MOTRv2&#x2F;MOTIP；TbD 中 DeepMoveSORT&#x2F;Deep OC-SORT）。</li>
+</ul>
+</li>
+<li><p><strong>启发式的天花板与代价</strong>：重工程启发式在 MOTChallenge 刷到 SOTA，但依赖手工调参、难泛化；其性能<strong>不随数据规模提升</strong>。</p>
+</li>
+<li><p><strong>可学习方法的潜力</strong>：affinity learning（含 GNN offline）与端到端方法可从数据学习、少调参，是<strong>更通用</strong>的方向；GNN offline 在 TbD 内优于在线变体。</p>
+</li>
+<li><p><strong>检测器是隐藏变量</strong>：TbD 用 YOLOX，端到端用 DETR，检测质量差异（DetA）使纯关联对比不完全公平。</p>
+</li>
+<li><p><strong>评测建议</strong>：应在<strong>多数据集</strong>评估泛化性，而非单一域；理想方案是大规模多域 MOT 数据集。</p>
+</li>
+<li><p><strong>范式演进脉络</strong>：SORT → Deep SORT（+外观）→ ByteTrack（现代基线）→ BoT-SORT（+CMC&#x2F;ReID）→ OC-SORT（非线性）→ 深度运动模型 &#x2F; affinity learning &#x2F; GNN → 端到端 MOTR 系。TransTrack→TrackFormer→MOTR 为端到端的过渡。</p>
+</li>
+</ol>
+<hr>
+<h2 id="十、方法速查表"><a href="#十、方法速查表" class="headerlink" title="十、方法速查表"></a>十、方法速查表</h2><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>年份</th>
+<th>类别&#x2F;范式</th>
+<th>一句话特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SORT</td>
+<td>2016</td>
+<td>基线</td>
+<td>KF + IoU 匈牙利关联，先驱</td>
+</tr>
+<tr>
+<td>Deep SORT</td>
+<td>2017</td>
+<td>基线</td>
+<td>+ ReID 外观，缓冲区最近邻</td>
+</tr>
+<tr>
+<td>JDE &#x2F; FairMOT</td>
+<td>2020&#x2F;2021</td>
+<td>JDE</td>
+<td>检测+ReID 联合 one-shot</td>
+</tr>
+<tr>
+<td>ByteTrack</td>
+<td>2022</td>
+<td>启发式</td>
+<td>高低分层级联，现代 SORT</td>
+</tr>
+<tr>
+<td>BoT-SORT</td>
+<td>2022</td>
+<td>启发式</td>
+<td>+自适应KF+CMC+强ReID</td>
+</tr>
+<tr>
+<td>OC-SORT</td>
+<td>2023</td>
+<td>运动</td>
+<td>观察中心化，修 KF 误差</td>
+</tr>
+<tr>
+<td>Deep OC-SORT</td>
+<td>2023</td>
+<td>运动</td>
+<td>+CMC+ReID+动态外观</td>
+</tr>
+<tr>
+<td>DeepMoveSORT</td>
+<td>2024</td>
+<td>运动</td>
+<td>深度滤波器+ReID，非线性 SOTA</td>
+</tr>
+<tr>
+<td>UCMCTrack</td>
+<td>2024</td>
+<td>运动</td>
+<td>地平面点跟踪，无 CMC&#x2F;ReID</td>
+</tr>
+<tr>
+<td>BoostTrack++</td>
+<td>2024</td>
+<td>启发式</td>
+<td>丰富启发式，MOT20 SOTA</td>
+</tr>
+<tr>
+<td>ImprAsso</td>
+<td>2023</td>
+<td>启发式</td>
+<td>combined matching</td>
+</tr>
+<tr>
+<td>CoNo-Link</td>
+<td>2024</td>
+<td>Offline&#x2F;GNN</td>
+<td>NodeNet+GNN，多数据集强</td>
+</tr>
+<tr>
+<td>SUSHI</td>
+<td>2022</td>
+<td>Offline&#x2F;GNN</td>
+<td>层次化图</td>
+</tr>
+<tr>
+<td>MOTR &#x2F; MOTRv3</td>
+<td>2022&#x2F;2023</td>
+<td>端到端</td>
+<td>track query 迭代更新</td>
+</tr>
+<tr>
+<td>MOTRv2</td>
+<td>2023</td>
+<td>端到端*</td>
+<td>+YOLOX 提案，DanceTrack SOTA（非真端到端）</td>
+</tr>
+<tr>
+<td>MOTIP</td>
+<td>2024</td>
+<td>端到端</td>
+<td>MOT as ID Prediction</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="附：转换说明"><a href="#附：转换说明" class="headerlink" title="附：转换说明"></a>附：转换说明</h2><ul>
+<li>PDF→Markdown 转换工具：<code>pymupdf4llm</code>（开源，已禁用 OCR，直接提取数字文本）。</li>
+<li>图片提取至 <code>Clippings/2506.13457_images/</code>（43 张）。</li>
+<li>公式以图片形式保留在转换文件 [[Clippings&#x2F;2506.13457v1.md]] 中。</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA%E7%BB%BC%E8%BF%B0%E6%A2%B3%E7%90%86/">https://www.loveww.top/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA%E7%BB%BC%E8%BF%B0%E6%A2%B3%E7%90%86/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/">深度学习</a><a class="post-meta__tags" href="/tags/%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/">多目标跟踪</a><a class="post-meta__tags" href="/tags/MOT/">MOT</a><a class="post-meta__tags" href="/tags/%E7%BB%BC%E8%BF%B0/">综述</a><a class="post-meta__tags" href="/tags/tracking-by-detection/">tracking-by-detection</a><a class="post-meta__tags" href="/tags/%E7%AB%AF%E5%88%B0%E7%AB%AF%E8%B7%9F%E8%B8%AA/">端到端跟踪</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</div></div><div class="info-2"><div class="info-item-1">CARLA + ROS2 + rf-DETR + OC-SORT 感知仿真教程本教程记录从零搭建 CARLA 0.9.16 仿真环境、接入 ROS2 话题、用 rf-DETR (TensorRT) 做目标检测、再用 OC-SORT 做多目标跟踪并绘制移动轨迹的完整过程。最终在 rviz2 中看到带 ID 和轨迹的检测结果。 你将搭建的系统1234567891011CARLA 仿真(带 NPC 交通)   │  RGB 相机 (ROS2 native 接口)   ▼/carla/hero/rgb/image 话题   │  perception_camera 检测节点 (rf-DETR TensorRT + OC-SORT)   ▼/carla/hero/rgb/detection_image  (画框 + ID + 轨迹, 给 rviz2)/carla/hero/detections           (Detection2DArray, track_id 在 id 字段)   │   ▼rviz2 可视化  目录   章节 内容    01 环境准备 系统、GPU&#x2F;...</div></div></div></a><a class="pagination-related" href="/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/OC-SORT%20%E8%AF%A6%E8%A7%A3/" title="OC-SORT 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">OC-SORT 详解</div></div><div class="info-2"><div class="info-item-1">OC-SORT: Observation-Centric SORT 论文: Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking (CVPR 2023)作者: Jinkun Cao, Xinshuo Weng, Rawal Khirodkar, Kris Kitani, Jiangmiao Pang (CMU &#x2F; 商汤)代码: noahcao&#x2F;OC_SORT   一句话总结：OC-SORT 把 SORT 从”以估计为中心”改为”以观测为中心”–当轨迹从遮挡中恢复时，用观测历史修正卡尔曼参数（ORU）；在关联代价中加入观测方向一致性（OCM）；用最后一次观测做二次恢复匹配（OCR）。 无需外观特征，即超越 DeepSORT。   一、背景：SORT 的三个局限 OC-SORT 的出发点是分析 SORT 的三个根本局限，逐一解决。  1.1 局限一：对状态噪声敏感SORT 假设匀速运动，用卡尔曼滤波估计速度。但在高帧率视频中，连续帧间位移很小，噪声与实际位移量级相当，导...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"><img class="cover" src="/images/4.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-02-01</div><div class="info-item-2">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</div></div><div class="info-2"><div class="info-item-1">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)0. 前言：为什么要写这个系列？在计算机视觉（CV）的江湖里，YOLO (You Only Look Once) 是一个绕不开的名字。从 2015 年 Redmon 提出 v1 版本至今，YOLO 系列已经走过了近十个年头，演进到了如今的 v11。 作为一名算法从业者，我几乎每天都在和各种版本的 YOLO 打交道：调参、部署、优化。但在高强度的工作节奏下，我发现自己陷入了一个**“熟练的陌生人”**误区：  对抗遗忘： 算法的演进非常细碎。从 Anchor-based 到 Anchor-free，从简单的 IoU 到复杂的 $CIoU$、$DIoU$ 损失函数，如果不系统整理，很多细节（如正负样本匹配策略的改变）很容易在脑海中变得模糊。 构建底层逻辑： 仅仅跑通 train.py 是远远不够的。为了在面试中对答如流，也为了在实际业务中能根据场景选择最合适的版本，我需要从底层原理出发，理解每一代 YOLO “为什么要这么改”。 职业背书： 博客是最好的技术名片。通过深度解析，我希望向同行和面试官展示：我不仅能通过工具解决问题，更...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/" title="YOLO 核心概念"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 核心概念</div></div><div class="info-2"><div class="info-item-1">🧠 YOLO 核心概念详解1. 目标检测基础什么是目标检测 同时解决两个问题：物体在哪里（定位）+ 物体是什么（分类）  输出形式： 1(x, y, w, h, confidence, class_probs...)  Two-Stage vs One-Stage   方法 流程 代表 特点    Two-Stage 提取候选区 → 分类回归 R-CNN, Faster R-CNN 精度高，速度慢   One-Stage 一步到位直接预测 YOLO, SSD 速度快，端到端    YOLO 的本质：把检测变成回归问题，整张图输入，一次性输出所有预测。   2. 核心机制2.1 Grid Cell（网格划分）12输入图像 448×448 → 划分为 S×S 网格 (v1: S=7)每个网格负责预测中心点落在该网格内的目标  v1 例子：  7×7 &#x3D; 49 个网格 每个网格预测 2 个 bounding box 每个 box: (x, y, w, h, confidence) &#x3D; 5 个值 每个网格预测 C 个类别 (VOC: 20) 输出张量: 7×7×(5...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E7%B3%BB%E5%88%97%E6%80%BB%E8%A7%88/" title="YOLO 系列总览"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 系列总览</div></div><div class="info-2"><div class="info-item-1">🎯 YOLO 系列目标检测算法总览一句话理解 YOLO You Only Look Once —— 只需看一次，就能完成目标检测。 把目标检测从”先找候选区再分类”的两阶段，变成了”一步到位”的回归问题。   版本演进时间线   版本 年份 作者&#x2F;机构 核心创新 论文&#x2F;状态    v1 2016 Joseph Redmon 单阶段检测、Grid Cell 划分 1506.02640   v2 2017 Redmon &amp; Farhadi Anchor Box、BN、Darknet-19、细粒度特征 1612.08242   v3 2018 Redmon &amp; Farhadi Darknet-53、多尺度预测(FPN)、逻辑分类器 1804.02767   v4 2020 Alexey Bochkovskiy CSPDarknet53、PAN、Mosaic增强、BoF&#x2F;BoS 2004.10934   v5 2020 Ultralytics PyTorch实现、工程化、CSPNet+PAN ❌ 无论文   v6 2022 美团 工业级部署...</div></div></div></a><a class="pagination-related" href="/2026/07/25/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/Transformer%20%E8%AF%A6%E8%A7%A3/" title="Transformer： 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-25</div><div class="info-item-2">Transformer： 详解</div></div><div class="info-2"><div class="info-item-1">Transformer: Attention Is All You Need 论文: Attention Is All You Need (NeurIPS 2017)作者: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, Illia Polosukhin (Google Brain)代码: tensor2tensor 官方实现   一、背景 把《Attention Is All You Need》放回 2017 年的语境，理解它当时要解决什么问题、采用了哪些关键设计，有助于更准确地把握后续架构细节。  1.1 2017 年的世界：Transformer 诞生时的 NLP 图景2017 年 6 月这篇论文出现时，NLP 学术圈与工业界的图景是这样的：  机器翻译是 NLP 的旗舰任务。Google Translate 在 2016 年 9 月把生产环境从短语统计 MT（PBMT）切到神经 MT（GNMT），翻译质量显著提升，...</div></div></div></a><a class="pagination-related" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-09</div><div class="info-item-2">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</div></div><div class="info-2"><div class="info-item-1">CARLA + ROS2 + rf-DETR + OC-SORT 感知仿真教程本教程记录从零搭建 CARLA 0.9.16 仿真环境、接入 ROS2 话题、用 rf-DETR (TensorRT) 做目标检测、再用 OC-SORT 做多目标跟踪并绘制移动轨迹的完整过程。最终在 rviz2 中看到带 ID 和轨迹的检测结果。 你将搭建的系统1234567891011CARLA 仿真(带 NPC 交通)   │  RGB 相机 (ROS2 native 接口)   ▼/carla/hero/rgb/image 话题   │  perception_camera 检测节点 (rf-DETR TensorRT + OC-SORT)   ▼/carla/hero/rgb/detection_image  (画框 + ID + 轨迹, 给 rviz2)/carla/hero/detections           (Detection2DArray, track_id 在 id 字段)   │   ▼rviz2 可视化  目录   章节 内容    01 环境准备 系统、GPU&#x2F;...</div></div></div></a><a class="pagination-related" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/06-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA-OC-SORT/" title="CARLA教程-06-目标跟踪(OC-SORT)与移动轨迹"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-09</div><div class="info-item-2">CARLA教程-06-目标跟踪(OC-SORT)与移动轨迹</div></div><div class="info-2"><div class="info-item-1">06 目标跟踪 (OC-SORT) + 移动轨迹检测之后接 OC-SORT 做多目标跟踪，给每个目标分配稳定 ID，并绘制移动轨迹。 6.1 OC-SORT 简介OC-SORT（Observation-Centric SORT）是纯运动模型的多目标跟踪器，输入每帧检测 [x1,y1,x2,y2,score]，输出带 track ID 的轨迹。适合拥挤和非线性运动场景，实时性好。 6.2 依赖OC-SORT 的 kalmanfilter.py 用了 filterpy，装到系统 python： 1/usr/bin/python3 -m pip install filterpy  association.py 的 linear_assignment 有 lap&#x2F;scipy 回退，系统 python 有 scipy 就行，不用装 lap。 6.3 在节点里引入 OC-SORTOC-SORT 仓库不需要 pip install，加路径即可。在 carla_detector.py 顶部： 1234import sysOC_SORT_PATH = &quot;~/models/OC_...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA%EF%BC%88MOT%EF%BC%89%E7%BB%BC%E8%BF%B0%E6%A2%B3%E7%90%86"><span class="toc-number">1.</span> <span class="toc-text">深度学习多目标跟踪（MOT）综述梳理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E7%BB%BC%E8%BF%B0%E5%AE%9A%E4%BD%8D%E4%B8%8E%E8%B4%A1%E7%8C%AE"><span class="toc-number">1.1.</span> <span class="toc-text">一、综述定位与贡献</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81MOT-%E9%97%AE%E9%A2%98%E4%B8%8E%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5"><span class="toc-number">1.2.</span> <span class="toc-text">二、MOT 问题与基础概念</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E4%BB%BB%E5%8A%A1%E5%AE%9A%E4%B9%89"><span class="toc-number">1.2.1.</span> <span class="toc-text">2.1 任务定义</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E9%80%9A%E7%94%A8%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.2 通用流水线</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E9%94%99%E8%AF%AF%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.2.3.</span> <span class="toc-text">2.3 错误类型</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E8%AF%84%E4%BC%B0%E6%8C%87%E6%A0%87"><span class="toc-number">1.3.</span> <span class="toc-text">三、评估指标</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%9F%BA%E5%87%86%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="toc-number">1.4.</span> <span class="toc-text">四、基准数据集</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B%E6%A8%A1%E5%9E%8B%EF%BC%88%E4%B8%89%E5%A4%A7%E6%97%8F%EF%BC%89"><span class="toc-number">1.5.</span> <span class="toc-text">五、深度学习目标检测模型（三大族）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81Tracking-by-Detection-%E8%8C%83%E5%BC%8F%EF%BC%88%E6%A0%B8%E5%BF%83%EF%BC%89"><span class="toc-number">1.6.</span> <span class="toc-text">六、Tracking-by-Detection 范式（核心）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E4%B8%A4%E5%A4%A7%E5%9F%BA%E7%BA%BF"><span class="toc-number">1.6.1.</span> <span class="toc-text">6.1 两大基线</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#SORT%EF%BC%88%E5%85%88%E9%A9%B1%EF%BC%89"><span class="toc-number">1.6.1.1.</span> <span class="toc-text">SORT（先驱）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Deep-SORT"><span class="toc-number">1.6.1.2.</span> <span class="toc-text">Deep SORT</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E4%BA%94%E5%A4%A7%E6%96%B9%E6%B3%95%E5%88%86%E7%B1%BB"><span class="toc-number">1.6.2.</span> <span class="toc-text">6.2 五大方法分类</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E5%90%84%E7%B1%BB%E6%96%B9%E6%B3%95%E8%A6%81%E7%82%B9"><span class="toc-number">1.6.3.</span> <span class="toc-text">6.3 各类方法要点</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A0-JDE-%E7%B1%BB"><span class="toc-number">1.6.3.1.</span> <span class="toc-text">① JDE 类</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A1-Heuristic-%E7%B1%BB%EF%BC%88%E2%80%9D%E7%8E%B0%E4%BB%A3-SORT%E2%80%9D%EF%BC%89"><span class="toc-number">1.6.3.2.</span> <span class="toc-text">② Heuristic 类（”现代 SORT”）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A2-Motion-%E7%B1%BB"><span class="toc-number">1.6.3.3.</span> <span class="toc-text">③ Motion 类</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A3-Affinity-learning-%E7%B1%BB"><span class="toc-number">1.6.3.4.</span> <span class="toc-text">④ Affinity learning 类</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E2%91%A4-Offline-%E7%B1%BB%EF%BC%88GNN%EF%BC%89"><span class="toc-number">1.6.3.5.</span> <span class="toc-text">⑤ Offline 类（GNN）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-%E8%8C%83%E5%BC%8F%E8%AE%A8%E8%AE%BA"><span class="toc-number">1.6.4.</span> <span class="toc-text">6.4 范式讨论</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81End-to-End-%E8%8C%83%E5%BC%8F"><span class="toc-number">1.7.</span> <span class="toc-text">七、End-to-End 范式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%96%B9%E6%B3%95%E5%AF%B9%E6%AF%94%E4%B8%8E%E5%AE%9E%E9%AA%8C%E7%BB%93%E8%AE%BA"><span class="toc-number">1.8.</span> <span class="toc-text">八、方法对比与实验结论</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-%E6%80%BB%E4%BD%93%E6%80%A7%E8%83%BD%E6%BC%94%E8%BF%9B%EF%BC%882022%E2%86%922024%EF%BC%8CHOTA%EF%BC%89"><span class="toc-number">1.8.1.</span> <span class="toc-text">8.1 总体性能演进（2022→2024，HOTA）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-%E5%90%84%E6%95%B0%E6%8D%AE%E9%9B%86%E7%BB%93%E8%AE%BA"><span class="toc-number">1.8.2.</span> <span class="toc-text">8.2 各数据集结论</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-3-%E5%85%B3%E8%81%94%E7%BB%84%E4%BB%B6%E6%9C%89%E6%95%88%E6%80%A7%EF%BC%88%E5%9B%A0%E5%9F%9F%E8%80%8C%E5%BC%82%EF%BC%89"><span class="toc-number">1.8.3.</span> <span class="toc-text">8.3 关联组件有效性（因域而异）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-4-%E8%B7%A8%E5%9F%9F%E6%B3%9B%E5%8C%96%EF%BC%88%E5%8A%A0%E6%9D%83%E5%AE%8F%E5%B9%B3%E5%9D%87%E5%9F%BA%E5%87%86%EF%BC%89"><span class="toc-number">1.8.4.</span> <span class="toc-text">8.4 跨域泛化（加权宏平均基准）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E6%A0%B8%E5%BF%83%E7%BB%93%E8%AE%BA%E4%B8%8E%E5%90%AF%E7%A4%BA"><span class="toc-number">1.9.</span> <span class="toc-text">九、核心结论与启示</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E6%96%B9%E6%B3%95%E9%80%9F%E6%9F%A5%E8%A1%A8"><span class="toc-number">1.10.</span> <span class="toc-text">十、方法速查表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%99%84%EF%BC%9A%E8%BD%AC%E6%8D%A2%E8%AF%B4%E6%98%8E"><span class="toc-number">1.11.</span> <span class="toc-text">附：转换说明</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/01-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87/" title="CARLA教程-01-环境准备">CARLA教程-01-环境准备</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/02-%E6%9E%84%E5%BB%BAUE4%E4%B8%8ECARLA/" title="CARLA教程-02-构建UE4与CARLA">CARLA教程-02-构建UE4与CARLA</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/03-%E8%BF%90%E8%A1%8C%E4%BB%BF%E7%9C%9F/" title="CARLA教程-03-运行仿真">CARLA教程-03-运行仿真</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/04-ROS2%E6%8E%A5%E5%8F%A3%E4%B8%8E%E8%AF%9D%E9%A2%98/" title="CARLA教程-04-ROS2接口与话题">CARLA教程-04-ROS2接口与话题</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>

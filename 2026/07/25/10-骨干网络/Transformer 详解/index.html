@@ -1,0 +1,1499 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Transformer： 详解 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="Transformer: Attention Is All You Need 论文: Attention Is All You Need (NeurIPS 2017)作者: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, Illia Pol">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Transformer： 详解">
+<meta property="og:url" content="https://www.loveww.top/2026/07/25/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/Transformer%20%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="Transformer: Attention Is All You Need 论文: Attention Is All You Need (NeurIPS 2017)作者: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, Illia Pol">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-07-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-09T15:28:31.638Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="Transformer">
+<meta property="article:tag" content="注意力机制">
+<meta property="article:tag" content="骨干网络">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Transformer： 详解",
+  "url": "https://www.loveww.top/2026/07/25/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/Transformer%20%E8%AF%A6%E8%A7%A3/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-07-24T16:00:00.000Z",
+  "dateModified": "2026-08-09T15:28:31.638Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/07/25/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/Transformer%20%E8%AF%A6%E8%A7%A3/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Transformer： 详解',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">Transformer： 详解</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Transformer： 详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-07-24T16:00:00.000Z" title="发表于 2026-07-25 00:00:00">2026-07-25</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-08-09T15:28:31.638Z" title="更新于 2026-08-09 23:28:31">2026-08-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/">骨干网络</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">17.1k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>65分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="Transformer-Attention-Is-All-You-Need"><a href="#Transformer-Attention-Is-All-You-Need" class="headerlink" title="Transformer: Attention Is All You Need"></a>Transformer: Attention Is All You Need</h1><blockquote>
+<p><strong>论文</strong>: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a> (NeurIPS 2017)<br><strong>作者</strong>: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser, Illia Polosukhin (Google Brain)<br><strong>代码</strong>: <a target="_blank" rel="noopener" href="https://github.com/tensorflow/tensor2tensor">tensor2tensor 官方实现</a></p>
+</blockquote>
+<hr>
+<h2 id="一、背景"><a href="#一、背景" class="headerlink" title="一、背景"></a>一、背景</h2><blockquote>
+<p>把《Attention Is All You Need》放回 2017 年的语境，理解它当时要解决什么问题、采用了哪些关键设计，有助于更准确地把握后续架构细节。</p>
+</blockquote>
+<h3 id="1-1-2017-年的世界：Transformer-诞生时的-NLP-图景"><a href="#1-1-2017-年的世界：Transformer-诞生时的-NLP-图景" class="headerlink" title="1.1 2017 年的世界：Transformer 诞生时的 NLP 图景"></a>1.1 2017 年的世界：Transformer 诞生时的 NLP 图景</h3><p>2017 年 6 月这篇论文出现时，NLP 学术圈与工业界的图景是这样的：</p>
+<ul>
+<li><strong>机器翻译是 NLP 的旗舰任务</strong>。Google Translate 在 2016 年 9 月把生产环境从短语统计 MT（PBMT）切到神经 MT（GNMT），翻译质量显著提升，推动行业转向 NMT，几乎所有 NLP 实验室都在做翻译。</li>
+<li><strong>LSTM 是事实标准</strong>。所有 seq2seq、对话模型、语言模型都是 LSTM（GRU 被视为轻量替代）。Schmidhuber 1997 年提出的 LSTM，20 年后才成为序列建模的主流。</li>
+<li><strong>attention 是 LSTM 的辅助机制</strong>。Bahdanau (2015)、Luong (2015) 的 attention 被定位成 RNN 的附加模块，RNN 仍是主体，attention 仅帮助 decoder 关注 encoder 的相关信息。</li>
+<li><strong>训练慢是公认瓶颈</strong>。GNMT 训练要好几天到一周，因为 LSTM 的时间步必须串行。Facebook 的 ConvS2S（2017.5）开始用 CNN 做 seq2seq 来并行化，引起讨论。</li>
+<li><strong>没有预训练范式</strong>。word2vec &#x2F; GloVe 词嵌入是有的，但”先预训练大 LM 再 fine-tune 下游”的范式还没诞生——BERT 还要再等 17 个月。</li>
+<li><strong>“大模型”指 &lt;1B 参数</strong>的东西。GPT 还没出现，GPT-2 要再等一年半。</li>
+</ul>
+<p>在这个语境里，标题 <em>Attention Is All You Need</em> 略带挑衅意味，意在表明：去掉 RNN 同样能完成翻译，而且更快更好。</p>
+<h3 id="1-2-真正的动机：为「训练效率」而生，而非「容量」"><a href="#1-2-真正的动机：为「训练效率」而生，而非「容量」" class="headerlink" title="1.2 真正的动机：为「训练效率」而生，而非「容量」"></a>1.2 真正的动机：为「训练效率」而生，而非「容量」</h3><p>论文表面是 Google Brain 的研究，背后还有一条隐藏脉络：<strong>Google Translate 团队的工程压力</strong>。</p>
+<p>GNMT 上线后，翻译团队要在生产环境维护一个每月迭代的庞大模型。真实痛点不是”翻译不够好”，而是：</p>
+<ul>
+<li>训练一次新模型要 1 周以上（LSTM 串行）；</li>
+<li>实验迭代极慢，调一个超参要等几天；</li>
+<li>LSTM 的长依赖在长句子上仍不行。</li>
+</ul>
+<blockquote>
+<p>⭐ <strong>关键认知</strong>：Transformer 在诞生时是<strong>为”训练效率”而生的架构，不是为”容量”而生的架构</strong>。它的并行性是优化目标，attention 的全局连接是手段。今天我们说”Transformer 因 attention 能建模长依赖所以强大”——这种叙事其实是后人的总结。当年作者真正想要的，是把 N 个时间步的串行计算变成可并行的矩阵乘法。</p>
+</blockquote>
+<p>这也是论文反复强调 <strong>“3.5 days on 8 P100 GPUs”</strong> 的原因：在当年的语境下，这一数字强调的是训练速度上的优势。</p>
+<p>同时，2017 年 5 月 Facebook 的 <strong>ConvS2S</strong> 用 CNN 并行化做 seq2seq，WMT’14 EN-FR 达到 40.46 BLEU、超过 GNMT，引起广泛关注。Google 团队由此感受到竞争压力，论文实验里 ConvS2S 是核心 baseline。要回答的问题就是：<strong>能不能用 attention 同样实现并行化，而且效果更好？</strong> 答案是 Transformer big 在 EN-DE 28.4（ConvS2S 25.16）、EN-FR 41.8（ConvS2S 40.46），用更小模型、更短训练时间超过两者。</p>
+<h3 id="1-3-技术脉络：从-RNN-attention-到纯-self-attention"><a href="#1-3-技术脉络：从-RNN-attention-到纯-self-attention" class="headerlink" title="1.3 技术脉络：从 RNN+attention 到纯 self-attention"></a>1.3 技术脉络：从 RNN+attention 到纯 self-attention</h3><p>很多教程把 Bahdanau 2015 当作 self-attention 的祖先，<strong>这是不准确的</strong>。Bahdanau attention 是 decoder-encoder 之间的 <strong>cross-attention</strong>，不是 self-attention，且 RNN 仍是主体。</p>
+<p>self-attention 真正的前身有几条线：</p>
+<table>
+<thead>
+<tr>
+<th align="left">工作</th>
+<th align="left">年份</th>
+<th align="left">贡献</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Cheng, Dong, Lapata</td>
+<td align="left">2016</td>
+<td align="left">让 LSTM 的某 step attend 到自己历史所有隐状态（”序列内部 attention”的早期想法）</td>
+</tr>
+<tr>
+<td align="left">Parikh et al.（Google）</td>
+<td align="left">2016</td>
+<td align="left"><em>A Decomposable Attention Model</em>，把 attention 用作两文本相似度建模的核心而非辅助（Niki Parmar 团队）</td>
+</tr>
+<tr>
+<td align="left">Lin et al.</td>
+<td align="left">2017.3</td>
+<td align="left"><em>A Structured Self-Attentive Sentence Embedding</em>，专门用 self-attention 做句子表示</td>
+</tr>
+</tbody></table>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/transformer_timeline.svg"></p>
+<blockquote>
+<p>Transformer 的创新<strong>不是”发明”了 self-attention</strong>，而是把它推到极端：<strong>整个网络都不要 RNN&#x2F;CNN，纯靠 self-attention 堆叠</strong>。在 2017 年，”能不能完全没有 RNN”这个问题本身就大胆——多数同行认为这一思路过于激进。</p>
+</blockquote>
+<h3 id="1-4-八位作者与后续动向"><a href="#1-4-八位作者与后续动向" class="headerlink" title="1.4 八位作者与后续动向"></a>1.4 八位作者与后续动向</h3><p>论文署名八人，arXiv 顺序：Ashish Vaswani、Noam Shazeer、Niki Parmar、Jakob Uszkoreit、Llion Jones、Aidan N. Gomez（多伦多大学实习生）、Łukasz Kaiser、Illia Polosukhin。结尾一行 “Equal contribution”——八人贡献相等、顺序随机，反映这不是传统的主导模式，而是一群高水平工程师&#x2F;研究员的平等合作。</p>
+<p>几人后续都成了 AI 领域的重要人物，且几乎没人留在 Google 原岗位——这是 2018–2022 年间被媒体（Wired 等）称为 “Transformer Mafia” 现象的一部分：</p>
+<ul>
+<li><strong>Noam Shazeer</strong>：后做 Sparse MoE Transformer，创办 Character.AI（2021），2024 年又重返 Google，被广泛认为是核心作者之一。</li>
+<li><strong>Łukasz Kaiser</strong>：做 Tensor2Tensor（论文实验框架），后去 OpenAI 参与 GPT 系列。</li>
+<li><strong>Aidan Gomez</strong>：当时本科实习生，后创办 Cohere。</li>
+<li><strong>Illia Polosukhin</strong>：后做 NEAR Protocol。</li>
+<li><strong>Jakob Uszkoreit</strong>：后创办 Inceptive 做生物医药 AI。</li>
+</ul>
+<h3 id="1-5-论文真正说了什么——以及刻意没说什么"><a href="#1-5-论文真正说了什么——以及刻意没说什么" class="headerlink" title="1.5 论文真正说了什么——以及刻意没说什么"></a>1.5 论文真正说了什么——以及刻意没说什么</h3><p>论文的真正贡献可归纳为五点：</p>
+<ol>
+<li><strong>完全去掉 RNN 和 CNN</strong>，仅用 attention + FFN 构造序列模型；</li>
+<li><strong>Multi-head self-attention</strong>：把 attention 拆成多个并行 head；</li>
+<li><strong>Positional encoding</strong>：用 sin&#x2F;cos 给位置无关的 attention 注入位置信息；</li>
+<li><strong>Encoder-decoder + cross-attention</strong>：保留 seq2seq 框架但内部全用 attention；</li>
+<li><strong>训练速度大幅提升</strong>：8 卡 P100、3.5 天达到 SOTA。</li>
+</ol>
+<p>实验设定非常 minimal：</p>
+<table>
+<thead>
+<tr>
+<th align="left">项</th>
+<th align="left">设定</th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">数据</td>
+<td align="left">WMT’14 EN-DE (4.5M 句对)、EN-FR (36M 句对)</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">硬件</td>
+<td align="left">1 台 8×P100</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">训练</td>
+<td align="left">base 12 小时(100k step)、big 3.5 天(300k step)</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">指标</td>
+<td align="left">BLEU</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">结果</td>
+<td align="left">EN-DE base 27.3 &#x2F; big 28.4（前 SOTA 26.03）；EN-FR base 38.1 &#x2F; big 41.8</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/transformer_bleu.svg"></p>
+<blockquote>
+<p>⚠️ <strong>注意论文里”没有”什么</strong>：没有预训练、没有 in-context learning、没有 chain-of-thought、没有 instruct-tuning。这些后来”让 Transformer 真正改变世界”的东西都不在原论文里。原论文做的事非常聚焦：<strong>在机器翻译这一个任务上，证明纯 attention 架构可行且训练更快</strong>。模型也小——base 65M、big 213M，按今天的标准看规模很小。</p>
+</blockquote>
+<h3 id="1-6-接收度与历史转折：从「翻译论文」到「大模型圣经」"><a href="#1-6-接收度与历史转折：从「翻译论文」到「大模型圣经」" class="headerlink" title="1.6 接收度与历史转折：从「翻译论文」到「大模型圣经」"></a>1.6 接收度与历史转折：从「翻译论文」到「大模型圣经」</h3><p>论文在 NeurIPS 2017 只被接收为 <strong>poster</strong>（不是 oral），如今看来略显意外。当年的反应大致是：</p>
+<ul>
+<li><strong>机器翻译圈</strong>：迅速接受，SOTA + 训练时间优势太明显，2018 年内几乎所有 NMT 系统都迁到 Transformer。</li>
+<li><strong>NLP 整体</strong>：观望，多数人觉得这是”翻译领域的论文”。</li>
+<li><strong>CV 圈</strong>：几乎未关注，当时少有人认为 attention 适用于 CV。</li>
+</ul>
+<p>真正的爆发来自几个转折点：</p>
+<ul>
+<li><strong>2018 BERT</strong>：证明 Transformer encoder 可预训练成通用语言表示，下游任务全面 SOTA，把整个 NLP 拉到 Transformer 旗帜下；</li>
+<li><strong>2018 GPT-1 → 2019 GPT-2 → 2020 GPT-3</strong>：decoder-only 路线被验证，GPT-3 在 175B 涌现出 in-context learning；</li>
+<li><strong>2022.11 ChatGPT</strong>：decoder-only + RLHF 引发广泛关注，奠定对话式 AI 的产品形态，decoder-only 从此成为 LLM 事实标准。</li>
+</ul>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/transformer_influence.svg"></p>
+<blockquote>
+<p>有意思的是：原论文展示的是 encoder-decoder，而今天主流大模型（GPT &#x2F; LLaMA &#x2F; Claude &#x2F; Gemini &#x2F; Qwen）几乎全是 decoder-only。从 encoder-decoder 简化到 decoder-only 只是”去掉一半”——如果 2017 年作者已知 decoder-only 这么强，可能根本不会讲 encoder-decoder。但他们当时面对的是翻译这个本质 seq2seq 任务，encoder-decoder 是默认选择。</p>
+</blockquote>
+<p>到 2024 年，这篇论文 Google Scholar 引用超 13 万，是过去十年被引最多的 ML 论文之一。</p>
+<h3 id="1-7-广泛影响：从翻译到通用骨干"><a href="#1-7-广泛影响：从翻译到通用骨干" class="headerlink" title="1.7 广泛影响：从翻译到通用骨干"></a>1.7 广泛影响：从翻译到通用骨干</h3><p>七年里，Transformer 的核心结构几乎没变，却从翻译模型发展为几乎所有现代 AI 的共同基础：</p>
+<table>
+<thead>
+<tr>
+<th align="left">领域</th>
+<th align="left">代表工作</th>
+<th align="left">用法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">NLP 大模型</td>
+<td align="left">BERT &#x2F; GPT &#x2F; T5 &#x2F; LLaMA &#x2F; Claude</td>
+<td align="left">encoder-only &#x2F; decoder-only &#x2F; enc-dec 三大流派</td>
+</tr>
+<tr>
+<td align="left">视觉</td>
+<td align="left">ViT</td>
+<td align="left">把图块当 token，attention 建模全局</td>
+</tr>
+<tr>
+<td align="left">检测</td>
+<td align="left">DETR</td>
+<td align="left">用 attention 取代 NMS 后处理</td>
+</tr>
+<tr>
+<td align="left">自动驾驶</td>
+<td align="left">BEVFormer &#x2F; DETR3D &#x2F; 时空 attention</td>
+<td align="left">时序 + 多视角 BEV 特征建模、占据网络中的 attention</td>
+</tr>
+<tr>
+<td align="left">3D 高斯泼溅</td>
+<td align="left">Transformer 预测高斯参数 &#x2F; 动态场景建模</td>
+<td align="left">把 3DGS 与序列&#x2F;生成模型结合</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>核心结构七年不变，但实现细节被社区不断更新：位置编码改 RoPE &#x2F; ALiBi、归一化改 RMSNorm、激活改 SwiGLU、attention 加 KV cache &#x2F; FlashAttention 优化。这正是 Bitter Lesson 的又一例证——“少改动 + 多 scale + 好工程”击败了几乎所有精巧但局限于局部改进的变体（ConvS2S、Universal Transformer、Reformer、Performer、Linformer 等都没能成为主流）。</p>
+</blockquote>
+<h3 id="1-8-常见误解澄清"><a href="#1-8-常见误解澄清" class="headerlink" title="1.8 常见误解澄清"></a>1.8 常见误解澄清</h3><ul>
+<li>❌「核心创新是 attention」——不准确。attention 2014 年就有，self-attention 也有前作。真正创新是”全部用 attention 不用 RNN” + multi-head + positional encoding 的<strong>组合</strong>。</li>
+<li>❌「一发表就引爆 NLP」——错。当时只是 NMT 圈接受，全行业转向是 BERT 之后的事。</li>
+<li>❌「原论文是 decoder-only」——错。原论文是 encoder-decoder 用于翻译。</li>
+<li>❌「论文里有 GPT&#x2F;BERT 雏形」——只能说有 encoder&#x2F;decoder 模块，pretraining-finetuning 范式当时根本不存在。</li>
+<li>❌「Transformer 当年很大」——错。base 65M、big 213M 按今天的标准看规模都很小。</li>
+<li>❌「八位作者后来都留在 Google」——错。几乎所有人都离开了。</li>
+</ul>
+<hr>
+<h2 id="二、整体架构"><a href="#二、整体架构" class="headerlink" title="二、整体架构"></a>二、整体架构</h2><blockquote>
+<p>这一章只做一件事：把 Transformer 的<strong>整体骨架</strong>讲清楚–主架构图长什么样、由哪些部件组成、每个部件负责什么、数据怎么从输入流到输出。具体每个部件的内部细节，留到第三~六章展开。</p>
+</blockquote>
+<h3 id="2-1-主架构图：论文-Figure-1"><a href="#2-1-主架构图：论文-Figure-1" class="headerlink" title="2.1 主架构图：论文 Figure 1"></a>2.1 主架构图：论文 Figure 1</h3><p>Transformer 的全貌就是论文 Figure 1 这张图（下图是清晰重绘版）。熟悉这张图后，后续内容都可视为在其基础上的局部展开：</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/transformer_full_arch.svg"></p>
+<p>骨架四句话：</p>
+<ol>
+<li><strong>左半边 Encoder</strong>（堆 $N&#x3D;6$ 层）：处理源序列（如待翻译的句子）；</li>
+<li><strong>右半边 Decoder</strong>（堆 $N&#x3D;6$ 层）：自回归地生成目标序列；</li>
+<li><strong>Cross-Attention 是两边唯一连接</strong>：encoder 的输出作为 decoder 的 K、V；</li>
+<li><strong>Decoder 顶端 -&gt; Linear -&gt; Softmax -&gt; 词表概率</strong>。</li>
+</ol>
+<blockquote>
+<p>💡 这张图是 2017 年为机器翻译设计的<strong>完整 Encoder-Decoder 架构</strong>。今天的 LLM（GPT&#x2F;LLaMA 等）只用了<strong>右半边的 decoder-only</strong>；BERT 只用了<strong>左半边的 encoder-only</strong>。理解了完整图，就顺带理解了 BERT 与 GPT 的关系。</p>
+</blockquote>
+<h3 id="2-2-两大模块与职责"><a href="#2-2-两大模块与职责" class="headerlink" title="2.2 两大模块与职责"></a>2.2 两大模块与职责</h3><table>
+<thead>
+<tr>
+<th align="left">模块</th>
+<th align="left">职责</th>
+<th align="left">输入</th>
+<th align="left">输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Encoder</strong></td>
+<td align="left">把源序列编码成一组”上下文记忆”</td>
+<td align="left">源 token + 位置编码</td>
+<td align="left">记忆 <code>mem</code>（每层输出形状不变）</td>
+</tr>
+<tr>
+<td align="left"><strong>Decoder</strong></td>
+<td align="left">自回归生成目标序列，并经 cross-attention 读取 encoder 的记忆</td>
+<td align="left">目标 token（shifted right）+ 位置编码 + encoder 的 mem</td>
+<td align="left">每个位置的隐表示 -&gt; 词表概率</td>
+</tr>
+<tr>
+<td align="left"><strong>输入端</strong></td>
+<td align="left">token id -&gt; 向量 + 位置信息</td>
+<td align="left">token id</td>
+<td align="left">$d_{model}$ 维序列表示</td>
+</tr>
+<tr>
+<td align="left"><strong>输出端</strong></td>
+<td align="left">隐表示 -&gt; 词表分布</td>
+<td align="left">decoder 最后一层输出</td>
+<td align="left">每位置一个词表概率分布</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Encoder 与 Decoder 之间<strong>只有一个信息通道</strong>：cross-attention。encoder 算完一次，结果被 decoder 的每一层反复”查询”–这继承了 2014 年 Bahdanau RNN attention 的思想。</p>
+</blockquote>
+<h3 id="2-3-组件清单：每个组件负责什么"><a href="#2-3-组件清单：每个组件负责什么" class="headerlink" title="2.3 组件清单：每个组件负责什么"></a>2.3 组件清单：每个组件负责什么</h3><p>Transformer 由以下组件构成（标注 <code>src/transformer.py</code> 中已实现的对应代码）：</p>
+<table>
+<thead>
+<tr>
+<th align="left">组件</th>
+<th align="left">职责</th>
+<th align="left">实现</th>
+<th align="left">详见</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Token Embedding</strong></td>
+<td align="left">token id -&gt; $d_{model}$ 向量（×√d_model 缩放）</td>
+<td align="left"><code>TransformerEmbedding</code></td>
+<td align="left">第三章</td>
+</tr>
+<tr>
+<td align="left"><strong>Positional Encoding</strong></td>
+<td align="left">注入位置信息（sin&#x2F;cos），因模型本身无顺序感</td>
+<td align="left"><code>PositionalEncoding</code></td>
+<td align="left">第三章</td>
+</tr>
+<tr>
+<td align="left"><strong>Multi-Head Self-Attention</strong></td>
+<td align="left">序列内部建模依赖：encoder 双向、decoder 因果(mask)</td>
+<td align="left"><code>SelfAttention</code>（单头版）</td>
+<td align="left">第四章</td>
+</tr>
+<tr>
+<td align="left"><strong>Cross-Attention</strong></td>
+<td align="left">decoder 查询 encoder，是两边唯一信息通道（Q来自decoder, K&#x2F;V来自encoder）</td>
+<td align="left">待补</td>
+<td align="left">第五章</td>
+</tr>
+<tr>
+<td align="left"><strong>Feed-Forward (FFN)</strong></td>
+<td align="left">非线性变换 + 记忆容量，两层线性夹 ReLU，宽度 4×d</td>
+<td align="left">待补</td>
+<td align="left">第四章</td>
+</tr>
+<tr>
+<td align="left"><strong>Add &amp; Norm</strong></td>
+<td align="left">残差连接 + LayerNorm，缓解梯度消失、稳定训练</td>
+<td align="left">待补</td>
+<td align="left">第四章</td>
+</tr>
+<tr>
+<td align="left"><strong>Linear + Softmax</strong></td>
+<td align="left">投影到词表维度 + 归一化为概率</td>
+<td align="left">待补</td>
+<td align="left">第六章</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>几个关键认知（后面章节会展开）：</p>
+<ul>
+<li><strong>全程无递归、无卷积</strong> -&gt; 必须靠 Positional Encoding 显式注入位置信息；</li>
+<li><strong>FFN 占了约 2&#x2F;3 参数量</strong>（每层 attention ~1.05M，FFN ~2.1M），这就是为什么 MoE 把 FFN 稀疏化能省大量参数；</li>
+<li>原论文用 <strong>Post-LN</strong>（Add 后再 Norm），今天大模型几乎都改 <strong>Pre-LN</strong>（Norm 在前），稳定性更好。</li>
+</ul>
+</blockquote>
+<h3 id="2-4-单层内部：Encoder-6-步-Decoder-9-步"><a href="#2-4-单层内部：Encoder-6-步-Decoder-9-步" class="headerlink" title="2.4 单层内部：Encoder 6 步 &#x2F; Decoder 9 步"></a>2.4 单层内部：Encoder 6 步 &#x2F; Decoder 9 步</h3><p><strong>Encoder 一层</strong>做 6 件事（一个 sublayer 群 + 一个 FFN 群）：</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/transformer_encoder_layer.svg"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1. Multi-Head Self-Attention      -&gt; Attn(x)</span><br><span class="line">2. Add (残差)                      x + Attn(x)</span><br><span class="line">3. LayerNorm</span><br><span class="line">4. Feed-Forward (Linear-&gt;ReLU-&gt;Linear, 宽度 4d)</span><br><span class="line">5. Add (残差)                      y + FFN(y)</span><br><span class="line">6. LayerNorm</span><br></pre></td></tr></table></figure>
+
+<p><strong>Decoder 一层</strong>多一个 cross-attention，共 9 步（三个 sublayer 群）：</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/transformer_decoder_layer.svg"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">第一组 Masked Self-Attention:  1. Masked MHA (QKV 都来自 decoder 输入)  2. Add  3. LayerNorm</span><br><span class="line">第二组 Cross-Attention:        4. Cross-Attn (Q 来自 decoder, K/V 来自 encoder 输出)  5. Add  6. LayerNorm</span><br><span class="line">第三组 FFN:                    7. Feed-Forward  8. Add  9. LayerNorm</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>三个关键差异：</p>
+<ul>
+<li>第一组 self-attention <strong>必须带 causal mask</strong>（decoder 生成时不能提前看到未来 token）；</li>
+<li>第二组 cross-attention <strong>不需要 causal mask</strong>（源序列每个位置都可被完整看到）；</li>
+<li>第二组的 K、V 来自 <strong>encoder 最后一层输出</strong>，是 encoder&#x2F;decoder 唯一信息通道。</li>
+</ul>
+</blockquote>
+<h3 id="2-5-数据流：一个-token-的旅程"><a href="#2-5-数据流：一个-token-的旅程" class="headerlink" title="2.5 数据流：一个 token 的旅程"></a>2.5 数据流：一个 token 的旅程</h3><p>以翻译 <code>&quot;Hello world&quot;</code> -&gt; <code>&quot;Bonjour le monde&quot;</code> 为例，架构层面的数据流：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">源: &quot;Hello world&quot; --tokenize--&gt; [15496, 995]</span><br><span class="line">                                  ↓ Embedding + 位置编码</span><br><span class="line">                            Encoder × 6  ──────────────┐</span><br><span class="line">                                  ↓ 输出 mem (2×512)    │ K,V</span><br><span class="line">                                                       ↓</span><br><span class="line">目标: &quot;Bonjour le monde&quot; --shift right--&gt; [BOS, 10222, 333]</span><br><span class="line">                                  ↓ Embedding + 位置编码</span><br><span class="line">                            Decoder × 6  &lt;── cross-attention 读取 mem</span><br><span class="line">                                  ↓ (3×512)</span><br><span class="line">                            Linear(512-&gt;vocab) + Softmax</span><br><span class="line">                                  ↓</span><br><span class="line">                            每位置一个词表概率分布</span><br><span class="line">                            (BOS-&gt;Bonjour, Bonjour-&gt;le, le-&gt;monde)</span><br></pre></td></tr></table></figure>
+
+<p><strong>训练 vs 推理，同一套权重、两种执行方式</strong>：</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/transformer_data_flow.svg"></p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">训练（teacher forcing）</th>
+<th align="left">推理（autoregressive）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">decoder 输入</td>
+<td align="left">整个目标序列一次喂入</td>
+<td align="left">从 BOS 开始逐 token 生成</td>
+</tr>
+<tr>
+<td align="left">并行性</td>
+<td align="left">一次 forward 算出所有位置 loss（高度并行）</td>
+<td align="left">每生成一个 token 重新 forward（串行，用 KV cache 优化）</td>
+</tr>
+<tr>
+<td align="left">mask 作用</td>
+<td align="left">causal mask 保证位置 t 只看 0..t-1</td>
+<td align="left">保证只看已生成部分</td>
+</tr>
+<tr>
+<td align="left">复杂度</td>
+<td align="left">$O(1)$（不算 batch）</td>
+<td align="left">$O(m)$ 步，m 为输出长度</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>这正是 <strong>Transformer 训练快、推理慢</strong>的根源：训练时整句并行，推理时必须自回归串行。所有”推理优化”（KV cache、speculative decoding 等）都在攻这个串行瓶颈。</p>
+</blockquote>
+<h3 id="2-6-三种架构变体"><a href="#2-6-三种架构变体" class="headerlink" title="2.6 三种架构变体"></a>2.6 三种架构变体</h3><p>原论文是完整 Encoder-Decoder，2018 年后工业界把它拆成三种用法，对应这张图用哪一半：</p>
+<table>
+<thead>
+<tr>
+<th align="left">维度</th>
+<th align="left">Encoder-only</th>
+<th align="left">Decoder-only</th>
+<th align="left">Encoder-Decoder</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">用图哪部分</td>
+<td align="left">左半边</td>
+<td align="left">右半边（去 cross-attn）</td>
+<td align="left">完整</td>
+</tr>
+<tr>
+<td align="left">Self-attention</td>
+<td align="left">双向</td>
+<td align="left">causal</td>
+<td align="left">enc双向 &#x2F; dec因果</td>
+</tr>
+<tr>
+<td align="left">训练目标</td>
+<td align="left">MLM（掩码预测）</td>
+<td align="left">LM（下一 token）</td>
+<td align="left">seq2seq</td>
+</tr>
+<tr>
+<td align="left">主要用途</td>
+<td align="left">理解（分类、NER、QA）</td>
+<td align="left">生成（对话、LM）</td>
+<td align="left">翻译、摘要</td>
+</tr>
+<tr>
+<td align="left">代表</td>
+<td align="left">BERT、RoBERTa</td>
+<td align="left"><strong>GPT、LLaMA、Qwen</strong></td>
+<td align="left">原版、T5、BART</td>
+</tr>
+<tr>
+<td align="left">时代</td>
+<td align="left">2018–2020</td>
+<td align="left">2020+ 主流</td>
+<td align="left">2017–2020</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>今天 LLM 几乎全是 <strong>decoder-only</strong>：参数效率高、数据简单（纯文本自回归）、任务可统一成”prompt -&gt; text”、推理优化生态成熟。Encoder-only 主要留在向量检索&#x2F;分类；Encoder-Decoder 主要在 T5 派研究里。</p>
+</blockquote>
+<hr>
+<h2 id="三、输入表示-Input"><a href="#三、输入表示-Input" class="headerlink" title="三、输入表示 (Input)"></a>三、输入表示 (Input)</h2><blockquote>
+<p>这一章围绕 <code>src/transformer.py</code> 与 <code>src/transformer.ipynb</code> 中的实现，说明文本如何转换为模型可处理的张量，并解答几个常见疑问：编码器输入如何处理、变长序列如何对齐、mask 如何获得、长度限制、中英文输入关系、位置编码。</p>
+</blockquote>
+<h3 id="3-1-输入处理总览：完整链路"><a href="#3-1-输入处理总览：完整链路" class="headerlink" title="3.1 输入处理总览：完整链路"></a>3.1 输入处理总览：完整链路</h3><p>文本不能直接输入网络，要经过以下处理（对应代码中的执行顺序）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">原始文本 (中英句对 clean_cmn.txt)</span><br><span class="line">   │</span><br><span class="line">   ① 分词 Tokenization (BPE / SentencePiece)      -&gt; token id 列表 (变长)</span><br><span class="line">   ② 对齐 Padding + 截断 (到 batch 内最长, ≤512)   -&gt; [batch, max_len] 整数矩阵</span><br><span class="line">   ③ 生成 Padding Mask                            -&gt; [batch, 1, 1, max_len]</span><br><span class="line">   ④ 词嵌入 Token Embedding (×√d_model)           -&gt; [batch, max_len, d_model]</span><br><span class="line">   ⑤ 加位置编码 Positional Encoding (+ dropout)    -&gt; [batch, max_len, d_model]</span><br><span class="line">   ↓</span><br><span class="line">送入 Encoder / Decoder</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>编码器的输入是怎么处理的？</strong> 即上述 ①-&gt;⑤ 五步：前三步把文本变成对齐的 token id 矩阵 + mask，后两步把 id 矩阵变成带位置信息的连续向量。下面逐节展开。</p>
+</blockquote>
+<h3 id="3-2-分词：BPE-与-SentencePiece（中英联合词表）"><a href="#3-2-分词：BPE-与-SentencePiece（中英联合词表）" class="headerlink" title="3.2 分词：BPE 与 SentencePiece（中英联合词表）"></a>3.2 分词：BPE 与 SentencePiece（中英联合词表）</h3><h4 id="为什么用-BPE"><a href="#为什么用-BPE" class="headerlink" title="为什么用 BPE"></a>为什么用 BPE</h4><p>直接按”词”分词表会爆炸、按”字符”分序列太长且丢语义。BPE（Byte Pair Encoding）在两者间取平衡：</p>
+<table>
+<thead>
+<tr>
+<th align="left">优势</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">解决 OOV</td>
+<td align="left">只要词表含基础字符，就能用子词拼出任何生僻词，不再有 <code>&lt;unk&gt;</code></td>
+</tr>
+<tr>
+<td align="left">语义对齐</td>
+<td align="left">子词常携带语义（词根&#x2F;前缀），如 <code>unhappily</code> &#x3D; <code>un</code> + <code>happily</code></td>
+</tr>
+<tr>
+<td align="left">效率最优</td>
+<td align="left">序列长度适中，词表大小可控</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>BPE 原理（<code>doc/Byte-Pair-Encoding.md</code> 有完整演示）：先 把词拆成字符 + 加 <code>&lt;/w&gt;</code> 边界标记，再 反复统计最高频相邻对、合并成新 token，直到达到预设 <code>vocab_size</code>。所以高频词会变成单个 token，低频词被拆成子词。</p>
+</blockquote>
+<h4 id="代码实现：Joint-BPE-训练中英共享词表"><a href="#代码实现：Joint-BPE-训练中英共享词表" class="headerlink" title="代码实现：Joint BPE 训练中英共享词表"></a>代码实现：Joint BPE 训练中英共享词表</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">spm.SentencePieceTrainer.train(</span><br><span class="line">    <span class="built_in">input</span>=cleaned_data_path,     <span class="comment"># clean_cmn.txt: 英文\t中文 句对</span></span><br><span class="line">    model_prefix=<span class="string">&quot;bpe_m&quot;</span>,</span><br><span class="line">    vocab_size=<span class="number">8000</span>,             <span class="comment"># 词表大小</span></span><br><span class="line">    model_type=<span class="string">&quot;bpe&quot;</span>,</span><br><span class="line">    character_coverage=<span class="number">0.9995</span>,   <span class="comment"># 覆盖 99.95% 字符，防 [UNK]</span></span><br><span class="line">    pad_id=<span class="number">0</span>, unk_id=<span class="number">1</span>, bos_id=<span class="number">2</span>, eos_id=<span class="number">3</span>,</span><br><span class="line">    user_defined_symbols=[<span class="string">&#x27;&lt;mask/&gt;&#x27;</span>]</span><br><span class="line">)</span><br><span class="line">sp = spm.SentencePieceProcessor(model_file=<span class="string">&quot;bpe_m.model&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>几个关键点：</p>
+<ul>
+<li><strong>Joint BPE（联合分词）</strong>：中英文合并训练一个共享词表，不分开训练。这样一个 <code>nn.Embedding</code> 表就能同时表示中英文。</li>
+<li><strong>特殊 token 占住前 4 个 id</strong>：<code>pad=0 / unk=1 / bos=2 / eos=3</code>。<code>pad_id=0</code> 是为后面 padding 直接用 0 填充做准备。</li>
+<li><strong>编码</strong>：<code>sp.encode_as_ids(&quot;Hello world&quot;)</code> -&gt; <code>[15496, 995]</code> 这样的 id 列表。</li>
+</ul>
+<blockquote>
+<p><strong>英译汉中，英文和中文是同时输入的吗？</strong> 不是。词表是共享的（合并训练），但输入分两路：英文句子进 <strong>Encoder</strong>，中文句子（shifted right，首位加 BOS）进 <strong>Decoder</strong>。共享词表只是让两边能用同一张 embedding 表，而非把中英拼成一条序列输入。</p>
+</blockquote>
+<h3 id="3-3-变长处理：Padding-与长度限制"><a href="#3-3-变长处理：Padding-与长度限制" class="headerlink" title="3.3 变长处理：Padding 与长度限制"></a>3.3 变长处理：Padding 与长度限制</h3><p>句子长度不一，无法组成矩阵，必须<strong>对齐到 batch 内最长</strong>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">tokenized_data = [sp.encode_as_ids(s) <span class="keyword">for</span> s <span class="keyword">in</span> input_data]   <span class="comment"># 每句变长 id 列表</span></span><br><span class="line">limit = <span class="number">512</span>                                                   <span class="comment"># 长度上限</span></span><br><span class="line">actual_max_len = <span class="built_in">max</span>(<span class="built_in">len</span>(t) <span class="keyword">for</span> t <span class="keyword">in</span> tokenized_data)          <span class="comment"># batch 内最长</span></span><br><span class="line">max_len = <span class="built_in">min</span>(actual_max_len, limit)                          <span class="comment"># 不超过 512</span></span><br><span class="line"></span><br><span class="line">padded_inputs = torch.full((batch_size, max_len), pad_idx, dtype=torch.long)  <span class="comment"># 先全填 0</span></span><br><span class="line"><span class="keyword">for</span> i, tokens <span class="keyword">in</span> <span class="built_in">enumerate</span>(tokenized_data):</span><br><span class="line">    content_len = <span class="built_in">min</span>(<span class="built_in">len</span>(tokens), limit)</span><br><span class="line">    padded_inputs[i, :content_len] = torch.tensor(tokens[:content_len])       <span class="comment"># 前面填真 token</span></span><br><span class="line"><span class="comment"># 形状: [batch, max_len]，不足的尾部是 0 (pad)</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>句子长度不一怎么处理？</strong> padding 到 batch 内最长（不足的尾部补 <code>pad_id=0</code>），超长的截断到 <code>limit</code>。</p>
+<p><strong>原文输入长度限制多少？</strong> 代码中 <code>limit = 512</code>。原论文做 WMT 翻译时句子较短（且按子词计），实际设置视任务而定；如今 LLM 上下文窗口从 2k 到 128k+ 不等，但”截断到一个上限”的思路不变。</p>
+</blockquote>
+<h3 id="3-4-Padding-Mask：让模型忽略填充位"><a href="#3-4-Padding-Mask：让模型忽略填充位" class="headerlink" title="3.4 Padding Mask：让模型忽略填充位"></a>3.4 Padding Mask：让模型忽略填充位</h3><p>padding 补的 0 不是真 token，<strong>不能让 attention 去关注这些位置</strong>，否则会污染结果。所以需要一个 mask 标出哪些是有效 token。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">GeneratePadMask</span>(<span class="params">input_ids, pad_token_id=<span class="number">0</span></span>):</span><br><span class="line">    <span class="comment"># 1 表示有效 token，0 表示 padding</span></span><br><span class="line">    mask = (input_ids != pad_token_id).unsqueeze(<span class="number">1</span>).unsqueeze(<span class="number">2</span>)</span><br><span class="line">    <span class="keyword">return</span> mask   <span class="comment"># [batch_size, 1, 1, seq_len]</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>input_ids != pad_token_id</code> 得到 <code>[batch, seq_len]</code> 的布尔矩阵；</li>
+<li><code>.unsqueeze(1).unsqueeze(2)</code> 升到 <code>[batch, 1, 1, seq_len]</code>，<strong>方便在多头注意力里广播</strong>到 <code>[batch, heads, query, key]</code> 的 key 维度。</li>
+</ul>
+<p><strong>在 SelfAttention 中的使用</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">    <span class="comment"># 把 mask==0 (padding) 位置的注意力分数设成极大负数</span></span><br><span class="line">    attention_scores = attention_scores.masked_fill(mask == <span class="number">0</span>, <span class="built_in">float</span>(<span class="string">&quot;-1e9&quot;</span>))</span><br><span class="line">attention_weights = F.softmax(attention_scores, dim=-<span class="number">1</span>)   <span class="comment"># softmax 后这些位置权重 -&gt; 0</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>把分数设成 <code>-1e9</code> 再 softmax，对应位置权重就接近 0–<strong>等于让 padding 位对任何 query 都不产生影响</strong>。</p>
+<p><strong>变长句子的 mask 怎么获得？</strong> 即 <code>input_ids != pad_token_id</code>，再 unsqueeze 到 4D 广播。Decoder 还多一个 <strong>causal mask</strong>（下三角，防止提前看到未来），两者按位相加&#x2F;相乘合并（第四章细讲）。</p>
+</blockquote>
+<h3 id="3-5-词嵌入-Token-Embedding"><a href="#3-5-词嵌入-Token-Embedding" class="headerlink" title="3.5 词嵌入 Token Embedding"></a>3.5 词嵌入 Token Embedding</h3><p>token id 是离散整数，要变成连续向量才能进网络：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TransformerEmbedding</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, d_model</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.lut = nn.Embedding(vocab_size, d_model)   <span class="comment"># 查表: id -&gt; d_model 向量</span></span><br><span class="line">        <span class="variable language_">self</span>.d_model = d_model</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.lut(x) * math.sqrt(<span class="variable language_">self</span>.d_model)   <span class="comment"># ★ 乘 √d_model</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>nn.Embedding(vocab_size, d_model)</code>：一张 <code>[vocab, d_model]</code> 的可学习查表，<code>lut(x)</code> 把 <code>[batch, seq]</code> 的 id 变成 <code>[batch, seq, d_model]</code>。</li>
+<li><strong>为什么要 <code>×√d_model</code></strong>：后面要加位置编码（PE 的值在 [-1,1] 量级），如果不放大 embedding，加完 PE 后 embedding 信号会被 PE 淹没。乘 <code>√d_model</code>（d_model&#x3D;512 时 ≈22.6）把 embedding 量级抬上去，两者才匹配。</li>
+</ul>
+<h3 id="3-6-位置编码-Positional-Encoding-⭐"><a href="#3-6-位置编码-Positional-Encoding-⭐" class="headerlink" title="3.6 位置编码 Positional Encoding ⭐"></a>3.6 位置编码 Positional Encoding ⭐</h3><h4 id="为什么必须有位置编码：self-attention-的排列等变性"><a href="#为什么必须有位置编码：self-attention-的排列等变性" class="headerlink" title="为什么必须有位置编码：self-attention 的排列等变性"></a>为什么必须有位置编码：self-attention 的排列等变性</h4><p>一个常被忽视的硬事实：<strong>self-attention 是排列等变（permutation-equivariant）的</strong>–它对 token 的顺序无感知。把输入序列任意打乱，输出只是跟着重排，每个位置的内容完全不变。用一行公式写死：设 $P$ 是任意置换矩阵，$f(X)&#x3D;\text{softmax}(QK^\top&#x2F;\sqrt{d_k})V$ 是一次 self-attention，则</p>
+<p>$$<br>f(PX) &#x3D; P,f(X)<br>$$</p>
+<p>证明很短：投影逐行做，故 $Q’&#x3D;PQ,\ K’&#x3D;PK,\ V’&#x3D;PV$；分数矩阵 $S’&#x3D;Q’K’^\top &#x3D; PS P^\top$；softmax 逐行作用，$\text{softmax}(PSP^\top)&#x3D;P,\text{softmax}(S),P^\top$；再乘 $V’$ 并用 $P^\top P&#x3D;I$，即得 $P,f(X)$。</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/pe_permutation-equivariance.svg"></p>
+<p>工程后果很直接：在没有位置信息的 self-attention 看来，”猫吃鱼”和”鱼吃猫”是不可区分的–模型不是学不会，而是从根本上接收不到两者有差别的信息。实测中，把 PE 替换成 <code>torch.zeros_like</code>，loss 在前几百步几乎不下降。</p>
+<blockquote>
+<p><strong>RNN&#x2F;CNN 自带位置感</strong>：RNN 的位置信息隐含在”第 t 步只能依赖第 t-1 步”的递推里；CNN 的位置感来自感受野的局部性（哪些 token 一起做了卷积）。Transformer 放弃了这两种结构性偏置，换取长程依赖的全局建模能力，代价就是<strong>位置信息归零</strong>–除非显式注入。</p>
+</blockquote>
+<h4 id="正弦位置编码公式"><a href="#正弦位置编码公式" class="headerlink" title="正弦位置编码公式"></a>正弦位置编码公式</h4><p>$$<br>PE_{(pos,,2i)} &#x3D; \sin!\left(\frac{pos}{10000^{2i&#x2F;d_{model}}}\right),\quad<br>PE_{(pos,,2i+1)} &#x3D; \cos!\left(\frac{pos}{10000^{2i&#x2F;d_{model}}}\right)<br>$$</p>
+<ul>
+<li><code>pos</code>：token 在序列中的位置（0,1,2,…）；</li>
+<li><code>i</code>：维度索引（偶数维用 sin，奇数维用 cos）；</li>
+<li>每对维度 $(2i, 2i+1)$ 共用一个频率 $\omega_i &#x3D; 10000^{-2i&#x2F;d_{model}}$。</li>
+</ul>
+<h4 id="代码逐行解析"><a href="#代码逐行解析" class="headerlink" title="代码逐行解析"></a>代码逐行解析</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, max_len, d_model, dropout=<span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.dropout = nn.Dropout(p=dropout)</span><br><span class="line">        pe = torch.zeros(max_len, d_model)                                     <span class="comment"># [max_len, d_model]</span></span><br><span class="line">        position = torch.arange(<span class="number">0</span>, max_len, dtype=torch.<span class="built_in">float</span>).unsqueeze(<span class="number">1</span>)    <span class="comment"># [max_len, 1]</span></span><br><span class="line">        <span class="comment"># div_term = 1 / 10000^(2i/d_model)，用 exp+log 实现是为了数值稳定</span></span><br><span class="line">        div_term = torch.exp(torch.arange(<span class="number">0</span>, d_model, <span class="number">2</span>).<span class="built_in">float</span>() * -(math.log(<span class="number">10000.0</span>) / d_model))</span><br><span class="line">        pe[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(position * div_term)   <span class="comment"># 偶数维 = sin</span></span><br><span class="line">        pe[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(position * div_term)   <span class="comment"># 奇数维 = cos</span></span><br><span class="line">        pe = pe.unsqueeze(<span class="number">0</span>)                           <span class="comment"># [1, max_len, d_model]</span></span><br><span class="line">        <span class="variable language_">self</span>.register_buffer(<span class="string">&#x27;pe&#x27;</span>, pe)                 <span class="comment"># ★ 不参与训练</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = x + <span class="variable language_">self</span>.pe[:, :x.size(<span class="number">1</span>)]   <span class="comment"># 按当前序列长度切片，逐元素相加</span></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.dropout(x)</span><br></pre></td></tr></table></figure>
+
+<p>几个要点：</p>
+<ul>
+<li><strong><code>register_buffer</code></strong>：PE 是固定公式算出来的，<strong>不是可学习参数</strong>，存成 buffer（随模型一起保存、随 <code>.to(device)</code> 一起迁移，但不被优化器更新）。</li>
+<li><strong><code>div_term</code> 用 <code>exp(-log(...))</code> 而非直接 <code>1/10000^...</code></strong>：纯为数值稳定（避免大数幂运算溢出），数学上等价。</li>
+<li><strong><code>x + pe[:, :x.size(1)]</code></strong>：PE 预算到 <code>max_len</code>（代码中设为 5000），实际用时按当前序列长度切片相加。</li>
+<li><strong>dropout</strong>：加完 PE 后做 dropout，正则化的是”语义+位置”这个组合。</li>
+</ul>
+<h4 id="把它读成”一组不同频率的波”"><a href="#把它读成”一组不同频率的波”" class="headerlink" title="把它读成”一组不同频率的波”"></a>把它读成”一组不同频率的波”</h4><p>$d_{model}&#x3D;512$ 的 PE 摊开，是 256 对 (sin, cos) 通道，频率从最高（$i&#x3D;0,\ \omega&#x3D;1$，周期约 6.28）平滑下降到最低（$i&#x3D;255,\ \omega&#x3D;1&#x2F;10000$，周期约 62832）。<strong>高频维度区分相邻位置的差异，低频维度记录”在序列的哪个大段落”</strong>，类似傅里叶级数把一个位置坐标同时投影到多个尺度的正弦波上，组合起来成为该位置的唯一指纹。</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/pe_sinusoidal-heatmap.svg"></p>
+<p><strong>10000 是怎么来的</strong>：</p>
+<ul>
+<li><strong>数学层</strong>：$10000^{2i&#x2F;d_{model}}$ 的最大值是 10000，最低频周期约 $2\pi\times10000\approx62832$，意味着能区分约六万个位置而不”绕回”相撞，对原论文几千的序列长度非常宽裕。</li>
+<li><strong>工程层</strong>：作者在 §3.5 末尾说明，选 sinusoidal 是假设它”可能让模型外推到训练时未见过的更长序列”。10000 本身没有神奇理论依据，是”足够大、覆盖足够长尺度、无需调参”的经验选择。</li>
+</ul>
+<p><strong>d_model&#x3D;4 的最小手算例子</strong>（$\omega_0&#x3D;1,\ \omega_1&#x3D;0.01$）：</p>
+<table>
+<thead>
+<tr>
+<th align="left">pos</th>
+<th align="left">PE 向量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">0</td>
+<td align="left">[0, 1, 0, 1]</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">[0.841, 0.540, 0.010, 1.000]</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">[0.909, -0.416, 0.020, 1.000]</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">[0.141, -0.990, 0.030, 1.000]</td>
+</tr>
+</tbody></table>
+<p>前两维（高频）剧烈变化，后两维（低频）几乎不动；pos&#x3D;0 是特殊的起点向量 $[0,1,0,1]$。</p>
+<blockquote>
+<p><strong>范数恒定</strong>：每个 pos 的 PE 范数都等于 $\sqrt{d_{model}&#x2F;2}$（每对 (sin,cos) 平方和恒为 1）。这意味着<strong>位置信息全部在”方向”上而非”长度”上</strong>，对 LayerNorm 友好–LayerNorm 归一掉范数、保留方向，位置信息得以保留。若用”位置越远 PE 越大”的方案，LayerNorm 后位置信息会被显著抹掉。</p>
+</blockquote>
+<h4 id="关键性质：相对位置可线性表达-⭐"><a href="#关键性质：相对位置可线性表达-⭐" class="headerlink" title="关键性质：相对位置可线性表达 ⭐"></a>关键性质：相对位置可线性表达 ⭐</h4><p>这是原论文选 sin&#x2F;cos 的真正理由。原话：对任意固定偏移 $k$，$PE_{pos+k}$ 可表示为 $PE_{pos}$ 的线性函数：</p>
+<p>$$<br>PE(pos+k) &#x3D; M_k, PE(pos)<br>$$</p>
+<p>其中 $M_k$ 不依赖 pos。证明来自一组三角恒等式：</p>
+<p>$$<br>\begin{pmatrix} \sin(\alpha+\beta) \ \cos(\alpha+\beta) \end{pmatrix}<br>&#x3D; \begin{pmatrix} \cos\beta &amp; \sin\beta \ -\sin\beta &amp; \cos\beta \end{pmatrix}<br>\begin{pmatrix} \sin\alpha \ \cos\alpha \end{pmatrix}<br>$$</p>
+<p>即”角度从 $\alpha$ 加到 $\alpha+\beta$”对 $(\sin\alpha,\cos\alpha)$ 是乘一个<strong>旋转矩阵</strong> $R(\beta)$。回到 PE：第 $i$ 个频率块上，从 pos 到 pos+k 多出的角度是 $k\omega_i$，故</p>
+<p>$$<br>\begin{pmatrix} \sin((pos{+}k)\omega_i) \ \cos((pos{+}k)\omega_i) \end{pmatrix}<br>&#x3D; R(k\omega_i)\begin{pmatrix} \sin(pos\cdot\omega_i) \ \cos(pos\cdot\omega_i) \end{pmatrix}<br>$$</p>
+<p>把所有 $d_{model}&#x2F;2$ 个频率块的旋转矩阵堆成块对角矩阵，就是完整的 $M_k$。</p>
+<p><strong>意义</strong>：模型若想识别”离我 k 步的 token”，只需学一个 $M_k$（等价于让 $W_Q, W_K$ 学到合适形状），而不必在数据里见过每对 $(pos, pos+k)$。这种”相对位置一次学习、全 pos 复用”是 sinusoidal 相比可学习位置的关键优势。</p>
+<blockquote>
+<p>⚠️ <strong>注意</strong>：线性可表达只是”免费的下限”，不保证模型一定学到这条性质。后续可解释性研究发现原版 sinusoidal 在远端位置上 attention 仍有漂移–这正是 RoPE 的动机：把旋转直接”焊”进 Q&#x2F;K 投影，把下限推成结构上的保证。</p>
+</blockquote>
+<h4 id="为什么是相加，不是拼接"><a href="#为什么是相加，不是拼接" class="headerlink" title="为什么是相加，不是拼接"></a>为什么是相加，不是拼接</h4><p>原论文从头到尾是<strong>相加</strong>（常被误读为拼接）：</p>
+<p>$$<br>x &#x3D; \text{embed}(token) + PE(pos)<br>$$</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/pe_add-vs-concat.svg"></p>
+<p>相加看似会污染语义，但 embedding 空间是高维的（$d_{model}&#x3D;512$），模型能在不同子空间分别承载语义与位置。更技术地看，相加让 PE 与 embedding 共享同一组 $W_Q, W_K$，attention 打分 $(W_Q(e+p))(W_K(e+p))^\top$ 展开后产生 $e!\cdot!e$、$e!\cdot!p$、$p!\cdot!e$、$p!\cdot!p$ 四项，模型可同时利用语义-语义、语义-位置、位置-位置三种交互。</p>
+<p>拼接（concat）不被采用的原因：①参数效率低（要么挤占语义维度，要么扩大 $d_{model}$ 增加计算量）；②强制语义与位置不混合，限制表达；③实验上无稳定优势。</p>
+<blockquote>
+<p>这也呼应 3.5 的 <code>×√d_model</code>：相加前先把 token embedding 放大到与 PE 可比的量级，避免固定的 PE 在训练初期过早主导输入–本质是<strong>尺度校准</strong>。</p>
+</blockquote>
+<h4 id="其他位置编码方式对比"><a href="#其他位置编码方式对比" class="headerlink" title="其他位置编码方式对比"></a>其他位置编码方式对比</h4><p>按”位置信息从哪进入 attention”分为三类：</p>
+<table>
+<thead>
+<tr>
+<th align="left">类别</th>
+<th align="left">方式</th>
+<th align="left">形式</th>
+<th align="left">外推</th>
+<th align="left">代表</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>绝对位置</strong>（加在输入）</td>
+<td align="left">正弦</td>
+<td align="left">固定 sin&#x2F;cos</td>
+<td align="left">中等</td>
+<td align="left">原版 Transformer</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">可学习 PE</td>
+<td align="left">(max_len, d_model) 查表</td>
+<td align="left">几乎为零</td>
+<td align="left">BERT、GPT-2、ViT</td>
+</tr>
+<tr>
+<td align="left"><strong>相对位置</strong>（改打分公式）</td>
+<td align="left">相对位置 bias</td>
+<td align="left">在 Q·Kᵀ 加 (i-j) 偏置</td>
+<td align="left">强</td>
+<td align="left">T5、Shaw 2018</td>
+</tr>
+<tr>
+<td align="left"><strong>旋转&#x2F;衰减</strong></td>
+<td align="left">RoPE</td>
+<td align="left">旋转矩阵把位置编进 Q&#x2F;K</td>
+<td align="left">强</td>
+<td align="left">LLaMA、Mistral、Qwen</td>
+</tr>
+<tr>
+<td align="left"></td>
+<td align="left">ALiBi</td>
+<td align="left">attention score 减 m·|i-j|</td>
+<td align="left">强</td>
+<td align="left">-</td>
+</tr>
+</tbody></table>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/pe_extrapolation.svg"></p>
+<p><strong>可学习 PE 的外推问题</strong>：它是一张有限查表，训练长度外的位置没有梯度。训练 512、推理 2048 时，前 512 位能查表，后面的位置要么不存在、要么未被充分训练。这正是大模型时代主流转向函数型（sinusoidal&#x2F;RoPE&#x2F;ALiBi）的原因–函数型在任何 pos 都有定义且服从同一规律。</p>
+<blockquote>
+<p><strong>选型没有”正确答案”，只有”约束下最合适”</strong>：固定长度任务（如 NER、分类）用可学习 PE 完全够用；需要相对距离敏感的翻译任务，sinusoidal 或 T5 bias 不错；长上下文对话&#x2F;文档理解，RoPE&#x2F;ALiBi 是默认。</p>
+</blockquote>
+<h4 id="常见误解"><a href="#常见误解" class="headerlink" title="常见误解"></a>常见误解</h4><ul>
+<li>❌「位置编码是可选模块，去掉也能训」–对纯 self-attention 不成立，去掉后”猫吃鱼”与”鱼吃猫”不可分（除非是集合建模任务，或 decoder 的 causal mask 提供了部分顺序偏置）。</li>
+<li>❌「sinusoidal 是拼接到 embedding 上的」–原论文是<strong>相加</strong>，且要求 PE 维度 &#x3D; $d_{model}$。</li>
+<li>❌「10000 是某种神秘最优值」–是”足够大、覆盖足够长尺度、无需调参”的经验选择，RoPE 沿用 10000，长上下文场景会调到 1e6。</li>
+<li>❌「可学习位置一定更强，因为能学」–能学的代价是参数量、长度上限、外推能力差；长上下文场景函数型更占优。</li>
+<li>❌「sinusoidal 的相对位置性质保证模型一定用得上」–只保证”可线性表达”，不保证”一定学到”；这正是 RoPE 把旋转焊进 Q&#x2F;K 的动机。</li>
+</ul>
+<blockquote>
+<p>今天主流 LLM 基本用 <strong>RoPE</strong>；原论文的 sin&#x2F;cos 是起点，理解了它再看 RoPE，就是”把位置从加在输入上，改成融入 Q&#x2F;K 中”，并从”免费下限”升级为”结构保证”。</p>
+</blockquote>
+<h3 id="3-7-组合与中英分流：Encoder-Decoder-各吃什么"><a href="#3-7-组合与中英分流：Encoder-Decoder-各吃什么" class="headerlink" title="3.7 组合与中英分流：Encoder &#x2F; Decoder 各吃什么"></a>3.7 组合与中英分流：Encoder &#x2F; Decoder 各吃什么</h3><p>最终输入 &#x3D; <strong>Embedding + PE</strong>，代码中的完整调用链：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ①②③ 文本 -&gt; token id -&gt; padding -&gt; mask</span></span><br><span class="line">padded_inputs = ...                      <span class="comment"># [batch, max_len]</span></span><br><span class="line">pad_mask_4d    = (padded_inputs != <span class="number">0</span>).unsqueeze(<span class="number">1</span>).unsqueeze(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ④ 词嵌入</span></span><br><span class="line">emb_layer      = TransformerEmbedding(vocab_size, d_model)</span><br><span class="line">embedded_output = emb_layer(padded_inputs)          <span class="comment"># [batch, max_len, d_model]</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ⑤ 加位置编码</span></span><br><span class="line">pos_enc  = PositionalEncoding(max_len=<span class="number">5000</span>, d_model=d_model)</span><br><span class="line">enc_input = pos_enc(embedded_output)                <span class="comment"># [batch, max_len, d_model]  ★ 最终输入</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 送入 self-attention (带 pad mask)</span></span><br><span class="line">sa_out = SelfAttention(d_model)(enc_input, mask=pad_mask_4d)</span><br></pre></td></tr></table></figure>
+
+<p><strong>英译汉任务中，两路输入分别是什么</strong>：</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">输入内容</th>
+<th align="left">处理</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Encoder 输入</strong></td>
+<td align="left">英文句子（源语言）</td>
+<td align="left">tokenize -&gt; pad -&gt; mask -&gt; emb -&gt; +PE</td>
+</tr>
+<tr>
+<td align="left"><strong>Decoder 输入</strong></td>
+<td align="left">中文句子 <strong>shifted right</strong>（首位加 BOS）</td>
+<td align="left">同上 5 步，再加 causal mask</td>
+</tr>
+<tr>
+<td align="left"><strong>Decoder 目标</strong></td>
+<td align="left">中文句子（要预测的，即把 BOS 去掉、末位接 EOS）</td>
+<td align="left">算 loss 用</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>训练时 encoder 和 decoder <strong>分别处理各自的输入</strong>（英文一路、中文错位一路），通过 cross-attention 连接；并非把中英拼成一条序列输入。共享的只是 BPE 词表和 embedding 表。</p>
+</blockquote>
+<hr>
+<h2 id="四、编码器-Encoder"><a href="#四、编码器-Encoder" class="headerlink" title="四、编码器 Encoder"></a>四、编码器 Encoder</h2><blockquote>
+<p>Encoder 由”自注意力 + FFN + 残差归一化”组成，重复 N 层。这一章以你 <code>src/transformer.py</code> 里的 <code>SelfAttention</code> 为核心讲清单层内部，再回答一个关键问题：<strong>既然一层就能看全局，为什么还要堆 6 层？</strong> 你代码尚未实现的多头、FFN、Add&amp;Norm、Encoder Block 给出标准写法（可直接拼进工程）。</p>
+</blockquote>
+<h3 id="4-1-自注意力-Self-Attention-⭐⭐"><a href="#4-1-自注意力-Self-Attention-⭐⭐" class="headerlink" title="4.1 自注意力 Self-Attention ⭐⭐"></a>4.1 自注意力 Self-Attention ⭐⭐</h3><p>自注意力的本质：序列中每个位置都去”查询”所有位置，按相似度加权求和，得到融合了全局上下文的新表示。核心是 Q（Query）、K（Key）、V（Value）三个量。</p>
+<h4 id="你的代码（逐行）"><a href="#你的代码（逐行）" class="headerlink" title="你的代码（逐行）"></a>你的代码（逐行）</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SelfAttention</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, embed_size</span>):</span><br><span class="line">        <span class="built_in">super</span>(SelfAttention, <span class="variable language_">self</span>).__init__()</span><br><span class="line">        <span class="variable language_">self</span>.embed_size = embed_size</span><br><span class="line">        <span class="variable language_">self</span>.values   = nn.Linear(embed_size, embed_size, bias=<span class="literal">False</span>)   <span class="comment"># W_V</span></span><br><span class="line">        <span class="variable language_">self</span>.keys     = nn.Linear(embed_size, embed_size, bias=<span class="literal">False</span>)   <span class="comment"># W_K</span></span><br><span class="line">        <span class="variable language_">self</span>.queries  = nn.Linear(embed_size, embed_size, bias=<span class="literal">False</span>)   <span class="comment"># W_Q</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, mask=<span class="literal">None</span></span>):</span><br><span class="line">        <span class="comment"># 1. 由输入 x 线性投影出 Q, K, V（三个不同参数的线性层）</span></span><br><span class="line">        V = <span class="variable language_">self</span>.values(x)        <span class="comment"># [batch, seq, d]</span></span><br><span class="line">        K = <span class="variable language_">self</span>.keys(x)          <span class="comment"># [batch, seq, d]</span></span><br><span class="line">        Q = <span class="variable language_">self</span>.queries(x)       <span class="comment"># [batch, seq, d]</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 2. 注意力分数 = Q @ K^T（每个 query 对每个 key 的相似度）</span></span><br><span class="line">        energy = torch.matmul(Q, K.transpose(-<span class="number">1</span>, -<span class="number">2</span>))   <span class="comment"># [batch, seq, seq]</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 3. 缩放：除以 √d_k</span></span><br><span class="line">        scaling = <span class="variable language_">self</span>.embed_size ** (<span class="number">1</span>/<span class="number">2</span>)              <span class="comment"># √d_model</span></span><br><span class="line">        attention_scores = energy / scaling</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 4. pad masking（可选，针对变长序列，见 3.4）</span></span><br><span class="line">        <span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            attention_scores = attention_scores.masked_fill(mask == <span class="number">0</span>, <span class="built_in">float</span>(<span class="string">&quot;-1e9&quot;</span>))</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 5. softmax 归一化成权重（每个 query 对所有 key 的权重和为 1）</span></span><br><span class="line">        attention_weights = F.softmax(attention_scores, dim=-<span class="number">1</span>)   <span class="comment"># [batch, seq, seq]</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 6. 用权重对 V 加权求和，得到最终输出</span></span><br><span class="line">        out = torch.matmul(attention_weights, V)      <span class="comment"># [batch, seq, d]</span></span><br><span class="line">        <span class="keyword">return</span> out</span><br></pre></td></tr></table></figure>
+
+<p>对应公式（Scaled Dot-Product Attention）：</p>
+<p>$$<br>\text{Attention}(Q,K,V) &#x3D; \text{softmax}!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V<br>$$</p>
+<h4 id="三个关键”为什么”"><a href="#三个关键”为什么”" class="headerlink" title="三个关键”为什么”"></a>三个关键”为什么”</h4><p><strong>① Q&#x2F;K&#x2F;V 为什么是三个不同投影？</strong><br>同一个输入 $x$ 经三组不同参数（$W_Q, W_K, W_V$）投影，让模型学到”用什么去查（Q）、用什么被查（K）、查出信息取什么（V）”三种角色。若三者相同，attention 退化为对 $x$ 自身加权平均，表达力大幅下降。</p>
+<p><strong>② 为什么除以 $\sqrt{d_k}$？</strong><br>$d_k$ 较大时 $Q\cdot K^\top$ 数值会很大，把 softmax 推入饱和区（最大值趋近 1、其余趋近 0），梯度几乎为 0，训练停滞。除以 $\sqrt{d_k}$ 把方差控制在 1 附近，保持梯度健康。你的代码用 <code>embed_size ** (1/2)</code>，单头时 $d_k&#x3D;d_{model}$，与论文一致。</p>
+<p><strong>③ 维度怎么变？</strong></p>
+<ul>
+<li><strong>特征维度不变</strong>：Q&#x2F;K&#x2F;V 与输出都是 <code>[batch, seq, d_model]</code>；</li>
+<li><strong>产生 seq×seq 矩阵</strong>：<code>Q @ K^T</code> 把 <code>[seq, d]</code> 变成 <code>[seq, seq]</code> 的注意力分数矩阵，这是核心中间量，不是特征升维；</li>
+<li>真正的”升维”在后面的 <strong>FFN</strong>（$d_{model}\to 4d_{model}\to d_{model}$），见 4.3。</li>
+</ul>
+<h4 id="Encoder-的-self-attention-是双向的"><a href="#Encoder-的-self-attention-是双向的" class="headerlink" title="Encoder 的 self-attention 是双向的"></a>Encoder 的 self-attention 是双向的</h4><p>Encoder 的 self-attention <strong>没有 causal mask</strong>（那是 Decoder 的事），位置 $i$ 的 query 可以看见所有位置的 key，包括左边和右边。从第一层起每个 token 就是<strong>双向</strong>的–这正是 Encoder 适合”理解”任务的结构原因。</p>
+<blockquote>
+<p><strong>上下文化表示</strong>：以 <code>&quot;The animal didn&#39;t cross the street because it was tired.&quot;</code> 为例，<code>it</code> 进入第一层前只是个通用代词向量；经过 self-attention，它的 query 与全句 key 匹配后，输出向量已融合了”指向 animal”的语义信息。<strong>attention 决定”从哪里拿信息”</strong>，把每个 token 改写成”在这句话里的含义”。</p>
+</blockquote>
+<h3 id="4-2-多头注意力-Multi-Head-Attention-⭐"><a href="#4-2-多头注意力-Multi-Head-Attention-⭐" class="headerlink" title="4.2 多头注意力 Multi-Head Attention ⭐"></a>4.2 多头注意力 Multi-Head Attention ⭐</h3><p>你的 <code>SelfAttention</code> 是<strong>单头</strong>版。多头把它扩展：把 $d_{model}$ 切成 $h$ 份（论文 $h&#x3D;8$，每头 $d_k&#x3D;d_{model}&#x2F;h&#x3D;64$），每头独立做一次 attention，最后 concat 再投影。</p>
+<p><strong>为什么要多头</strong>：单头只用一组 Q&#x2F;K&#x2F;V，关注一种”视角”；多头让不同头关注不同子空间&#x2F;不同模式（局部、长程、语法关系等），表达力更强。</p>
+<p><strong>各头如何并行</strong>：靠 <strong>reshape 把头维度并进 batch 维</strong>，一次矩阵乘法同时算完所有头，无需 for 循环：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># x: [batch, seq, d_model]</span></span><br><span class="line">Q = <span class="variable language_">self</span>.W_Q(x).view(batch, seq, h, d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)   <span class="comment"># [batch, h, seq, d_k]</span></span><br><span class="line">K = <span class="variable language_">self</span>.W_K(x).view(batch, seq, h, d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">V = <span class="variable language_">self</span>.W_V(x).view(batch, seq, h, d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">scores = Q @ K.transpose(-<span class="number">2</span>, -<span class="number">1</span>) / math.sqrt(d_k)          <span class="comment"># [batch, h, seq, seq]</span></span><br><span class="line">attn = F.softmax(scores, dim=-<span class="number">1</span>)</span><br><span class="line">out = attn @ V                                              <span class="comment"># [batch, h, seq, d_k]</span></span><br><span class="line">out = out.transpose(<span class="number">1</span>, <span class="number">2</span>).reshape(batch, seq, d_model)      <span class="comment"># concat 回 [batch, seq, d_model]</span></span><br><span class="line">out = <span class="variable language_">self</span>.W_O(out)                                         <span class="comment"># 最后线性投影</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>计算量与单头相当</strong>：单头投影是 $d_{model}\times d_{model}$，多头是 $h\times(d_{model}\times d_k)&#x3D;d_{model}\times d_{model}$，参数量与 FLOPs 基本相同，只是换成了多视角。</p>
+</blockquote>
+<h3 id="4-3-位置前馈网络-Position-wise-FFN"><a href="#4-3-位置前馈网络-Position-wise-FFN" class="headerlink" title="4.3 位置前馈网络 Position-wise FFN"></a>4.3 位置前馈网络 Position-wise FFN</h3><p>你的代码尚未实现 FFN。它是每个 attention 子层后的两层全连接，<strong>对每个位置独立</strong>施加（token 间交互已由 attention 完成）：</p>
+<p>$$<br>\text{FFN}(x) &#x3D; \max(0,\ xW_1+b_1),W_2+b_2<br>$$</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">FeedForward</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, d_ff=<span class="number">2048</span>, dropout=<span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.net = nn.Sequential(</span><br><span class="line">            nn.Linear(d_model, d_ff),   <span class="comment"># 512 -&gt; 2048  ★ 升维 4 倍</span></span><br><span class="line">            nn.ReLU(),</span><br><span class="line">            nn.Dropout(dropout),</span><br><span class="line">            nn.Linear(d_ff, d_model),   <span class="comment"># 2048 -&gt; 512  降回</span></span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.net(x)   <span class="comment"># [batch, seq, d_model] -&gt; [batch, seq, d_model]</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>FFN 决定”拿回来之后怎么改写”</strong>：attention 让 token 带上上下文，但只是线性混合的结果；FFN 把每个位置的隐藏状态投到更高维空间、经 ReLU 引入非线性、再压回来，做逐位置的重写。升维 4 倍是模型”记忆容量”的主要来源–<strong>FFN 占每层约 2&#x2F;3 参数量</strong>（$\approx2.1M$ vs attention 的 $\approx1.05M$），这也是 MoE 把 FFN 稀疏化能省大量参数的原因。</p>
+<h3 id="4-4-残差连接与层归一化-Add-Norm"><a href="#4-4-残差连接与层归一化-Add-Norm" class="headerlink" title="4.4 残差连接与层归一化 (Add &amp; Norm)"></a>4.4 残差连接与层归一化 (Add &amp; Norm)</h3><p>每个子层都包一层残差 + 归一化：</p>
+<p>$$<br>\text{output} &#x3D; \text{LayerNorm}(x + \text{Sublayer}(x))\quad\text{（Post-LN，原论文）}<br>$$</p>
+<p><strong>为什么需要 Add &amp; Norm</strong>：残差（Add）让网络学残差 $F(x)&#x3D;H(x)-x$ 而非直接学变换，梯度可经 $+x$ 直通浅层，缓解梯度消失，使堆叠多层成为可能；归一化（Norm）稳定每层输入分布，加速收敛、降低对初始化的敏感。两者让”重写”不是硬覆盖，而是在旧表示上做小修正。</p>
+<p><strong>为什么用 LayerNorm 而不是 BatchNorm</strong>：</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">BatchNorm</th>
+<th align="left">LayerNorm</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">归一化方向</td>
+<td align="left">沿 <strong>batch 维</strong>（每个特征跨样本统计）</td>
+<td align="left">沿 <strong>特征维</strong>（每个样本自身统计）</td>
+</tr>
+<tr>
+<td align="left">对 batch 大小</td>
+<td align="left">✅ 强敏感（小 batch 统计不稳）</td>
+<td align="left">❌ 不敏感</td>
+</tr>
+<tr>
+<td align="left">变长序列</td>
+<td align="left">❌ 难处理（样本长度不同）</td>
+<td align="left">✅ 每位置独立归一</td>
+</tr>
+<tr>
+<td align="left">训练&#x2F;推理差异</td>
+<td align="left">需维护 running mean&#x2F;var</td>
+<td align="left">无</td>
+</tr>
+</tbody></table>
+<p>NLP 序列任务 batch 小、序列变长，<strong>LayerNorm 更合适</strong>；BatchNorm 更适合 CV（固定尺寸图像、大 batch）。</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/enc_post-vs-pre-ln.svg"></p>
+<p><strong>Pre-LN vs Post-LN</strong>：原论文用 Post-LN（<code>LayerNorm(x+Sublayer(x))</code>），深层训练不稳定、对 warmup 敏感；现代大模型多用 Pre-LN（<code>x+Sublayer(LayerNorm(x))</code>）。直觉差别：Post-LN 每走一层都要先过一次归一化”闸门”；Pre-LN 主路径基本直通，归一化只作用在旁路变换的输入上，残差更像一条真正的直通高速路。</p>
+<h3 id="4-5-6-层堆叠到底在做什么-⭐"><a href="#4-5-6-层堆叠到底在做什么-⭐" class="headerlink" title="4.5 6 层堆叠到底在做什么 ⭐"></a>4.5 6 层堆叠到底在做什么 ⭐</h3><p>这是理解 Encoder 的核心问题：<strong>既然第一层每个 token 已经能看全句，为什么还要堆 6 层甚至 24 层？</strong></p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/enc_encoder-stack.svg"></p>
+<p>答案不是”增加感受野”–Transformer 从第一层起感受野就是全局的。<strong>堆叠增加的是表示的抽象层级与迭代修正能力</strong>：</p>
+<ul>
+<li><strong>第一层</strong>看到的是”原始词之间的关系”：词性、近距离依存、常见搭配、指代&#x2F;主谓&#x2F;修饰等浅层模式；</li>
+<li><strong>更深层</strong>重写的是”已经上下文化过的表示”：第二层拿到的不再是裸 embedding，而是第一层改写后的表示，于是能看到”哪些位置已被标成主语&#x2F;宾语&#x2F;实体&#x2F;否定词””这是问句&#x2F;对比&#x2F;条件句”等更抽象的关系；</li>
+<li><strong>类比</strong>：像反复读一句复杂句子–第一遍只知字面意思，第二遍抓主干，第三遍才意识到让步、转折、因果。多层堆叠就是这种”反复读、反复重写”。</li>
+</ul>
+<p>经验观察（非严格定律但相当稳定）：底层头偏局部语法与位置模式，中层偏句法依赖与实体关系，高层偏任务相关语义。</p>
+<blockquote>
+<p><strong>6 层只是 2017 年的折中</strong>（WMT 翻译、P100 算力下的合理点），不是神奇数字。后来 BERT-base 用 12 层、BERT-large 24 层、ViT&#x2F;DeBERTa 动辄 24 层起步。真正不变的是”<strong>重复同一种 block，靠深度反复 refinement</strong>“这条设计。</p>
+</blockquote>
+<h4 id="Encoder-的输出是什么"><a href="#Encoder-的输出是什么" class="headerlink" title="Encoder 的输出是什么"></a>Encoder 的输出是什么</h4><p>设最后一层输出 $H^{(L)}&#x3D;[h_1,h_2,\ldots,h_n]$，每个 $h_i\in\mathbb{R}^{d_{model}}$。这些向量<strong>不是概率、不是标签</strong>，而是把”这个 token 在整句里的意义”压缩进来的连续表示–一组<strong>上下文化的 token 表示</strong>。</p>
+<ul>
+<li><strong>形状全程不变</strong>：输入输出都是 <code>[batch, seq, d_model]</code>，Encoder 不是在改变张量外形，而是在反复重写同一组 token 表示（类似迭代 refinement，区别于 RNN 的时间深、CNN 的感受野扩大）。</li>
+<li><strong>适合”读完再判断”的任务</strong>：分类（用 <code>[CLS]</code> 或池化）、Token 分类（NER&#x2F;POS）、抽取式问答、检索&#x2F;匹配、视觉&#x2F;多模态编码。</li>
+<li><strong>不擅长直接生成</strong>：没有 causal mask、训练目标不是预测下一 token、输出是表示而非生成状态。Encoder 像个”读者”而非”说话者”。</li>
+</ul>
+<blockquote>
+<p>三大架构家族的分化正源于此（详见 2.6 对照表）：Encoder-only（BERT）做理解、Decoder-only（GPT）做生成、Encoder-Decoder（T5）做翻译&#x2F;摘要。BERT 之所以只要 Encoder，正是抓住了它”双向表示学习”最强的一点。</p>
+</blockquote>
+<h3 id="4-6-完整-Encoder-Block"><a href="#4-6-完整-Encoder-Block" class="headerlink" title="4.6 完整 Encoder Block"></a>4.6 完整 Encoder Block</h3><p>把上述零件组装成一个 Encoder Block（你的代码可在此基础上扩展）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">EncoderBlock</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, heads, d_ff, dropout=<span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.attn  = MultiHeadAttention(d_model, heads)   <span class="comment"># 4.2（你的 SelfAttention 的多头版）</span></span><br><span class="line">        <span class="variable language_">self</span>.ffn   = FeedForward(d_model, d_ff, dropout)  <span class="comment"># 4.3</span></span><br><span class="line">        <span class="variable language_">self</span>.norm1 = nn.LayerNorm(d_model)</span><br><span class="line">        <span class="variable language_">self</span>.norm2 = nn.LayerNorm(d_model)</span><br><span class="line">        <span class="variable language_">self</span>.drop  = nn.Dropout(dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, mask=<span class="literal">None</span></span>):</span><br><span class="line">        <span class="comment"># 子层 1: Multi-Head Self-Attention + Add &amp; Norm</span></span><br><span class="line">        attn_out = <span class="variable language_">self</span>.attn(x, x, x, mask)</span><br><span class="line">        x = <span class="variable language_">self</span>.norm1(x + <span class="variable language_">self</span>.drop(attn_out))           <span class="comment"># Post-LN</span></span><br><span class="line">        <span class="comment"># 子层 2: FFN + Add &amp; Norm</span></span><br><span class="line">        ffn_out = <span class="variable language_">self</span>.ffn(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.norm2(x + <span class="variable language_">self</span>.drop(ffn_out))</span><br><span class="line">        <span class="keyword">return</span> x   <span class="comment"># [batch, seq, d_model]，形状不变</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>单个 Block 内部 6 步（回扣 2.4）：MHA -&gt; Add -&gt; LayerNorm -&gt; FFN -&gt; Add -&gt; LayerNorm；</li>
+<li><strong>堆叠 N&#x3D;6 层</strong>：上层输出作为下层输入，逐层提取更高层表示；</li>
+<li>最后一层输出送入 Decoder 的 cross-attention 作为 K、V（见第五章）。</li>
+</ul>
+<h3 id="4-7-常见误解"><a href="#4-7-常见误解" class="headerlink" title="4.7 常见误解"></a>4.7 常见误解</h3><ul>
+<li>❌「一层已看全局，所以多层是浪费」–全局可见 ≠ 全局理解。第一层看原始 embedding 的全局关系，更深层看多轮改写后的高阶表示；深度带来的是表示变换与迭代推理，不是更大感受野。</li>
+<li>❌「Encoder 只是 Decoder 的配角」–只在翻译图里像配角；到 BERT、ViT、CLIP 里它是主角，是整条表示学习路线的核心骨架。</li>
+<li>❌「Encoder 的输出就是一句话的向量」–不对。默认输出是一整串 token 表示，句向量需额外构造（<code>[CLS]</code>、mean pooling、attention pooling）。</li>
+<li>❌「Encoder 不建模顺序」–没有位置编码时成立；加上 PE 后它就能利用顺序，只是通过 attention + 位置信号建模，而非递归。</li>
+<li>❌「Encoder-only 一定比 Decoder-only 更懂语义」–在理解任务上有结构优势，但现代 decoder-only LLM 经大规模自回归训练也能学到很强语义。真正区别是训练目标与推理方式。</li>
+</ul>
+<blockquote>
+<p>你当前的实现进度：<code>SelfAttention</code>（单头）✅ -&gt; 多头&#x2F;FFN&#x2F;Add&amp;Norm&#x2F;EncoderBlock 待补。把 4.2~4.6 的标准实现拼进 <code>transformer.py</code>，即可得到一个完整的 Encoder。</p>
+</blockquote>
+<hr>
+<h2 id="五、解码器-Decoder"><a href="#五、解码器-Decoder" class="headerlink" title="五、解码器 Decoder"></a>五、解码器 Decoder</h2><blockquote>
+<p>Decoder 像个”写作者”：在每个时刻回答”看到前文与外部条件后，下一个 token 该是什么”。这一章用 <code>Homework1_Question.ipynb</code> 里的 <code>DecoderLayer</code> &#x2F; <code>Decoder</code> &#x2F; mask 代码为主线，讲清三块子层、训练与推理的差异，以及为什么 Decoder 天生适合生成。</p>
+</blockquote>
+<h3 id="5-1-概览：比-Encoder-多一块-cross-attention"><a href="#5-1-概览：比-Encoder-多一块-cross-attention" class="headerlink" title="5.1 概览：比 Encoder 多一块 cross-attention"></a>5.1 概览：比 Encoder 多一块 cross-attention</h3><p>Encoder 一层有两块（self-attention + FFN），Decoder 一层多一个中间的 <strong>cross-attention</strong>，共三块子层，每块都包 Add &amp; Norm：</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/dec_decoder-layer.svg"></p>
+<p>原论文 Post-LN 形式：</p>
+<p>$$<br>\begin{aligned}<br>h_1 &amp;&#x3D; \text{LayerNorm}(x + \text{MaskedMHA}(x)) \<br>h_2 &amp;&#x3D; \text{LayerNorm}(h_1 + \text{CrossAttn}(h_1, M)) \<br>y   &amp;&#x3D; \text{LayerNorm}(h_2 + \text{FFN}(h_2))<br>\end{aligned}<br>$$</p>
+<p>其中 $M$ 是 Encoder 最后一层输出的 memory。</p>
+<p><strong>子层顺序及其原因</strong>（不是随便排的）：</p>
+<ol>
+<li><strong>先 masked self-attention</strong>：整理目标序列内部的历史，构造”我已经说到哪儿了”的状态；</li>
+<li><strong>再 cross-attention</strong>：拿着这个状态去 encoder memory 里查外部信息，决定对齐输入里的什么内容；</li>
+<li><strong>最后 FFN</strong>：对融合了历史与外部信息的表示做非线性重写。</li>
+</ol>
+<blockquote>
+<p>若把 cross-attention 放到 masked self-attention 之前，”要查什么外部信息”就缺少明确的历史状态作目标，语义上不合理。</p>
+</blockquote>
+<h3 id="5-2-解码器的输入与两种执行方式-⭐"><a href="#5-2-解码器的输入与两种执行方式-⭐" class="headerlink" title="5.2 解码器的输入与两种执行方式 ⭐"></a>5.2 解码器的输入与两种执行方式 ⭐</h3><p>Decoder 的输入是目标序列 <strong>shifted right</strong>（首位加 BOS）。训练与推理执行方式截然不同：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">decoder 输入 : [BOS, y1, y2, ..., y_&#123;T-1&#125;]   ← shifted right</span><br><span class="line">训练标签     : [y1,  y2, y3, ..., y_T]</span><br></pre></td></tr></table></figure>
+
+<p><strong>训练（teacher forcing，并行）</strong>：已知整条目标序列，一次性喂入 decoder，靠 causal mask 保证位置 $t$ 计算时看不见未来，所有位置在同一次前向里并行算出。例如目标 <code>[BOS, 我, 喜欢, 机器, 学习]</code>，位置 0&#x2F;1&#x2F;2&#x2F;3 分别预测 <code>我/喜欢/机器/学习</code>，一次 forward 完成。</p>
+<p><strong>推理（autoregressive，串行）</strong>：模型不知道未来，只能逐步生成：</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/dec_autoregressive-decoding.svg"></p>
+<ol>
+<li>输入 <code>[BOS]</code> -&gt; 预测 <code>我</code>；</li>
+<li>输入 <code>[BOS, 我]</code> -&gt; 预测 <code>喜欢</code>；</li>
+<li>输入 <code>[BOS, 我, 喜欢]</code> -&gt; 预测 <code>机器</code>；……</li>
+</ol>
+<blockquote>
+<p>训练并行、推理串行，不是矛盾，而是同一套自回归约束在”已知&#x2F;未知未来”两种信息条件下的自然结果。推理串行正是 LLM 推理慢的根源，KV cache 等优化都在攻它。</p>
+<p>⚠️ <strong>exposure bias</strong>：训练时 decoder 总看到真实前缀，推理时看到的是自己生成、可能带误差的前缀，两者分布不完全一致。scheduled sampling、RLHF 的 rollout 等都在缓解此问题。</p>
+</blockquote>
+<h3 id="5-3-掩码自注意力-Masked-Self-Attention"><a href="#5-3-掩码自注意力-Masked-Self-Attention" class="headerlink" title="5.3 掩码自注意力 Masked Self-Attention"></a>5.3 掩码自注意力 Masked Self-Attention</h3><p>Decoder 的核心约束：<strong>不能偷看未来</strong>。若不加 mask，训练时位置 $t$ 预测第 $t$ 个 token 时能直接看到答案 $y_t$ 及之后的 $y_{t+1},…$，loss 很好看但模型学到的是作弊。</p>
+<p>解决：加一个<strong>下三角 causal mask</strong>：</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/dec_causal-mask.svg"></p>
+<p>$$<br>S &#x3D; \frac{QK^\top}{\sqrt{d_k}} + \text{Mask},\quad<br>\text{Mask}_{ij} &#x3D; \begin{cases} 0, &amp; j \leq i \ -\infty, &amp; j &gt; i \end{cases}<br>$$</p>
+<p>softmax 后所有未来位置权重为 0。</p>
+<h4 id="你的代码：mask-怎么生成（pad-mask-与-causal-mask-合并）"><a href="#你的代码：mask-怎么生成（pad-mask-与-causal-mask-合并）" class="headerlink" title="你的代码：mask 怎么生成（pad mask 与 causal mask 合并）"></a>你的代码：mask 怎么生成（pad mask 与 causal mask 合并）</h4><p>回扣 3.4 的 pad mask，Decoder 还需 causal mask，两者按位与合并。<code>Homework1_Question.ipynb</code> 里 <code>Transformer</code> 类的实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_pad_mask</span>(<span class="params">self, x, pad_idx</span>):</span><br><span class="line">    <span class="keyword">return</span> (x != pad_idx).unsqueeze(-<span class="number">2</span>)        <span class="comment"># [batch, 1, seq_len]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_subsequent_mask</span>(<span class="params">self, x</span>):</span><br><span class="line">    seq_len = x.size(<span class="number">1</span>)</span><br><span class="line">    <span class="comment"># np.triu(k=1) 取上三角（不含对角线）为 1，==0 后上三角变 False</span></span><br><span class="line">    subsequent_mask = np.triu(np.ones((<span class="number">1</span>, seq_len, seq_len)), k=<span class="number">1</span>).astype(np.int8)</span><br><span class="line">    subsequent_mask = (torch.from_numpy(subsequent_mask) == <span class="number">0</span>).to(x.device)</span><br><span class="line">    <span class="keyword">return</span> subsequent_mask                      <span class="comment"># [batch, seq, seq]，下三角+对角为 True</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 源序列只需 pad mask；目标序列需 pad &amp; causal 两种合并</span></span><br><span class="line">src_mask = <span class="variable language_">self</span>.get_pad_mask(src, <span class="variable language_">self</span>.pad_idx)</span><br><span class="line">tgt_mask = <span class="variable language_">self</span>.get_pad_mask(tgt, <span class="variable language_">self</span>.pad_idx) &amp; <span class="variable language_">self</span>.get_subsequent_mask(tgt)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>tgt_mask = pad_mask &amp; subsequent_mask</code>：同时屏蔽 padding 位与未来位置。这就是第三章预告的”pad mask 与 causal mask 按位合并”的真实写法。</p>
+</blockquote>
+<blockquote>
+<p><strong>与 Encoder 的差别只在 mask</strong>：公式相同，但 Encoder 无 causal mask（双向，适合理解），Decoder 有 causal mask（只看过去，适合生成）。Causal mask 不是小补丁，而是 Decoder 路线的结构分水岭–没有它就没有 GPT 式自回归语言模型。</p>
+</blockquote>
+<h3 id="5-4-交叉注意力-Cross-Attention-⭐"><a href="#5-4-交叉注意力-Cross-Attention-⭐" class="headerlink" title="5.4 交叉注意力 Cross-Attention ⭐"></a>5.4 交叉注意力 Cross-Attention ⭐</h3><p>Cross-attention 是 Decoder 读取 Encoder 的<strong>唯一通道</strong>。与 self-attention 的区别不在公式，而在 Q&#x2F;K&#x2F;V 的来源：</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/dec_cross-attention-flow.svg"></p>
+<ul>
+<li><strong>Query</strong>：来自 Decoder 当前层的隐藏状态；</li>
+<li><strong>Key、Value</strong>：来自 Encoder 最后一层输出（memory）。</li>
+</ul>
+<p>$$<br>\text{CrossAttn}(Q_{\text{dec}}, K_{\text{enc}}, V_{\text{enc}}) &#x3D; \text{softmax}!\left(\frac{Q_{\text{dec}} K_{\text{enc}}^\top}{\sqrt{d_k}}\right) V_{\text{enc}}<br>$$</p>
+<h4 id="你的代码"><a href="#你的代码" class="headerlink" title="你的代码"></a>你的代码</h4><p><code>DecoderLayer</code> 里第二块子层，Q 来自 decoder、K&#x2F;V 来自 encoder memory：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># memory 是 encoder 最后一层输出</span></span><br><span class="line">x1, attn = <span class="variable language_">self</span>.enc_attn_layer(x, memory, memory, src_mask)</span><br><span class="line"><span class="comment"># x1:  [batch, tgt_len, d_model]</span></span><br><span class="line"><span class="comment"># attn:[batch, n_heads, tgt_len, src_len]  ← 每个 decoder 位置对每个 encoder 位置的注意力</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这一步是”条件生成”真正发生的地方。翻译时 decoder 决定下一个 token，masked self-attention 提供”前面已写了什么”，cross-attention 提供”源句里还有什么待对齐”，两者结合才能既符合目标语言历史又忠实于输入。</p>
+</blockquote>
+<blockquote>
+<p><strong>没有 encoder 时，这一块整块删掉</strong>–这就是 GPT 把”带 cross-attention 的 decoder”裁成”decoder-only”的过程。纯语言建模只需左侧历史，cross-attention 可去掉，Decoder layer 退化成 masked self-attention + FFN。</p>
+</blockquote>
+<h3 id="5-5-FFN-Add-Norm"><a href="#5-5-FFN-Add-Norm" class="headerlink" title="5.5 FFN + Add &amp; Norm"></a>5.5 FFN + Add &amp; Norm</h3><p>第三块 FFN 与 Encoder 的 FFN 公式相同，但吃到的输入语义不同：Encoder 的 FFN 看到的是”融合了全句上下文的表示”，Decoder 的 FFN 看到的是”融合了历史前缀 + encoder memory 的表示”，作用是把当前生成位置的综合状态压成适合下一个 token 分类的隐藏向量。</p>
+<p>Decoder 一层有 <strong>3 个 Add &amp; Norm</strong>（masked-attn 后、cross-attn 后、FFN 后），结构同 Encoder，只是多一组。</p>
+<h3 id="5-6-完整-DecoderLayer-代码与堆叠"><a href="#5-6-完整-DecoderLayer-代码与堆叠" class="headerlink" title="5.6 完整 DecoderLayer 代码与堆叠"></a>5.6 完整 DecoderLayer 代码与堆叠</h3><p><code>Homework1_Question.ipynb</code> 的完整 <code>DecoderLayer</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">DecoderLayer</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, n_heads, d_ff, dropout_rate=<span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.attn_layer       = MultiHeadAttention(d_model, n_heads, dropout_rate)  <span class="comment"># masked self-attn</span></span><br><span class="line">        <span class="variable language_">self</span>.attn_layer_norm  = nn.LayerNorm(d_model, eps=<span class="number">1e-6</span>)</span><br><span class="line">        <span class="variable language_">self</span>.enc_attn_layer   = MultiHeadAttention(d_model, n_heads, dropout_rate)  <span class="comment"># cross-attn</span></span><br><span class="line">        <span class="variable language_">self</span>.enc_attn_layer_norm = nn.LayerNorm(d_model, eps=<span class="number">1e-6</span>)</span><br><span class="line">        <span class="variable language_">self</span>.ff_layer         = PositionwiseFeedForward(d_model, d_ff, dropout_rate)</span><br><span class="line">        <span class="variable language_">self</span>.ff_layer_norm    = nn.LayerNorm(d_model, eps=<span class="number">1e-6</span>)</span><br><span class="line">        <span class="variable language_">self</span>.dropout = nn.Dropout(dropout_rate)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, memory, src_mask, tgt_mask</span>):</span><br><span class="line">        <span class="comment"># ① masked self-attention (Q=K=V=x, tgt_mask)</span></span><br><span class="line">        x1, _ = <span class="variable language_">self</span>.attn_layer(x, x, x, tgt_mask)</span><br><span class="line">        x = <span class="variable language_">self</span>.attn_layer_norm(x + <span class="variable language_">self</span>.dropout(x1))</span><br><span class="line">        <span class="comment"># ② cross-attention (Q=x, K=V=memory, src_mask)</span></span><br><span class="line">        x1, attn = <span class="variable language_">self</span>.enc_attn_layer(x, memory, memory, src_mask)</span><br><span class="line">        x = <span class="variable language_">self</span>.enc_attn_layer_norm(x + <span class="variable language_">self</span>.dropout(x1))</span><br><span class="line">        <span class="comment"># ③ FFN</span></span><br><span class="line">        x1 = <span class="variable language_">self</span>.ff_layer(x)</span><br><span class="line">        x = <span class="variable language_">self</span>.ff_layer_norm(x + <span class="variable language_">self</span>.dropout(x1))</span><br><span class="line">        <span class="keyword">return</span> x, attn   <span class="comment"># attn: [batch, n_heads, tgt_len, src_len]</span></span><br></pre></td></tr></table></figure>
+
+<p><code>Decoder</code> 在此基础上做 embedding + 位置编码，堆叠 N 层：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Decoder</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, vocab_size, d_model, n_layers, n_heads, d_ff, pad_idx, ...</span>):</span><br><span class="line">        <span class="variable language_">self</span>.tok_embedding = nn.Embedding(vocab_size, d_model, padding_idx=pad_idx)</span><br><span class="line">        <span class="variable language_">self</span>.pos_embedding = PositionalEncoding(d_model, dropout_rate, max_len)</span><br><span class="line">        <span class="variable language_">self</span>.layers = nn.ModuleList([DecoderLayer(...) <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(n_layers)])</span><br><span class="line">        <span class="variable language_">self</span>.layer_norm = nn.LayerNorm(d_model, eps=<span class="number">1e-6</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x, memory, src_mask, tgt_mask</span>):</span><br><span class="line">        x = <span class="variable language_">self</span>.tok_embedding(x)        <span class="comment"># 目标 token -&gt; embedding</span></span><br><span class="line">        x = <span class="variable language_">self</span>.pos_embedding(x)        <span class="comment"># + 位置编码</span></span><br><span class="line">        <span class="keyword">for</span> layer <span class="keyword">in</span> <span class="variable language_">self</span>.layers:</span><br><span class="line">            x, attn = layer(x, memory, src_mask, tgt_mask)   <span class="comment"># 逐层堆叠</span></span><br><span class="line">        x = <span class="variable language_">self</span>.layer_norm(x)</span><br><span class="line">        <span class="keyword">return</span> x, attn</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>单层内部 9 步（回扣 2.4）：MaskedMHA -&gt; Add -&gt; LN -&gt; CrossAttn -&gt; Add -&gt; LN -&gt; FFN -&gt; Add -&gt; LN；</li>
+<li>堆叠 N&#x3D;6 层，每层都读取同一个 encoder memory；</li>
+<li>输出送入 Generator（Linear + softmax&#x2F;log_softmax）得到词表分布（见第六章）。</li>
+</ul>
+<h3 id="5-7-为什么-Decoder-天生适合生成"><a href="#5-7-为什么-Decoder-天生适合生成" class="headerlink" title="5.7 为什么 Decoder 天生适合生成"></a>5.7 为什么 Decoder 天生适合生成</h3><ul>
+<li><strong>训练目标与推理动作一致</strong>：每个位置学的是 $p(y_t \mid y_{&lt;t}, x)$，与生成时”给历史前缀预测下一 token”完全对齐；结构、目标、推理三者一致。</li>
+<li><strong>历史状态累积在 residual stream</strong>：随 token 逐个生成，每层残差主路累积”到目前为止已说了什么”，效果类似 RNN 的 hidden state，但通过 attention 读取整段历史而非压缩向量。</li>
+<li><strong>对外部条件友好</strong>：翻译&#x2F;摘要&#x2F;问答&#x2F;多模态生成只需加回 cross-attention，就能在保留自回归生成能力的同时读取外部输入。</li>
+</ul>
+<blockquote>
+<p>这也是为什么 2017 年至今 Decoder 路线从未消失，只是从”完整 encoder-decoder 的右半边”演化成”GPT 式 decoder-only 主干”。互联网文本天然适合 next-token 目标、统一接口极简（一切任务转成”给定前缀续写”）、少了 cross-attention 后结构与部署更干净–这是 decoder-only 成为主流的工程合力。</p>
+</blockquote>
+<h3 id="5-8-常见误解"><a href="#5-8-常见误解" class="headerlink" title="5.8 常见误解"></a>5.8 常见误解</h3><ul>
+<li>❌「Decoder 就是 Encoder 多了个 mask」–不止。它还多了”自回归目标”这整个训练-推理闭环；没有闭环，mask 只是矩阵操作，Decoder 才成为生成模型。</li>
+<li>❌「cross-attention 是可有可无的附加模块」–对 decoder-only 可去；对翻译&#x2F;摘要&#x2F;条件生成，它是读取输入条件的唯一主通道，删掉就失去对齐输入的能力。</li>
+<li>❌「训练时 Decoder 不能并行，所以慢」–错。训练有 teacher forcing + causal mask，所有位置一次性并行算出；真正串行的是推理。</li>
+<li>❌「decoder-only 一定比 encoder-decoder 更先进」–它只是更适合大规模统一预训练与通用生成；翻译、摘要、语音识别等输入输出天然两段的任务里，encoder-decoder 仍很有竞争力。</li>
+<li>❌「Decoder 只能做文本生成」–代码、音频 token、图像 token、动作序列都可自回归生成；关键是”序列化的下一步预测”，不是”文本”。</li>
+</ul>
+<hr>
+<h2 id="六、输出-Output"><a href="#六、输出-Output" class="headerlink" title="六、输出 (Output)"></a>六、输出 (Output)</h2><blockquote>
+<p>Decoder 最后一层输出的是每个位置的隐表示，要转成”下一个 token 在词表上的概率分布”才能用于计算 loss 或生成。这一章用 <code>Homework1_Question.ipynb</code> 的 <code>Generator</code> 代码讲清输出头、训练目标与解码策略。</p>
+</blockquote>
+<h3 id="6-1-输出头：Linear-Softmax"><a href="#6-1-输出头：Linear-Softmax" class="headerlink" title="6.1 输出头：Linear + Softmax"></a>6.1 输出头：Linear + Softmax</h3><p><code>Generator</code> 把 decoder 输出从 $d_{model}$ 维投影到词表大小，再过 softmax 得到概率分布：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Generator</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, vocab_size</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line">        <span class="variable language_">self</span>.proj = nn.Linear(d_model, vocab_size)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="comment"># x: [batch, tgt_len, d_model]</span></span><br><span class="line">        x = <span class="variable language_">self</span>.proj(x)                       <span class="comment"># [batch, tgt_len, vocab_size]</span></span><br><span class="line">        output = F.log_softmax(x, dim=-<span class="number">1</span>)      <span class="comment"># log 概率（配合 NLLLoss）</span></span><br><span class="line">        <span class="keyword">return</span> output</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>用 <code>log_softmax</code> 而非 <code>softmax</code> 是为数值稳定，且直接配合 <code>NLLLoss</code>（负对数似然）使用；若用 <code>CrossEntropyLoss</code> 则内部已含 softmax，不需再 log_softmax。</p>
+<p><strong>Weight tying</strong>（原论文 §3.4）：encoder 输入 embedding、decoder 输入 embedding、decoder 输出投影 $W_{out}$ 三者共享同一张 <code>[vocab, d_model]</code> 矩阵。省参数（词表 37k、d&#x3D;512 时省下 ~38M）且有正则化效果。现代大模型因词表巨大（50k+）多不再共享。</p>
+</blockquote>
+<h3 id="6-2-训练目标：交叉熵-Label-Smoothing"><a href="#6-2-训练目标：交叉熵-Label-Smoothing" class="headerlink" title="6.2 训练目标：交叉熵 + Label Smoothing"></a>6.2 训练目标：交叉熵 + Label Smoothing</h3><p>训练用 teacher forcing：decoder 输入是目标序列<strong>去掉最后一个 token</strong>（<code>target[:, :-1]</code>），监督标签是<strong>去掉 BOS</strong>（<code>target[:, 1:]</code>）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># train_fn 核心</span></span><br><span class="line">output, _ = model(source, target[:, :-<span class="number">1</span>])          <span class="comment"># 预测，[batch, tgt_len-1, vocab]</span></span><br><span class="line">loss = criterion(</span><br><span class="line">    output.view(-<span class="number">1</span>, output.size(-<span class="number">1</span>)),              <span class="comment"># 展平到 [N, vocab]</span></span><br><span class="line">    target[:, <span class="number">1</span>:].contiguous().view(-<span class="number">1</span>)            <span class="comment"># 展平到 [N]</span></span><br><span class="line">)</span><br><span class="line">loss.backward()</span><br><span class="line">nn.utils.clip_grad_norm_(model.parameters(), clip) <span class="comment"># 梯度裁剪防爆炸</span></span><br><span class="line">optimizer.step()</span><br></pre></td></tr></table></figure>
+
+<p><strong>Label Smoothing（ε&#x3D;0.1）</strong>：把 one-hot 目标软化–目标词概率从 1 变 0.9，剩 0.1 平均分给所有其它词：</p>
+<p>$$<br>q_i &#x3D; (1-\varepsilon)\cdot\mathbf{1}[i&#x3D;\text{target}] + \varepsilon&#x2F;V<br>$$</p>
+<blockquote>
+<p>反直觉但有效：label smoothing 让训练 <strong>PPL 变差</strong>（最优分布被人为软化），但 <strong>BLEU 变好</strong>–因为分布更柔和时 beam search 能保留更多候选路径，找到更优解。现代 LLM（自回归生成、不用 beam search）基本不再用，但翻译任务仍是标配。</p>
+</blockquote>
+<h3 id="6-3-推理解码策略"><a href="#6-3-推理解码策略" class="headerlink" title="6.3 推理解码策略"></a>6.3 推理解码策略</h3><p>推理时没有真实标签，decoder 必须用自己生成的 token 作下一步输入。三种主流策略：</p>
+<table>
+<thead>
+<tr>
+<th align="left">策略</th>
+<th align="left">做法</th>
+<th align="left">特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Greedy</strong></td>
+<td align="left">每步选概率最高的 token</td>
+<td align="left">快，但易被早期局部最优锁死</td>
+</tr>
+<tr>
+<td align="left"><strong>Beam Search</strong></td>
+<td align="left">保留 k 条候选路径（原论文 beam&#x3D;4）</td>
+<td align="left">翻译&#x2F;摘要等”有标准答案”任务主流</td>
+</tr>
+<tr>
+<td align="left"><strong>Sampling</strong></td>
+<td align="left">按概率采样（top-k &#x2F; top-p）</td>
+<td align="left">现代 LLM 对话生成主流，多样性好</td>
+</tr>
+</tbody></table>
+<p><strong>Beam search 的长度偏置</strong>：每生成一个 token 乘一个 $P&lt;1$，句子越长总概率越低，beam search 倾向输出短句。原论文用 length penalty 抵消：</p>
+<p>$$<br>\text{score}(y) &#x3D; \frac{\log P(y)}{lp(|y|)},\quad lp(|y|)&#x3D;\left(\frac{5+|y|}{6}\right)^\alpha,\quad \alpha&#x3D;0.6<br>$$</p>
+<blockquote>
+<p>现代 LLM 对话生成几乎不用 beam search（输出”过于安全”、多样性差、长生成算力开销大），改用 temperature sampling + top-k&#x2F;top-p；但翻译、摘要这类有标准答案的任务 beam search 仍占主流。</p>
+</blockquote>
+<hr>
+<h2 id="七、训练与优化细节"><a href="#七、训练与优化细节" class="headerlink" title="七、训练与优化细节"></a>七、训练与优化细节</h2><blockquote>
+<p>“结构对了”不等于”能训出来”–同一架构配方稍动可能差几个 BLEU。这一章用 <code>NoamOptim</code> &#x2F; <code>train_fn</code> 代码 + 原论文配方，讲清优化器、学习率调度、正则化、batching 等关键细节。</p>
+</blockquote>
+<p>原论文完整配方一览：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">模型：    Transformer base / big</span><br><span class="line">数据集：  WMT 2014 En-De (4.5M 句对) / En-Fr (36M 句对)</span><br><span class="line">硬件：    8 × NVIDIA P100</span><br><span class="line">训练时长：base 12 小时 (100k 步) / big 3.5 天 (300k 步)</span><br><span class="line">batch：   每步约 25000 source token + 25000 target token</span><br><span class="line">优化器：  Adam, β₁=0.9, β₂=0.98, ε=1e-9</span><br><span class="line">学习率：  lr = d^(-0.5) · min(step^(-0.5), step · warmup^(-1.5))</span><br><span class="line">warmup：  4000 步</span><br><span class="line">正则化：  dropout 0.1（embedding 后、每个子层输出）/ label smoothing 0.1</span><br><span class="line">推理：    beam search, beam=4, length penalty α=0.6</span><br><span class="line">结果：    En-De BLEU 27.3 (base) / 28.4 (big)；En-Fr 38.1 / 41.8</span><br></pre></td></tr></table></figure>
+
+<h3 id="7-1-优化器：Adam-的微调"><a href="#7-1-优化器：Adam-的微调" class="headerlink" title="7.1 优化器：Adam 的微调"></a>7.1 优化器：Adam 的微调</h3><p>Adam 维护一阶矩 $m$（动量）和二阶矩 $v$（梯度平方移动平均），自适应调节各参数步长。原论文对默认值做了两处关键调整：</p>
+<ul>
+<li><strong>β₂ &#x3D; 0.98（不是默认 0.999）</strong>：β₂ 控制 $v$ 的记忆长度。0.999 对应”记忆 1000 步”，对百万步训练合适但对 100k 步太长；0.98 对应”记忆 50 步”，让 $v$ 更快跟上学习率变化，适合短训练。</li>
+<li><strong>ε &#x3D; 1e-9（不是默认 1e-8）</strong>：影响梯度平方接近 0 时的步长，复现时保持一致即可。</li>
+<li><strong>无 weight decay</strong>：当时靠 dropout + label smoothing 已提供充分正则；现代大模型改用 AdamW + weight decay 0.1。</li>
+</ul>
+<h3 id="7-2-学习率调度：warmup-1-√step-⭐"><a href="#7-2-学习率调度：warmup-1-√step-⭐" class="headerlink" title="7.2 学习率调度：warmup + 1&#x2F;√step ⭐"></a>7.2 学习率调度：warmup + 1&#x2F;√step ⭐</h3><p>原论文的学习率公式（你的 <code>NoamOptim</code> 即此实现）：</p>
+<p>$$<br>lr &#x3D; d_{model}^{-0.5} \cdot \min!\left(step^{-0.5},\ step \cdot warmup_steps^{-1.5}\right)<br>$$</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">NoamOptim</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_lr</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.factor * (</span><br><span class="line">            <span class="variable language_">self</span>.d_model ** (-<span class="number">0.5</span>)</span><br><span class="line">            * <span class="built_in">min</span>(<span class="variable language_">self</span>.n_steps ** (-<span class="number">0.5</span>), <span class="variable language_">self</span>.n_steps * <span class="variable language_">self</span>.n_warmup_steps ** (-<span class="number">1.5</span>))</span><br><span class="line">        )</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/train_lr-schedule.svg"></p>
+<p><code>min</code> 里两支函数：A &#x3D; <code>step·warmup⁻¹·⁵</code>（线性增长）、B &#x3D; <code>step⁻⁰·⁵</code>（平方根衰减），交点在 <code>step = warmup_steps</code>。所以曲线<strong>先线性升、再 1&#x2F;√step 衰减</strong>：</p>
+<ul>
+<li>step &lt; 4000：lr 沿 A 线性升到峰值 $lr_{peak}&#x3D;d^{-0.5}\cdot warmup^{-0.5}\approx7\times10^{-4}$（d&#x3D;512）；</li>
+<li>step &gt; 4000：lr 沿 B 按 1&#x2F;√step 慢慢降，100k 步时降到约 1&#x2F;5 峰值。</li>
+</ul>
+<p><strong>为什么 warmup</strong>：训练初期参数随机初始化、梯度方向嘈杂，Adam 的二阶矩 $v$ 需积累几千步才能给出靠谱的方差估计。若一开始就用大 lr，参数会被嘈杂梯度推到离解空间很远的”坏 basin”，后续难以恢复。warmup 给优化器几千步缓冲，让 $v$ 稳定后再放开 lr。</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/train_warmup-effect.svg"></p>
+<blockquote>
+<p><strong>warmup&#x3D;4000 不是魔法常数</strong>：是原论文那套模型规模&#x2F;batch&#x2F;硬件下的经验折中。太短训练不稳，太长前期 lr 偏低、收敛慢。现代 LLM 仍有 warmup（GPT-3 报 375M tokens、LLaMA-2 报 2000 steps），只是按各自尺度重选。</p>
+<p><strong>d_model⁻⁰·⁵</strong>：让学习率随模型宽度自动适配–模型越宽、矩阵乘输出方差越大，lr 要随宽度降下来（类似 Glorot&#x2F;He 初始化的 1&#x2F;√d）。big 模型（d&#x3D;1024）峰值自动比 base（d&#x3D;512）低约 30%。</p>
+</blockquote>
+<h3 id="7-3-正则化：Dropout-Label-Smoothing"><a href="#7-3-正则化：Dropout-Label-Smoothing" class="headerlink" title="7.3 正则化：Dropout + Label Smoothing"></a>7.3 正则化：Dropout + Label Smoothing</h3><p><strong>Dropout（P&#x3D;0.1）</strong> 加在两处：</p>
+<ol>
+<li>Embedding + 位置编码相加之后；</li>
+<li>每个子层（attention、FFN）的输出，在加到残差之前。</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">x<span class="string">&#x27; = x + dropout(Attention(x))   # 子层输出 dropout</span></span><br><span class="line"><span class="string">y  = x&#x27;</span> + dropout(FFN(x<span class="string">&#x27;))</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>为什么 0.1 而非经典 CV 的 0.5</strong>：Transformer 已有 LN、残差、label smoothing、weight tying 多重正则，再加重 dropout 反而让训练不稳定。0.1 是”轻量正则”。现代 LLM（数据量千亿 token）过拟合非主要矛盾，dropout 降到 0。</p>
+</blockquote>
+<p><strong>Label Smoothing（ε&#x3D;0.1）</strong>：见 6.2，PPL 变差但 BLEU 变好。</p>
+<h3 id="7-4-Batching-by-Tokens"><a href="#7-4-Batching-by-Tokens" class="headerlink" title="7.4 Batching by Tokens"></a>7.4 Batching by Tokens</h3><p>原论文每个 batch 含约 <strong>25000 source token + 25000 target token</strong>，即按 token 数而非句对数组 batch。</p>
+<p><strong>为什么不用固定 batch_size</strong>：翻译句子长度差异大（5 词到 100 词）。固定 64 句时，短句 batch（512 token）GPU 利用率极低，长句 batch（5120 token）可能爆显存；且显存由 batch 内最长句决定，短句 padding 白占位。按 token 数 batch 则短句 batch 句数多、长句 batch 句数少，显存占用稳定、利用率最大化。</p>
+<p>实现：按长度分桶（bucket），每桶内长度相近，凑够 25000 token 提交一个 batch。</p>
+<h3 id="7-5-训练循环"><a href="#7-5-训练循环" class="headerlink" title="7.5 训练循环"></a>7.5 训练循环</h3><p><code>train_fn</code> 的核心流程（teacher forcing + 梯度裁剪）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">train_fn</span>(<span class="params">model, iterator, optimizer, criterion, clip=<span class="number">1.0</span></span>):</span><br><span class="line">    model.train()</span><br><span class="line">    <span class="keyword">for</span> batch <span class="keyword">in</span> iterator:</span><br><span class="line">        source, _ = batch.src</span><br><span class="line">        target, _ = batch.trg</span><br><span class="line">        optimizer.zero_grad()</span><br><span class="line">        output, _ = model(source, target[:, :-<span class="number">1</span>])          <span class="comment"># teacher forcing</span></span><br><span class="line">        loss = criterion(output.view(-<span class="number">1</span>, output.size(-<span class="number">1</span>)),</span><br><span class="line">                         target[:, <span class="number">1</span>:].contiguous().view(-<span class="number">1</span>))</span><br><span class="line">        loss.backward()</span><br><span class="line">        nn.utils.clip_grad_norm_(model.parameters(), clip)  <span class="comment"># 梯度裁剪防爆炸</span></span><br><span class="line">        optimizer.step()</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>梯度裁剪（clip&#x3D;1.0）</strong>：防止偶发大梯度把训练弄崩，原论文未明确但 fairseq 默认开启，现代 LLM 普遍保留。</li>
+<li><strong>8 卡数据并行</strong>：每卡一份 batch 子集，前向反向后 all-reduce 梯度，再各自更新（参数相同）。单机 8 卡纯数据并行即可，千卡规模才需 3D 并行。</li>
+</ul>
+<h3 id="7-6-现代大模型-vs-2017-配方"><a href="#7-6-现代大模型-vs-2017-配方" class="headerlink" title="7.6 现代大模型 vs 2017 配方"></a>7.6 现代大模型 vs 2017 配方</h3><p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/train_cost-vs-bleu.svg"></p>
+<table>
+<thead>
+<tr>
+<th align="left">配方项</th>
+<th align="left">Transformer base (2017)</th>
+<th align="left">GPT-3 175B (2020)</th>
+<th align="left">LLaMA-2 70B (2023)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">优化器</td>
+<td align="left">Adam</td>
+<td align="left">Adam</td>
+<td align="left">AdamW</td>
+</tr>
+<tr>
+<td align="left">β₂</td>
+<td align="left">0.98</td>
+<td align="left">0.95</td>
+<td align="left">0.95</td>
+</tr>
+<tr>
+<td align="left">weight decay</td>
+<td align="left">0</td>
+<td align="left">0.1</td>
+<td align="left">0.1</td>
+</tr>
+<tr>
+<td align="left">LR schedule</td>
+<td align="left">inverse √step</td>
+<td align="left">cosine</td>
+<td align="left">cosine</td>
+</tr>
+<tr>
+<td align="left">LR peak</td>
+<td align="left">~7e-4 (d&#x3D;512)</td>
+<td align="left">6e-5</td>
+<td align="left">1.5e-4</td>
+</tr>
+<tr>
+<td align="left">dropout</td>
+<td align="left">0.1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr>
+<td align="left">label smoothing</td>
+<td align="left">0.1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr>
+<td align="left">batch (tokens)</td>
+<td align="left">25k+25k</td>
+<td align="left">3.2M</td>
+<td align="left">4M</td>
+</tr>
+<tr>
+<td align="left">训练 token</td>
+<td align="left">~3B</td>
+<td align="left">300B</td>
+<td align="left">2T</td>
+</tr>
+<tr>
+<td align="left">精度</td>
+<td align="left">FP32</td>
+<td align="left">FP16+loss scale</td>
+<td align="left">BF16</td>
+</tr>
+<tr>
+<td align="left">梯度 clip</td>
+<td align="left">无</td>
+<td align="left">1.0</td>
+<td align="left">1.0</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>核心观察</strong>：scale 变了 1000 倍，但训练配方的”形状”基本没变–仍是 Adam 系、有 warmup、按 token batch、学习率峰值后衰减。变的细节：dropout&#x2F;label smoothing 砍到 0、加了 weight decay、1&#x2F;√step 换 cosine、FP32 换 BF16。梯度下降优化的几何性质并不随模型规模变化太多。</p>
+</blockquote>
+<h3 id="7-7-常见误解"><a href="#7-7-常见误解" class="headerlink" title="7.7 常见误解"></a>7.7 常见误解</h3><ul>
+<li>❌「warmup 可有可无，去掉只是慢一点」–错。warmup 缩过短或去掉，训练稳定性通常明显变差（Adam 二阶统计起步未站稳）。</li>
+<li>❌「Transformer 用 Adam 默认参数就行」–原论文用 β₂&#x3D;0.98、ε&#x3D;1e-9，非框架默认值；复现论文结果需先对齐这些超参。</li>
+<li>❌「label smoothing 让 PPL 变差所以是错误设计」–PPL 变差是预期内的，但 BLEU 变好，而翻译关心的是 BLEU。PPL 与 BLEU 不总同向。</li>
+<li>❌「beam size 越大越好」–beam&#x3D;4 是原论文选择，继续加大不自动带来更好翻译，常只是把算力花在相近候选上。</li>
+<li>❌「现代 LLM 训练完全用了不一样配方」–部分对。变了很多细节，但”骨架”（Adam 系 + warmup + token batching + 峰值后衰减）是 2017 年定下的。</li>
+</ul>
+<hr>
+<h2 id="八、优缺点与对比"><a href="#八、优缺点与对比" class="headerlink" title="八、优缺点与对比"></a>八、优缺点与对比</h2><h3 id="8-1-vs-RNN-LSTM-CNN"><a href="#8-1-vs-RNN-LSTM-CNN" class="headerlink" title="8.1 vs RNN&#x2F;LSTM&#x2F;CNN"></a>8.1 vs RNN&#x2F;LSTM&#x2F;CNN</h3><table>
+<thead>
+<tr>
+<th align="left">维度</th>
+<th align="left">RNN&#x2F;LSTM</th>
+<th align="left">CNN (seq)</th>
+<th align="left">Transformer</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">并行性</td>
+<td align="left">❌ 时间步串行</td>
+<td align="left">✅ 可并行</td>
+<td align="left">✅ 全并行</td>
+</tr>
+<tr>
+<td align="left">长距离依赖</td>
+<td align="left">弱（梯度衰减）</td>
+<td align="left">中（需堆叠扩感受野）</td>
+<td align="left">强（一步全局）</td>
+</tr>
+<tr>
+<td align="left">复杂度</td>
+<td align="left">O(n)</td>
+<td align="left">O(k·n)（k 为核宽）</td>
+<td align="left">O(n²)</td>
+</tr>
+<tr>
+<td align="left">位置信息</td>
+<td align="left">隐含在递推顺序</td>
+<td align="left">隐含在感受野局部性</td>
+<td align="left">需显式位置编码</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>RNN&#x2F;CNN 的位置感是”派生”的（递推顺序、感受野局部性），Transformer 放弃了这两种结构性偏置以换取全局建模，代价是位置信息归零（需 PE 注入）与 O(n²) 复杂度。</p>
+</blockquote>
+<h3 id="8-2-核心局限：O-n²-复杂度-⭐"><a href="#8-2-核心局限：O-n²-复杂度-⭐" class="headerlink" title="8.2 核心局限：O(n²) 复杂度 ⭐"></a>8.2 核心局限：O(n²) 复杂度 ⭐</h3><p>Attention 的复杂度来自 $QK^\top$ 产生的 $n\times n$ 矩阵：</p>
+<p>$$<br>S&#x3D;\frac{QK^\top}{\sqrt{d}}\in\mathbb{R}^{n\times n}\to A&#x3D;\text{softmax}(S)\to O&#x3D;AV<br>$$</p>
+<ul>
+<li><strong>计算复杂度 $O(n^2 d)$</strong>：$QK^\top$ 与 $AV$ 各约 $2n^2 d$ FLOPs；</li>
+<li><strong>显存复杂度 $O(n^2)$</strong>：$S$ 和 $A$ 都是 $n\times n$，这才是真正卡死长上下文的瓶颈。</li>
+</ul>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/cmp_memory-growth.svg"></p>
+<table>
+<thead>
+<tr>
+<th align="left">序列长度 $n$</th>
+<th align="left">$n^2$ 矩阵显存 (fp16, 单 head)</th>
+<th align="left">单 H100 (80GB) 能放几层</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">2k</td>
+<td align="left">8 MB</td>
+<td align="left">上万层</td>
+</tr>
+<tr>
+<td align="left">32k</td>
+<td align="left">2 GB</td>
+<td align="left">~30 层</td>
+</tr>
+<tr>
+<td align="left">128k</td>
+<td align="left">32 GB</td>
+<td align="left">~2 层（无法训练）</td>
+</tr>
+<tr>
+<td align="left">1M</td>
+<td align="left">2 TB</td>
+<td align="left">不可能</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>$n&#x3D;128k$ 时单层单 head 的 attention 矩阵就 32GB，一张 80GB 的 H100 都装不下–没有 FlashAttention 的话 128k 上下文在硬件上根本不可能。</p>
+</blockquote>
+<p><strong>Attention vs FFN 谁是计算大头</strong>：FFN 计算量 $\approx 16nd^2$（$O(nd^2)$），attention $\approx 4n^2d$（$O(n^2d)$），比值 $\approx n&#x2F;(4d)$。</p>
+<p><img src="/images/Transformer%E8%AF%A6%E8%A7%A3/cmp_scaling.svg"></p>
+<ul>
+<li>$n&lt;4d$ 时 FFN 主导（短上下文，attention 仅占小头，FFN 优化如量化&#x2F;MoE 更值钱）；</li>
+<li>$n&gt;4d$ 时 attention 主导（LLaMA-7B 的 $d&#x3D;4096$，$n&#x3D;16k$ 是临界点；$n&#x3D;128k$ 时 attention 是 FFN 的 8 倍）。</li>
+</ul>
+<p><strong>KV cache（推理隐藏成本）</strong>：推理时每生成一个 token，需存下所有历史 K、V。KV cache 大小 $&#x3D;2\cdot n\cdot d\cdot L$。LLaMA-2-7B 每个 token 约 512KB；$n&#x3D;128k$ 时 KV cache 达 64GB，<strong>甚至超过模型权重本身</strong>。这是 GQA、MLA、PagedAttention 等推理优化的攻击点。</p>
+<h3 id="8-3-降复杂度的五类方案"><a href="#8-3-降复杂度的五类方案" class="headerlink" title="8.3 降复杂度的五类方案"></a>8.3 降复杂度的五类方案</h3><table>
+<thead>
+<tr>
+<th align="left">类别</th>
+<th align="left">思路</th>
+<th align="left">复杂度</th>
+<th align="left">代表</th>
+<th align="left">代价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">滑窗 (local)</td>
+<td align="left">只看前后各 $w$ 位</td>
+<td align="left">$O(nw)$</td>
+<td align="left">Longformer、Mistral SWA</td>
+<td align="left">丢全局信息</td>
+</tr>
+<tr>
+<td align="left">稀疏 (sparse)</td>
+<td align="left">按规则稀疏化 attention</td>
+<td align="left">$O(n\sqrt{n})$</td>
+<td align="left">Sparse Transformer、BigBird</td>
+<td align="left">GPU 不友好、效果有差距</td>
+</tr>
+<tr>
+<td align="left">线性 (linear)</td>
+<td align="left">核分解 $\phi(Q)\phi(K)^\top V$</td>
+<td align="left">$O(n)$</td>
+<td align="left">Linformer、Performer</td>
+<td align="left">大规模上效果显著弱于 full</td>
+</tr>
+<tr>
+<td align="left">SSM&#x2F;RNN</td>
+<td align="left">不走 attention，状态空间建模</td>
+<td align="left">$O(n)$</td>
+<td align="left">Mamba、RWKV、RetNet</td>
+<td align="left">长程检索仍弱、未到 70B+</td>
+</tr>
+<tr>
+<td align="left"><strong>FlashAttention</strong></td>
+<td align="left">IO-aware 分块，不物化 $n\times n$</td>
+<td align="left">显存 $O(n)$、<strong>计算仍 $O(n^2)$</strong></td>
+<td align="left">FlashAttention 1&#x2F;2&#x2F;3</td>
+<td align="left">精确非近似、已成事实标准</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>⚠️ <strong>最常见的误解</strong>：FlashAttention 把 attention 降到 $O(n)$–<strong>错</strong>。它把<strong>显存</strong>从 $O(n^2)$ 降到 $O(n)$，<strong>计算仍是 $O(n^2)$</strong>（每对 Q-K 仍要做内积）。加速来自减少 HBM↔SRAM 数据搬运（现代 GPU 瓶颈是带宽不是 FLOPs），而非减少计算量。</p>
+</blockquote>
+<p><strong>为什么主流仍用 full attention</strong>：①线性方案放大到 7B+ 时质量差距被放大；②FlashAttention 让显存不再是瓶颈，计算贵可用 GPU 数量解决；③长上下文真正瓶颈是 KV cache 而非 attention 计算；④稀疏方案 GPU 不友好；⑤混合架构（如 Jamba&#x3D;Mamba+attention）兜底。所以 GPT-4&#x2F;Claude&#x2F;LLaMA&#x2F;Qwen 仍是 full attention + FlashAttention + GQA&#x2F;MLA。</p>
+<h3 id="8-4-优点-局限"><a href="#8-4-优点-局限" class="headerlink" title="8.4 优点 &#x2F; 局限"></a>8.4 优点 &#x2F; 局限</h3><p><strong>优点 ✅</strong></p>
+<ol>
+<li><strong>全并行</strong>：无递归，训练时所有位置一次算出，吞吐远高于 RNN；</li>
+<li><strong>全局建模</strong>：任意两位置一跳直达，长距离依赖强；</li>
+<li><strong>通用性强</strong>：同一架构覆盖 NLP&#x2F;CV&#x2F;语音&#x2F;多模态，扩展到实例分割、关键点等；</li>
+<li><strong>可扩展性好</strong>：结构骨架 7 年不变，靠 scale + 局部改进持续受益。</li>
+</ol>
+<p><strong>局限 ❌</strong></p>
+<ol>
+<li><strong>O(n²) 复杂度</strong>：长序列显存&#x2F;计算爆炸，需 FlashAttention、KV cache 等工程优化；</li>
+<li><strong>位置编码是补充</strong>：本身无顺序感，依赖 PE 注入，外推能力有限（sinusoidal 不够，需 RoPE&#x2F;ALiBi）；</li>
+<li><strong>推理串行</strong>：自回归生成必须逐 token，长生成 latency 高；</li>
+<li><strong>数据&#x2F;算力 hungry</strong>：大规模预训练需千亿 token + 千卡，小数据场景未必优于 RNN。</li>
+</ol>
+<h3 id="8-5-常见误解"><a href="#8-5-常见误解" class="headerlink" title="8.5 常见误解"></a>8.5 常见误解</h3><ul>
+<li>❌「FlashAttention 把 attention 降到 $O(n)$」–是 $O(n)$ <strong>显存</strong>，不是 $O(n)$ 计算。</li>
+<li>❌「线性 attention 已替代 full attention」–主流大模型仍是 full。</li>
+<li>❌「Mamba 比 Transformer 强」–中小模型上接近，长程检索仍弱。</li>
+<li>❌「attention 是模型计算量大头」–只在长序列成立，短序列时 FFN 才是大头。</li>
+<li>❌「降到 $O(n)$ 就能无限长上下文」–长上下文还有位置编码外推、训练数据、评测等多重瓶颈，复杂度只是表面问题。</li>
+</ul>
+<hr>
+<h2 id="九、变体与影响"><a href="#九、变体与影响" class="headerlink" title="九、变体与影响"></a>九、变体与影响</h2><h3 id="9-1-三大架构流派"><a href="#9-1-三大架构流派" class="headerlink" title="9.1 三大架构流派"></a>9.1 三大架构流派</h3><ul>
+<li>Encoder-only：BERT（理解任务）</li>
+<li>Decoder-only：GPT 系列 &#x2F; 现代 LLM（生成任务）</li>
+<li>Encoder-Decoder：T5 &#x2F; BART</li>
+</ul>
+<h3 id="9-2-跨模态"><a href="#9-2-跨模态" class="headerlink" title="9.2 跨模态"></a>9.2 跨模态</h3><ul>
+<li>视觉：ViT（把图块当 token）</li>
+<li>检测：DETR（目标检测去 NMS）</li>
+<li>语音&#x2F;多模态</li>
+</ul>
+<h3 id="9-3-领域应用"><a href="#9-3-领域应用" class="headerlink" title="9.3 领域应用"></a>9.3 领域应用</h3><ul>
+<li>自动驾驶：BEVFormer &#x2F; DETR3D &#x2F; 时空注意力</li>
+<li>3D 高斯泼溅：Transformer 预测高斯参数、动态场景</li>
+</ul>
+<h3 id="9-4-后续改进方向"><a href="#9-4-后续改进方向" class="headerlink" title="9.4 后续改进方向"></a>9.4 后续改进方向</h3><ul>
+<li>位置编码：相对位置 &#x2F; RoPE &#x2F; ALiBi</li>
+<li>效率：Flash Attention、稀疏注意力、线性注意力</li>
+<li>长上下文、MoE 等</li>
+</ul>
+<hr>
+<h2 id="十、总结"><a href="#十、总结" class="headerlink" title="十、总结"></a>十、总结</h2><ul>
+<li>核心贡献：用纯注意力取代 RNN&#x2F;CNN，实现并行 + 全局建模</li>
+<li>设计精髓：Q&#x2F;K&#x2F;V 自注意力、多头、位置编码、残差+LayerNorm、交叉注意力</li>
+<li>历史地位：现代大模型与多模态&#x2F;自动驾驶&#x2F;3D 场景的通用骨干</li>
+</ul>
+<hr>
+<h2 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h2><ul>
+<li>📋 论文原文: <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1706.03762">arxiv.org&#x2F;abs&#x2F;1706.03762</a></li>
+<li>📋 The Annotated Transformer (Harvard NLP): <a target="_blank" rel="noopener" href="https://nlp.seas.harvard.edu/annotated-transformer/">nlp.seas.harvard.edu&#x2F;annotated-transformer</a></li>
+<li>📋 Jay Alammar 图解 Transformer: <a target="_blank" rel="noopener" href="https://jalammar.github.io/illustrated-transformer/">jalammar.github.io&#x2F;illustrated-transformer</a></li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;【Transformer 与注意力机制】19｜《Attention Is All You Need》论文背景]] - 第一章背景的主要来源（含 2017 年时代图景、作者脉络、历史转折）</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;【Transformer 与注意力机制】21｜位置编码：为什么需要它，为什么用正弦]] - 第三章 3.6 位置编码的主要来源（排列等变证明、相对位置线性可表达、相加vs拼接等）</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;【Transformer 与注意力机制】22｜Encoder 详解：6 层堆叠到底在做什么]] - 第四章编码器的主要来源（6 层堆叠意义、encoder 输出性质、Post&#x2F;Pre-LN）</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;【Transformer 与注意力机制】23｜Decoder 详解：为什么它天生适合生成]] - 第五章解码器的主要来源（三子层、causal mask、cross-attention、训练&#x2F;推理差异）</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;【Transformer 与注意力机制】27｜原论文怎么训出来的：8 张 P100、12 小时、warmup 4000 步]] - 第七章训练优化的主要来源（Adam 微调、warmup 公式、label smoothing、batching by tokens、现代配方对照）</li>
+<li>📋 [[10.clippings&#x2F;感知算法&#x2F;骨干网络&#x2F;Transformer&#x2F;【Transformer 与注意力机制】18｜注意力的复杂度问题]] - 第八章优缺点对比的主要来源（O(n²) 复杂度来源、显存瓶颈、五类降复杂度方案、FlashAttention 误解）</li>
+<li>🔗 待补：相关笔记（ViT &#x2F; DETR &#x2F; BERT &#x2F; GPT 等建立后回链）</li>
+<li>📋 Transformer 系列原文（quant67）: <a target="_blank" rel="noopener" href="https://quant67.com/post/transformer/index.html">quant67.com&#x2F;post&#x2F;transformer&#x2F;index.html</a></li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/07/25/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/Transformer%20%E8%AF%A6%E8%A7%A3/">https://www.loveww.top/2026/07/25/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/Transformer%20%E8%AF%A6%E8%A7%A3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/">深度学习</a><a class="post-meta__tags" href="/tags/Transformer/">Transformer</a><a class="post-meta__tags" href="/tags/%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%9C%BA%E5%88%B6/">注意力机制</a><a class="post-meta__tags" href="/tags/%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/">骨干网络</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/07/26/10-%E9%AA%A8%E5%B9%B2%E7%BD%91%E7%BB%9C/ViT%20%E8%AF%A6%E8%A7%A3/" title="VIT 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">VIT 详解</div></div><div class="info-2"><div class="info-item-1">ViT: An Image is Worth 16x16 Words 论文: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (ICLR 2021)作者: Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, Neil Houlsby (Google Research)代码: google-research&#x2F;vision_transformer   一句话总结：ViT 把一张图切成若干 patch，每个 patch 当成一个”词”，喂给标准 Transformer Encoder，用 CLS token 做分类。 它证明了 NLP 的 Transf...</div></div></div></a><a class="pagination-related" href="/2026/07/19/08-2D%E6%A3%80%E6%B5%8B/RetinaNet%20%E8%AF%A6%E8%A7%A3/" title="RetinaNet 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">RetinaNet 详解</div></div><div class="info-2"><div class="info-item-1">RetinaNet: Focal Loss for Dense Object Detection 论文: Focal Loss for Dense Object Detection (ICCV 2017, best paper)作者: Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, Piotr Dollár (FAIR)代码: facebookresearch&#x2F;Detectron   一句话总结：这篇论文找到了”一阶段检测器精度不如两阶段”的根因–类别极度不平衡导致训练被大量易分负样本主导–并用 Focal Loss 一举解决，使 RetinaNet 成为第一个精度超越两阶段的一阶段检测器。 ⚠️ 论文的主角其实是 Focal Loss，RetinaNet 网络本身只是”顺便”提出、用来验证损失函数有效性的载体–结构上并无颠覆性创新（ResNet + FPN + anchor 双头都是已有组件）。   一、背景与动机：一阶段为什么打不过两阶段？12345两阶段 (Faster R-CNN 等):  RPN 筛选...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/02/01/03-%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B/%E5%AF%BB%E6%A0%B9%E6%BA%AF%E6%BA%90%EF%BC%9A%E6%88%91%E7%9A%84-YOLO-%E5%85%A8%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90%E4%B9%8B%E6%97%85-%E5%BC%80%E7%AF%87/" title="寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)"><img class="cover" src="/images/4.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-02-01</div><div class="info-item-2">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)</div></div><div class="info-2"><div class="info-item-1">寻根溯源：我的 YOLO 全系列深度解析之旅 (开篇)0. 前言：为什么要写这个系列？在计算机视觉（CV）的江湖里，YOLO (You Only Look Once) 是一个绕不开的名字。从 2015 年 Redmon 提出 v1 版本至今，YOLO 系列已经走过了近十个年头，演进到了如今的 v11。 作为一名算法从业者，我几乎每天都在和各种版本的 YOLO 打交道：调参、部署、优化。但在高强度的工作节奏下，我发现自己陷入了一个**“熟练的陌生人”**误区：  对抗遗忘： 算法的演进非常细碎。从 Anchor-based 到 Anchor-free，从简单的 IoU 到复杂的 $CIoU$、$DIoU$ 损失函数，如果不系统整理，很多细节（如正负样本匹配策略的改变）很容易在脑海中变得模糊。 构建底层逻辑： 仅仅跑通 train.py 是远远不够的。为了在面试中对答如流，也为了在实际业务中能根据场景选择最合适的版本，我需要从底层原理出发，理解每一代 YOLO “为什么要这么改”。 职业背书： 博客是最好的技术名片。通过深度解析，我希望向同行和面试官展示：我不仅能通过工具解决问题，更...</div></div></div></a><a class="pagination-related" href="/2026/08/09/09-%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E5%A4%9A%E7%9B%AE%E6%A0%87%E8%B7%9F%E8%B8%AA%E7%BB%BC%E8%BF%B0%E6%A2%B3%E7%90%86/" title="深度学习多目标跟踪综述梳理"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-09</div><div class="info-item-2">深度学习多目标跟踪综述梳理</div></div><div class="info-2"><div class="info-item-1">深度学习多目标跟踪（MOT）综述梳理 本笔记是对综述 Deep Learning-Based Multi-Object Tracking: A Comprehensive Survey from Foundations to State-of-the-Art（arXiv:2506.13457）的系统梳理。原始转换文件见 [[Clippings&#x2F;2506.13457v1.md]]。  一、综述定位与贡献 主题：深度学习驱动的多目标跟踪（MOT），聚焦 2022 年以来的现代方法。 两大范式： Tracking-by-Detection（检测再关联） —— 检测与关联解耦，仍是主流。 End-to-End（端到端） —— 检测与关联联合训练，以 DETR 系（tracking-by-query）为代表。   四大贡献： 系统梳理 2022 年起的现代深度 MOT 方法； 将 tracking-by-detection 划分为 五大类别； 在多基准上跨域对比，并自建加权宏平均基准评估泛化性； 提供详尽背景知识，兼顾不同基础读者。     二、MOT 问题与基础概念2.1 任务...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5/" title="YOLO 核心概念"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 核心概念</div></div><div class="info-2"><div class="info-item-1">🧠 YOLO 核心概念详解1. 目标检测基础什么是目标检测 同时解决两个问题：物体在哪里（定位）+ 物体是什么（分类）  输出形式： 1(x, y, w, h, confidence, class_probs...)  Two-Stage vs One-Stage   方法 流程 代表 特点    Two-Stage 提取候选区 → 分类回归 R-CNN, Faster R-CNN 精度高，速度慢   One-Stage 一步到位直接预测 YOLO, SSD 速度快，端到端    YOLO 的本质：把检测变成回归问题，整张图输入，一次性输出所有预测。   2. 核心机制2.1 Grid Cell（网格划分）12输入图像 448×448 → 划分为 S×S 网格 (v1: S=7)每个网格负责预测中心点落在该网格内的目标  v1 例子：  7×7 &#x3D; 49 个网格 每个网格预测 2 个 bounding box 每个 box: (x, y, w, h, confidence) &#x3D; 5 个值 每个网格预测 C 个类别 (VOC: 20) 输出张量: 7×7×(5...</div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLO%20%E7%B3%BB%E5%88%97%E6%80%BB%E8%A7%88/" title="YOLO 系列总览"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLO 系列总览</div></div><div class="info-2"><div class="info-item-1">🎯 YOLO 系列目标检测算法总览一句话理解 YOLO You Only Look Once —— 只需看一次，就能完成目标检测。 把目标检测从”先找候选区再分类”的两阶段，变成了”一步到位”的回归问题。   版本演进时间线   版本 年份 作者&#x2F;机构 核心创新 论文&#x2F;状态    v1 2016 Joseph Redmon 单阶段检测、Grid Cell 划分 1506.02640   v2 2017 Redmon &amp; Farhadi Anchor Box、BN、Darknet-19、细粒度特征 1612.08242   v3 2018 Redmon &amp; Farhadi Darknet-53、多尺度预测(FPN)、逻辑分类器 1804.02767   v4 2020 Alexey Bochkovskiy CSPDarknet53、PAN、Mosaic增强、BoF&#x2F;BoS 2004.10934   v5 2020 Ultralytics PyTorch实现、工程化、CSPNet+PAN ❌ 无论文   v6 2022 美团 工业级部署...</div></div></div></a><a class="pagination-related" href="/2025/09/22/04-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/transformer-%E6%89%8B%E6%90%93%E8%BF%87%E7%A8%8B%E5%8F%8A%E6%80%9D%E8%80%83/" title="transformer 手搓过程及思考"><img class="cover" src="/images/6.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-09-22</div><div class="info-item-2">transformer 手搓过程及思考</div></div><div class="info-2"><div class="info-item-1">transformer 手搓过程及思考1. 前言最近在研究transformer，发现网上很多教程都是直接给出代码，没有详细讲解，导致自己看了很久还是一头雾水，因此决定自己动手实现一个transformer，加深对transformer的理解。 2. transformer 基本结构transformer的基本结构如下：  transformer由encoder和decoder两部分组成，encoder和decoder都是由多个相同的层堆叠而成，每个层由多头自注意力机制和前馈神经网络组成。 参考 Attention Is All You Need https://github.com/harvardnlp/annotated-transformer  </div></div></div></a><a class="pagination-related" href="/2026/05/24/08-2D%E6%A3%80%E6%B5%8B/YOLOv12%20%E8%AF%A6%E8%A7%A3/" title="YOLOv12 详解"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-24</div><div class="info-item-2">YOLOv12 详解</div></div><div class="info-2"><div class="info-item-1">YOLOv12: 注意力中心的实时目标检测 论文: YOLOv12: Attention-Centric Real-Time Object Detectors (2025)作者: SUNY Buffalo (纽约州立大学布法罗分校) + 中国科学院大学代码: github.com&#x2F;sunsmarterjie&#x2F;yolov12   历史性跨越: CNN → Attention YOLO 系列首个完全基于注意力机制的实时检测器！ 同时保持了对实时推理至关重要的速度（208 FPS）。   为什么不是之前就用 Attention？CNN vs Attention 的困境   方案 优势 劣势    CNN 计算高效，硬件友好 感受野有限   ViT &#x2F; DETR 全局感受野，精度高 计算量大，实时性差   YOLOv12 ✅ 两者兼备 —   YOLOv12 如何做到？通过三项创新让 Attention 在实时检测器中可行：  区域注意力 (A²) — 大幅降低计算成本 R-ELAN — 解决大模型注意力架构的优化困难 架构精简 — 去除不必要的部分   核...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">52</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">62</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Transformer-Attention-Is-All-You-Need"><span class="toc-number">1.</span> <span class="toc-text">Transformer: Attention Is All You Need</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%83%8C%E6%99%AF"><span class="toc-number">1.1.</span> <span class="toc-text">一、背景</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-2017-%E5%B9%B4%E7%9A%84%E4%B8%96%E7%95%8C%EF%BC%9ATransformer-%E8%AF%9E%E7%94%9F%E6%97%B6%E7%9A%84-NLP-%E5%9B%BE%E6%99%AF"><span class="toc-number">1.1.1.</span> <span class="toc-text">1.1 2017 年的世界：Transformer 诞生时的 NLP 图景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E7%9C%9F%E6%AD%A3%E7%9A%84%E5%8A%A8%E6%9C%BA%EF%BC%9A%E4%B8%BA%E3%80%8C%E8%AE%AD%E7%BB%83%E6%95%88%E7%8E%87%E3%80%8D%E8%80%8C%E7%94%9F%EF%BC%8C%E8%80%8C%E9%9D%9E%E3%80%8C%E5%AE%B9%E9%87%8F%E3%80%8D"><span class="toc-number">1.1.2.</span> <span class="toc-text">1.2 真正的动机：为「训练效率」而生，而非「容量」</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-%E6%8A%80%E6%9C%AF%E8%84%89%E7%BB%9C%EF%BC%9A%E4%BB%8E-RNN-attention-%E5%88%B0%E7%BA%AF-self-attention"><span class="toc-number">1.1.3.</span> <span class="toc-text">1.3 技术脉络：从 RNN+attention 到纯 self-attention</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-4-%E5%85%AB%E4%BD%8D%E4%BD%9C%E8%80%85%E4%B8%8E%E5%90%8E%E7%BB%AD%E5%8A%A8%E5%90%91"><span class="toc-number">1.1.4.</span> <span class="toc-text">1.4 八位作者与后续动向</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-5-%E8%AE%BA%E6%96%87%E7%9C%9F%E6%AD%A3%E8%AF%B4%E4%BA%86%E4%BB%80%E4%B9%88%E2%80%94%E2%80%94%E4%BB%A5%E5%8F%8A%E5%88%BB%E6%84%8F%E6%B2%A1%E8%AF%B4%E4%BB%80%E4%B9%88"><span class="toc-number">1.1.5.</span> <span class="toc-text">1.5 论文真正说了什么——以及刻意没说什么</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-6-%E6%8E%A5%E6%94%B6%E5%BA%A6%E4%B8%8E%E5%8E%86%E5%8F%B2%E8%BD%AC%E6%8A%98%EF%BC%9A%E4%BB%8E%E3%80%8C%E7%BF%BB%E8%AF%91%E8%AE%BA%E6%96%87%E3%80%8D%E5%88%B0%E3%80%8C%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%9C%A3%E7%BB%8F%E3%80%8D"><span class="toc-number">1.1.6.</span> <span class="toc-text">1.6 接收度与历史转折：从「翻译论文」到「大模型圣经」</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-7-%E5%B9%BF%E6%B3%9B%E5%BD%B1%E5%93%8D%EF%BC%9A%E4%BB%8E%E7%BF%BB%E8%AF%91%E5%88%B0%E9%80%9A%E7%94%A8%E9%AA%A8%E5%B9%B2"><span class="toc-number">1.1.7.</span> <span class="toc-text">1.7 广泛影响：从翻译到通用骨干</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-8-%E5%B8%B8%E8%A7%81%E8%AF%AF%E8%A7%A3%E6%BE%84%E6%B8%85"><span class="toc-number">1.1.8.</span> <span class="toc-text">1.8 常见误解澄清</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84"><span class="toc-number">1.2.</span> <span class="toc-text">二、整体架构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E4%B8%BB%E6%9E%B6%E6%9E%84%E5%9B%BE%EF%BC%9A%E8%AE%BA%E6%96%87-Figure-1"><span class="toc-number">1.2.1.</span> <span class="toc-text">2.1 主架构图：论文 Figure 1</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E4%B8%A4%E5%A4%A7%E6%A8%A1%E5%9D%97%E4%B8%8E%E8%81%8C%E8%B4%A3"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.2 两大模块与职责</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E7%BB%84%E4%BB%B6%E6%B8%85%E5%8D%95%EF%BC%9A%E6%AF%8F%E4%B8%AA%E7%BB%84%E4%BB%B6%E8%B4%9F%E8%B4%A3%E4%BB%80%E4%B9%88"><span class="toc-number">1.2.3.</span> <span class="toc-text">2.3 组件清单：每个组件负责什么</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-%E5%8D%95%E5%B1%82%E5%86%85%E9%83%A8%EF%BC%9AEncoder-6-%E6%AD%A5-Decoder-9-%E6%AD%A5"><span class="toc-number">1.2.4.</span> <span class="toc-text">2.4 单层内部：Encoder 6 步 &#x2F; Decoder 9 步</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-5-%E6%95%B0%E6%8D%AE%E6%B5%81%EF%BC%9A%E4%B8%80%E4%B8%AA-token-%E7%9A%84%E6%97%85%E7%A8%8B"><span class="toc-number">1.2.5.</span> <span class="toc-text">2.5 数据流：一个 token 的旅程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-6-%E4%B8%89%E7%A7%8D%E6%9E%B6%E6%9E%84%E5%8F%98%E4%BD%93"><span class="toc-number">1.2.6.</span> <span class="toc-text">2.6 三种架构变体</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E8%BE%93%E5%85%A5%E8%A1%A8%E7%A4%BA-Input"><span class="toc-number">1.3.</span> <span class="toc-text">三、输入表示 (Input)</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E8%BE%93%E5%85%A5%E5%A4%84%E7%90%86%E6%80%BB%E8%A7%88%EF%BC%9A%E5%AE%8C%E6%95%B4%E9%93%BE%E8%B7%AF"><span class="toc-number">1.3.1.</span> <span class="toc-text">3.1 输入处理总览：完整链路</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E5%88%86%E8%AF%8D%EF%BC%9ABPE-%E4%B8%8E-SentencePiece%EF%BC%88%E4%B8%AD%E8%8B%B1%E8%81%94%E5%90%88%E8%AF%8D%E8%A1%A8%EF%BC%89"><span class="toc-number">1.3.2.</span> <span class="toc-text">3.2 分词：BPE 与 SentencePiece（中英联合词表）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8-BPE"><span class="toc-number">1.3.2.1.</span> <span class="toc-text">为什么用 BPE</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0%EF%BC%9AJoint-BPE-%E8%AE%AD%E7%BB%83%E4%B8%AD%E8%8B%B1%E5%85%B1%E4%BA%AB%E8%AF%8D%E8%A1%A8"><span class="toc-number">1.3.2.2.</span> <span class="toc-text">代码实现：Joint BPE 训练中英共享词表</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E5%8F%98%E9%95%BF%E5%A4%84%E7%90%86%EF%BC%9APadding-%E4%B8%8E%E9%95%BF%E5%BA%A6%E9%99%90%E5%88%B6"><span class="toc-number">1.3.3.</span> <span class="toc-text">3.3 变长处理：Padding 与长度限制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-Padding-Mask%EF%BC%9A%E8%AE%A9%E6%A8%A1%E5%9E%8B%E5%BF%BD%E7%95%A5%E5%A1%AB%E5%85%85%E4%BD%8D"><span class="toc-number">1.3.4.</span> <span class="toc-text">3.4 Padding Mask：让模型忽略填充位</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-5-%E8%AF%8D%E5%B5%8C%E5%85%A5-Token-Embedding"><span class="toc-number">1.3.5.</span> <span class="toc-text">3.5 词嵌入 Token Embedding</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-6-%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81-Positional-Encoding-%E2%AD%90"><span class="toc-number">1.3.6.</span> <span class="toc-text">3.6 位置编码 Positional Encoding ⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E6%9C%89%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81%EF%BC%9Aself-attention-%E7%9A%84%E6%8E%92%E5%88%97%E7%AD%89%E5%8F%98%E6%80%A7"><span class="toc-number">1.3.6.1.</span> <span class="toc-text">为什么必须有位置编码：self-attention 的排列等变性</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%AD%A3%E5%BC%A6%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81%E5%85%AC%E5%BC%8F"><span class="toc-number">1.3.6.2.</span> <span class="toc-text">正弦位置编码公式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E9%80%90%E8%A1%8C%E8%A7%A3%E6%9E%90"><span class="toc-number">1.3.6.3.</span> <span class="toc-text">代码逐行解析</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%8A%8A%E5%AE%83%E8%AF%BB%E6%88%90%E2%80%9D%E4%B8%80%E7%BB%84%E4%B8%8D%E5%90%8C%E9%A2%91%E7%8E%87%E7%9A%84%E6%B3%A2%E2%80%9D"><span class="toc-number">1.3.6.4.</span> <span class="toc-text">把它读成”一组不同频率的波”</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E6%80%A7%E8%B4%A8%EF%BC%9A%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%BD%AE%E5%8F%AF%E7%BA%BF%E6%80%A7%E8%A1%A8%E8%BE%BE-%E2%AD%90"><span class="toc-number">1.3.6.5.</span> <span class="toc-text">关键性质：相对位置可线性表达 ⭐</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF%E7%9B%B8%E5%8A%A0%EF%BC%8C%E4%B8%8D%E6%98%AF%E6%8B%BC%E6%8E%A5"><span class="toc-number">1.3.6.6.</span> <span class="toc-text">为什么是相加，不是拼接</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%B6%E4%BB%96%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81%E6%96%B9%E5%BC%8F%E5%AF%B9%E6%AF%94"><span class="toc-number">1.3.6.7.</span> <span class="toc-text">其他位置编码方式对比</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%AF%E8%A7%A3"><span class="toc-number">1.3.6.8.</span> <span class="toc-text">常见误解</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-7-%E7%BB%84%E5%90%88%E4%B8%8E%E4%B8%AD%E8%8B%B1%E5%88%86%E6%B5%81%EF%BC%9AEncoder-Decoder-%E5%90%84%E5%90%83%E4%BB%80%E4%B9%88"><span class="toc-number">1.3.7.</span> <span class="toc-text">3.7 组合与中英分流：Encoder &#x2F; Decoder 各吃什么</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E7%BC%96%E7%A0%81%E5%99%A8-Encoder"><span class="toc-number">1.4.</span> <span class="toc-text">四、编码器 Encoder</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B-Self-Attention-%E2%AD%90%E2%AD%90"><span class="toc-number">1.4.1.</span> <span class="toc-text">4.1 自注意力 Self-Attention ⭐⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81%EF%BC%88%E9%80%90%E8%A1%8C%EF%BC%89"><span class="toc-number">1.4.1.1.</span> <span class="toc-text">你的代码（逐行）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%89%E4%B8%AA%E5%85%B3%E9%94%AE%E2%80%9D%E4%B8%BA%E4%BB%80%E4%B9%88%E2%80%9D"><span class="toc-number">1.4.1.2.</span> <span class="toc-text">三个关键”为什么”</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Encoder-%E7%9A%84-self-attention-%E6%98%AF%E5%8F%8C%E5%90%91%E7%9A%84"><span class="toc-number">1.4.1.3.</span> <span class="toc-text">Encoder 的 self-attention 是双向的</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B-Multi-Head-Attention-%E2%AD%90"><span class="toc-number">1.4.2.</span> <span class="toc-text">4.2 多头注意力 Multi-Head Attention ⭐</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E4%BD%8D%E7%BD%AE%E5%89%8D%E9%A6%88%E7%BD%91%E7%BB%9C-Position-wise-FFN"><span class="toc-number">1.4.3.</span> <span class="toc-text">4.3 位置前馈网络 Position-wise FFN</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E6%AE%8B%E5%B7%AE%E8%BF%9E%E6%8E%A5%E4%B8%8E%E5%B1%82%E5%BD%92%E4%B8%80%E5%8C%96-Add-Norm"><span class="toc-number">1.4.4.</span> <span class="toc-text">4.4 残差连接与层归一化 (Add &amp; Norm)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-5-6-%E5%B1%82%E5%A0%86%E5%8F%A0%E5%88%B0%E5%BA%95%E5%9C%A8%E5%81%9A%E4%BB%80%E4%B9%88-%E2%AD%90"><span class="toc-number">1.4.5.</span> <span class="toc-text">4.5 6 层堆叠到底在做什么 ⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Encoder-%E7%9A%84%E8%BE%93%E5%87%BA%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-number">1.4.5.1.</span> <span class="toc-text">Encoder 的输出是什么</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-6-%E5%AE%8C%E6%95%B4-Encoder-Block"><span class="toc-number">1.4.6.</span> <span class="toc-text">4.6 完整 Encoder Block</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-7-%E5%B8%B8%E8%A7%81%E8%AF%AF%E8%A7%A3"><span class="toc-number">1.4.7.</span> <span class="toc-text">4.7 常见误解</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E8%A7%A3%E7%A0%81%E5%99%A8-Decoder"><span class="toc-number">1.5.</span> <span class="toc-text">五、解码器 Decoder</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E6%A6%82%E8%A7%88%EF%BC%9A%E6%AF%94-Encoder-%E5%A4%9A%E4%B8%80%E5%9D%97-cross-attention"><span class="toc-number">1.5.1.</span> <span class="toc-text">5.1 概览：比 Encoder 多一块 cross-attention</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E8%A7%A3%E7%A0%81%E5%99%A8%E7%9A%84%E8%BE%93%E5%85%A5%E4%B8%8E%E4%B8%A4%E7%A7%8D%E6%89%A7%E8%A1%8C%E6%96%B9%E5%BC%8F-%E2%AD%90"><span class="toc-number">1.5.2.</span> <span class="toc-text">5.2 解码器的输入与两种执行方式 ⭐</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E6%8E%A9%E7%A0%81%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B-Masked-Self-Attention"><span class="toc-number">1.5.3.</span> <span class="toc-text">5.3 掩码自注意力 Masked Self-Attention</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81%EF%BC%9Amask-%E6%80%8E%E4%B9%88%E7%94%9F%E6%88%90%EF%BC%88pad-mask-%E4%B8%8E-causal-mask-%E5%90%88%E5%B9%B6%EF%BC%89"><span class="toc-number">1.5.3.1.</span> <span class="toc-text">你的代码：mask 怎么生成（pad mask 与 causal mask 合并）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E4%BA%A4%E5%8F%89%E6%B3%A8%E6%84%8F%E5%8A%9B-Cross-Attention-%E2%AD%90"><span class="toc-number">1.5.4.</span> <span class="toc-text">5.4 交叉注意力 Cross-Attention ⭐</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81"><span class="toc-number">1.5.4.1.</span> <span class="toc-text">你的代码</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-5-FFN-Add-Norm"><span class="toc-number">1.5.5.</span> <span class="toc-text">5.5 FFN + Add &amp; Norm</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-6-%E5%AE%8C%E6%95%B4-DecoderLayer-%E4%BB%A3%E7%A0%81%E4%B8%8E%E5%A0%86%E5%8F%A0"><span class="toc-number">1.5.6.</span> <span class="toc-text">5.6 完整 DecoderLayer 代码与堆叠</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-7-%E4%B8%BA%E4%BB%80%E4%B9%88-Decoder-%E5%A4%A9%E7%94%9F%E9%80%82%E5%90%88%E7%94%9F%E6%88%90"><span class="toc-number">1.5.7.</span> <span class="toc-text">5.7 为什么 Decoder 天生适合生成</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-8-%E5%B8%B8%E8%A7%81%E8%AF%AF%E8%A7%A3"><span class="toc-number">1.5.8.</span> <span class="toc-text">5.8 常见误解</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E8%BE%93%E5%87%BA-Output"><span class="toc-number">1.6.</span> <span class="toc-text">六、输出 (Output)</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E8%BE%93%E5%87%BA%E5%A4%B4%EF%BC%9ALinear-Softmax"><span class="toc-number">1.6.1.</span> <span class="toc-text">6.1 输出头：Linear + Softmax</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E8%AE%AD%E7%BB%83%E7%9B%AE%E6%A0%87%EF%BC%9A%E4%BA%A4%E5%8F%89%E7%86%B5-Label-Smoothing"><span class="toc-number">1.6.2.</span> <span class="toc-text">6.2 训练目标：交叉熵 + Label Smoothing</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E6%8E%A8%E7%90%86%E8%A7%A3%E7%A0%81%E7%AD%96%E7%95%A5"><span class="toc-number">1.6.3.</span> <span class="toc-text">6.3 推理解码策略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E8%AE%AD%E7%BB%83%E4%B8%8E%E4%BC%98%E5%8C%96%E7%BB%86%E8%8A%82"><span class="toc-number">1.7.</span> <span class="toc-text">七、训练与优化细节</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-%E4%BC%98%E5%8C%96%E5%99%A8%EF%BC%9AAdam-%E7%9A%84%E5%BE%AE%E8%B0%83"><span class="toc-number">1.7.1.</span> <span class="toc-text">7.1 优化器：Adam 的微调</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E5%AD%A6%E4%B9%A0%E7%8E%87%E8%B0%83%E5%BA%A6%EF%BC%9Awarmup-1-%E2%88%9Astep-%E2%AD%90"><span class="toc-number">1.7.2.</span> <span class="toc-text">7.2 学习率调度：warmup + 1&#x2F;√step ⭐</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-3-%E6%AD%A3%E5%88%99%E5%8C%96%EF%BC%9ADropout-Label-Smoothing"><span class="toc-number">1.7.3.</span> <span class="toc-text">7.3 正则化：Dropout + Label Smoothing</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-4-Batching-by-Tokens"><span class="toc-number">1.7.4.</span> <span class="toc-text">7.4 Batching by Tokens</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-5-%E8%AE%AD%E7%BB%83%E5%BE%AA%E7%8E%AF"><span class="toc-number">1.7.5.</span> <span class="toc-text">7.5 训练循环</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-6-%E7%8E%B0%E4%BB%A3%E5%A4%A7%E6%A8%A1%E5%9E%8B-vs-2017-%E9%85%8D%E6%96%B9"><span class="toc-number">1.7.6.</span> <span class="toc-text">7.6 现代大模型 vs 2017 配方</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-7-%E5%B8%B8%E8%A7%81%E8%AF%AF%E8%A7%A3"><span class="toc-number">1.7.7.</span> <span class="toc-text">7.7 常见误解</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E4%BC%98%E7%BC%BA%E7%82%B9%E4%B8%8E%E5%AF%B9%E6%AF%94"><span class="toc-number">1.8.</span> <span class="toc-text">八、优缺点与对比</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-vs-RNN-LSTM-CNN"><span class="toc-number">1.8.1.</span> <span class="toc-text">8.1 vs RNN&#x2F;LSTM&#x2F;CNN</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-%E6%A0%B8%E5%BF%83%E5%B1%80%E9%99%90%EF%BC%9AO-n%C2%B2-%E5%A4%8D%E6%9D%82%E5%BA%A6-%E2%AD%90"><span class="toc-number">1.8.2.</span> <span class="toc-text">8.2 核心局限：O(n²) 复杂度 ⭐</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-3-%E9%99%8D%E5%A4%8D%E6%9D%82%E5%BA%A6%E7%9A%84%E4%BA%94%E7%B1%BB%E6%96%B9%E6%A1%88"><span class="toc-number">1.8.3.</span> <span class="toc-text">8.3 降复杂度的五类方案</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-4-%E4%BC%98%E7%82%B9-%E5%B1%80%E9%99%90"><span class="toc-number">1.8.4.</span> <span class="toc-text">8.4 优点 &#x2F; 局限</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-5-%E5%B8%B8%E8%A7%81%E8%AF%AF%E8%A7%A3"><span class="toc-number">1.8.5.</span> <span class="toc-text">8.5 常见误解</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E5%8F%98%E4%BD%93%E4%B8%8E%E5%BD%B1%E5%93%8D"><span class="toc-number">1.9.</span> <span class="toc-text">九、变体与影响</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#9-1-%E4%B8%89%E5%A4%A7%E6%9E%B6%E6%9E%84%E6%B5%81%E6%B4%BE"><span class="toc-number">1.9.1.</span> <span class="toc-text">9.1 三大架构流派</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-2-%E8%B7%A8%E6%A8%A1%E6%80%81"><span class="toc-number">1.9.2.</span> <span class="toc-text">9.2 跨模态</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-3-%E9%A2%86%E5%9F%9F%E5%BA%94%E7%94%A8"><span class="toc-number">1.9.3.</span> <span class="toc-text">9.3 领域应用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-4-%E5%90%8E%E7%BB%AD%E6%94%B9%E8%BF%9B%E6%96%B9%E5%90%91"><span class="toc-number">1.9.4.</span> <span class="toc-text">9.4 后续改进方向</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E6%80%BB%E7%BB%93"><span class="toc-number">1.10.</span> <span class="toc-text">十、总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5"><span class="toc-number">1.11.</span> <span class="toc-text">相关链接</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/00-%E6%95%99%E7%A8%8B%E6%80%BB%E8%A7%88/" title="CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）">CARLA+ROS2+rf-DETR+OC-SORT 感知仿真教程（总览）</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/01-%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87/" title="CARLA教程-01-环境准备">CARLA教程-01-环境准备</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/02-%E6%9E%84%E5%BB%BAUE4%E4%B8%8ECARLA/" title="CARLA教程-02-构建UE4与CARLA">CARLA教程-02-构建UE4与CARLA</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/03-%E8%BF%90%E8%A1%8C%E4%BB%BF%E7%9C%9F/" title="CARLA教程-03-运行仿真">CARLA教程-03-运行仿真</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/09/07-%E8%87%AA%E5%8A%A8%E9%A9%BE%E9%A9%B6%E4%BB%BF%E7%9C%9F/04-ROS2%E6%8E%A5%E5%8F%A3%E4%B8%8E%E8%AF%9D%E9%A2%98/" title="CARLA教程-04-ROS2接口与话题">CARLA教程-04-ROS2接口与话题</a><time datetime="2026-08-09T05:00:00.000Z" title="发表于 2026-08-09 13:00:00">2026-08-09</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>
