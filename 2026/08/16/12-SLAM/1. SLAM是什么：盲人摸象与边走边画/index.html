@@ -1,0 +1,518 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>1. SLAM是什么：盲人摸象与边走边画 | TeachCraft Blog</title><meta name="author" content="Wang Tao"><meta name="copyright" content="Wang Tao"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="定位需要地图，建图需要定位，两者互为先决条件--一个&#39;鸡生蛋、蛋生鸡&#39;问题。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="1. SLAM是什么：盲人摸象与边走边画">
+<meta property="og:url" content="https://www.loveww.top/2026/08/16/12-SLAM/1.%20SLAM%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9A%E7%9B%B2%E4%BA%BA%E6%91%B8%E8%B1%A1%E4%B8%8E%E8%BE%B9%E8%B5%B0%E8%BE%B9%E7%94%BB/index.html">
+<meta property="og:site_name" content="TeachCraft Blog">
+<meta property="og:description" content="定位需要地图，建图需要定位，两者互为先决条件--一个&#39;鸡生蛋、蛋生鸡&#39;问题。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4">
+<meta property="article:published_time" content="2026-08-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-16T15:07:58.411Z">
+<meta property="article:author" content="Wang Tao">
+<meta property="article:tag" content="SLAM">
+<meta property="article:tag" content="gmapping">
+<meta property="article:tag" content="入门">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "1. SLAM是什么：盲人摸象与边走边画",
+  "url": "https://www.loveww.top/2026/08/16/12-SLAM/1.%20SLAM%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9A%E7%9B%B2%E4%BA%BA%E6%91%B8%E8%B1%A1%E4%B8%8E%E8%BE%B9%E8%B5%B0%E8%BE%B9%E7%94%BB/",
+  "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&backgroundColor=b6e3f4",
+  "datePublished": "2026-08-15T16:00:00.000Z",
+  "dateModified": "2026-08-16T15:07:58.411Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wang Tao",
+      "url": "https://www.loveww.top"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.svg"><link rel="canonical" href="https://www.loveww.top/2026/08/16/12-SLAM/1.%20SLAM%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9A%E7%9B%B2%E4%BA%BA%E6%91%B8%E8%B1%A1%E4%B8%8E%E8%BE%B9%E8%B5%B0%E8%BE%B9%E7%94%BB/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.json","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '1. SLAM是什么：盲人摸象与边走边画',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/live2d/3.1.4/live2d.min.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">62</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">84</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">12</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="/img/logo.svg" alt="Logo"><span class="site-name">TeachCraft Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">1. SLAM是什么：盲人摸象与边走边画</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-user"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">1. SLAM是什么：盲人摸象与边走边画</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-08-15T16:00:00.000Z" title="发表于 2026-08-16 00:00:00">2026-08-16</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-08-16T15:07:58.411Z" title="更新于 2026-08-16 23:07:58">2026-08-16</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/SLAM/">SLAM</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">1.2k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>4分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="1-SLAM-是什么：一个”鸡生蛋”的故事"><a href="#1-SLAM-是什么：一个”鸡生蛋”的故事" class="headerlink" title="1. SLAM 是什么：一个”鸡生蛋”的故事"></a>1. SLAM 是什么：一个”鸡生蛋”的故事</h1><blockquote>
+<p>上一篇：<a href="/2026/08/16/12-SLAM/0.%20%E5%9F%BA%E6%9C%AC%E6%95%B0%E5%AD%A6">0. 基本数学</a> ｜ 下一篇：<a href="/2026/08/16/12-SLAM/2.%20%E6%9C%BA%E5%99%A8%E4%BA%BA%E7%9C%BC%E4%B8%AD%E7%9A%84%E4%B8%96%E7%95%8C%EF%BC%9A%E4%BC%A0%E6%84%9F%E5%99%A8%E4%B8%8E%E6%A0%85%E6%A0%BC%E5%9C%B0%E5%9B%BE">2. 机器人眼中的世界：传感器与栅格地图</a></p>
+</blockquote>
+<span id="more"></span>
+
+<hr>
+<h2 id="一、先讲个故事：蒙眼探索办公楼"><a href="#一、先讲个故事：蒙眼探索办公楼" class="headerlink" title="一、先讲个故事：蒙眼探索办公楼"></a>一、先讲个故事：蒙眼探索办公楼</h2><p>想象你被蒙上眼睛、坐轮椅推进一栋从没来过的办公楼，手里只有两样东西：</p>
+<ol>
+<li><strong>轮椅轮子上的计步器</strong>（&#x3D; 里程计）：”我刚才大概往前走了 3 米，左转了 90°”；</li>
+<li><strong>一根能旋转 360° 的盲杖</strong>（&#x3D; 激光雷达）：每挥一圈，告诉你”正前方 2.1 米是墙、右边 1.3 米是桌子腿、……”</li>
+</ol>
+<p>现在要求你：<strong>一边搞清楚自己在楼里的位置，一边画出整层楼的平面图。</strong></p>
+<p>你很快会遇到死循环：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    A[&quot;想画地图?&quot;] --&gt;|&quot;得先知道自己在哪&lt;br/&gt;不然墙画在哪?&quot;| B[&quot;想知道自己在哪?&quot;]</span><br><span class="line">    B --&gt;|&quot;得有地图参照&lt;br/&gt;&#x27;我在走廊三分之一处&#x27;&quot;| A</span><br><span class="line">    style A fill:#fce8e6,stroke:#d93025</span><br><span class="line">    style B fill:#fce8e6,stroke:#d93025</span><br></pre></td></tr></table></figure>
+
+<p><strong>这就是 SLAM（Simultaneous Localization And Mapping，同时定位与建图）的本质困境</strong>：</p>
+<blockquote>
+<p>定位需要地图，建图需要定位，两者互为先决条件–一个”鸡生蛋、蛋生鸡”问题。</p>
+</blockquote>
+<p>SLAM 算法的全部意义，就是<strong>打破这个死循环</strong>。gmapping 给出的解法，是本系列第 4 篇的主角。</p>
+<hr>
+<h2 id="二、SLAM-两个字的精确定义"><a href="#二、SLAM-两个字的精确定义" class="headerlink" title="二、SLAM 两个字的精确定义"></a>二、SLAM 两个字的精确定义</h2><table>
+<thead>
+<tr>
+<th align="left">任务</th>
+<th align="left">输入</th>
+<th align="left">输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>定位</strong> Localization</td>
+<td align="left">传感器数据 + 已知地图</td>
+<td align="left">我在哪（位姿 $x, y, \theta$）</td>
+</tr>
+<tr>
+<td align="left"><strong>建图</strong> Mapping</td>
+<td align="left">传感器数据 + 已知位姿</td>
+<td align="left">环境长什么样（地图 $m$）</td>
+</tr>
+<tr>
+<td align="left"><strong>SLAM</strong></td>
+<td align="left">只有传感器数据</td>
+<td align="left">位姿 + 地图<strong>同时都要</strong></td>
+</tr>
+</tbody></table>
+<p>机器人领域的三大件：建图、定位、路径规划。SLAM 正好卡在<strong>建图 ∩ 定位</strong>的交集上：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    M[&quot;🗺️ 建图 Mapping&quot;] --- SLAM</span><br><span class="line">    L[&quot;📍 定位 Localization&quot;] --- SLAM</span><br><span class="line">    SLAM[&quot;SLAM&lt;br/&gt;(两者交集)&quot;]</span><br><span class="line">    P[&quot;🧭 路径规划 Planning&lt;br/&gt;(通常在SLAM之后, 依赖地图)&quot;]</span><br><span class="line">    SLAM -.-&gt;|&quot;有了地图+定位&quot;| P</span><br><span class="line">    style SLAM fill:#fef7e0,stroke:#b06000</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、SLAM-门派地图：gmapping-站在哪"><a href="#三、SLAM-门派地图：gmapping-站在哪" class="headerlink" title="三、SLAM 门派地图：gmapping 站在哪"></a>三、SLAM 门派地图：gmapping 站在哪</h2><h3 id="3-1-按传感器分"><a href="#3-1-按传感器分" class="headerlink" title="3.1 按传感器分"></a>3.1 按传感器分</h3><table>
+<thead>
+<tr>
+<th align="left">门派</th>
+<th align="left">传感器</th>
+<th align="left">特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>激光 SLAM</strong></td>
+<td align="left">激光雷达（+里程计）</td>
+<td align="left">测距精准、不受光照影响、<strong>工业主流</strong>（扫地机器人&#x2F;仓储 AGV）</td>
+</tr>
+<tr>
+<td align="left">视觉 SLAM</td>
+<td align="left">相机（单目&#x2F;双目&#x2F;RGBD）</td>
+<td align="left">便宜、信息丰富，但受光照&#x2F;纹理影响大</td>
+</tr>
+</tbody></table>
+<p>gmapping 是<strong>激光 SLAM</strong>。</p>
+<h3 id="3-2-按后端解法分（更关键！）"><a href="#3-2-按后端解法分（更关键！）" class="headerlink" title="3.2 按后端解法分（更关键！）"></a>3.2 按后端解法分（更关键！）</h3><p>两大门派的区别在于”怎么求解那个鸡生蛋问题”：</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left"><strong>滤波派</strong>（贝叶斯递推）</th>
+<th align="left"><strong>图优化派</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">思路</td>
+<td align="left">每来一帧数据，<strong>在线更新</strong>对”位姿+地图”的概率估计</td>
+<td align="left">把历史位姿当<strong>节点</strong>、传感器约束当<strong>边</strong>，构建因子图，<strong>整体优化</strong></td>
+</tr>
+<tr>
+<td align="left">代表</td>
+<td align="left"><strong>gmapping</strong>（粒子滤波）、Hector</td>
+<td align="left">Cartographer、Karto</td>
+</tr>
+<tr>
+<td align="left">优点</td>
+<td align="left">实时性好、小场景精度高</td>
+<td align="left">支持回环检测、大场景、内存省</td>
+</tr>
+<tr>
+<td align="left">缺点</td>
+<td align="left">无回环、大场景内存爆炸（见第 9 篇）</td>
+<td align="left">计算量大、矩阵运算重</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>一个直觉对比</strong>：滤波派像”边走边记日记，写完不回头改”；图优化派像”写完整本日记后通读一遍，把前后矛盾的地方全部修正”（回环检测就是发现”这一页说的走廊和第 3 页是同一条”）。</p>
+</blockquote>
+<h3 id="3-3-gmapping-的江湖地位"><a href="#3-3-gmapping-的江湖地位" class="headerlink" title="3.3 gmapping 的江湖地位"></a>3.3 gmapping 的江湖地位</h3><ul>
+<li>2007 年 Grisetti 等人论文《Efficient Rao-Blackwellized Particle Filters for SLAM》（TRO）；</li>
+<li>基于 <strong>RBPF 粒子滤波</strong>（滤波派），是 ROS 里最老牌、最常用的 2D 激光 SLAM 之一；</li>
+<li><strong>小场景（室内、几百平米）精度高、算得快、参数少</strong>–至今仍是扫地机器人、教学实验的主力；</li>
+<li>大场景、需要回环的场景让位给 Cartographer。</li>
+</ul>
+<hr>
+<h2 id="四、SLAM-系统的通用流水线（所有算法都长这样）"><a href="#四、SLAM-系统的通用流水线（所有算法都长这样）" class="headerlink" title="四、SLAM 系统的通用流水线（所有算法都长这样）"></a>四、SLAM 系统的通用流水线（所有算法都长这样）</h2><p>无论哪个门派，激光 SLAM 都可以拆成四块：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    S[&quot;🔊 传感器数据&lt;br/&gt;激光+里程计&quot;] --&gt; F[&quot;前端 Odometry&lt;br/&gt;粗略估计&#x27;我动了多少&#x27;&lt;br/&gt;(gmapping: 里程计+扫描匹配)&quot;]</span><br><span class="line">    F --&gt; B[&quot;后端&lt;br/&gt;累积误差怎么处理&lt;br/&gt;(gmapping: 粒子滤波)&quot;]</span><br><span class="line">    B --&gt; L[&quot;↩️ 回环检测&lt;br/&gt;&#x27;我是不是来过这儿?&#x27;&lt;br/&gt;(gmapping: ❌没有!)&quot;]</span><br><span class="line">    B --&gt; M[&quot;🗺️ 建图&lt;br/&gt;更新栅格地图&quot;]</span><br><span class="line">    style S fill:#e8f0fe,stroke:#1a73e8</span><br><span class="line">    style B fill:#fef7e0,stroke:#b06000</span><br><span class="line">    style L fill:#f1f3f4,stroke:#5f6368</span><br></pre></td></tr></table></figure>
+
+<p><strong>gmapping 在这张图里的填空</strong>：前端 &#x3D; 里程计 + 扫描匹配；后端 &#x3D; RBPF 粒子滤波；回环 &#x3D; 无；地图 &#x3D; 2D 栅格图。后面几篇逐个填满。</p>
+<hr>
+<h2 id="五、本篇小结"><a href="#五、本篇小结" class="headerlink" title="五、本篇小结"></a>五、本篇小结</h2><ul>
+<li>SLAM &#x3D; 蒙眼画地图：<strong>定位和建图互为先决条件</strong>的死循环；</li>
+<li>gmapping &#x3D; 激光 + 滤波派（粒子滤波）+ 无回环 + 2D 栅格地图；</li>
+<li>通用流水线四件套：传感器 -&gt; 前端 -&gt; 后端 -&gt; 地图（+回环）。</li>
+</ul>
+<blockquote>
+<p>📚 参考：Gmapping算法原理及源代码解析（SLAM 分类与框架图）、GMapping原理分析（滤波 vs 图优化对比）</p>
+</blockquote>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.loveww.top">Wang Tao</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.loveww.top/2026/08/16/12-SLAM/1.%20SLAM%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9A%E7%9B%B2%E4%BA%BA%E6%91%B8%E8%B1%A1%E4%B8%8E%E8%BE%B9%E8%B5%B0%E8%BE%B9%E7%94%BB/">https://www.loveww.top/2026/08/16/12-SLAM/1.%20SLAM%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9A%E7%9B%B2%E4%BA%BA%E6%91%B8%E8%B1%A1%E4%B8%8E%E8%BE%B9%E8%B5%B0%E8%BE%B9%E7%94%BB/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.loveww.top" target="_blank">TeachCraft Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/SLAM/">SLAM</a><a class="post-meta__tags" href="/tags/gmapping/">gmapping</a><a class="post-meta__tags" href="/tags/%E5%85%A5%E9%97%A8/">入门</a></div><div class="post-share"><div class="social-share" data-image="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/08/16/12-SLAM/2.%20%E6%9C%BA%E5%99%A8%E4%BA%BA%E7%9C%BC%E4%B8%AD%E7%9A%84%E4%B8%96%E7%95%8C%EF%BC%9A%E4%BC%A0%E6%84%9F%E5%99%A8%E4%B8%8E%E6%A0%85%E6%A0%BC%E5%9C%B0%E5%9B%BE/" title="2. 机器人眼中的世界：传感器与栅格地图"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">2. 机器人眼中的世界：传感器与栅格地图</div></div><div class="info-2"><div class="info-item-1">2. 机器人眼中的世界：传感器与栅格地图 上一篇：1. SLAM是什么：盲人摸象与边走边画 ｜ 下一篇：3. 粒子滤波：一千个分身猜位置   gmapping 只吃两种数据：激光（”我看到什么”）和里程计（”我动了多少”）。这一篇讲清楚这两种数据长什么样、各有什么脾气，以及最终要画出的栅格地图是什么。     一、激光雷达：机器人的一圈”声呐”1.1 数据长什么样2D 激光雷达（如 RPLIDAR、思岚 S2）水平旋转，每转一圈打出几百束激光，返回一个距离数组： 123angles: [-90°, -89.5°, ..., +89.5°]   (均匀分布 360°/N 份)ranges: [2.13, 2.10, 1.05, inf, ..., 1.87]         ↑前方墙   ↑桌腿   ↑没打到东西(超量程)  一帧激光 &#x3D; N 个 (角度, 距离) 对，从雷达中心向外呈放射状的一圈点。 1.2 关键参数   参数 含义 对 gmapping 的影响    频率 每秒扫几圈（典型 5~12 Hz） gmapping 依赖里程计先验，5Hz 也够用（Hecto...</div></div></div></a><a class="pagination-related" href="/2026/08/16/12-SLAM/0.%20%E5%9F%BA%E6%9C%AC%E6%95%B0%E5%AD%A6/" title="0. 基本数学：三个小工具"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">0. 基本数学：三个小工具</div></div><div class="info-2"><div class="info-item-1">0. 基本数学：看懂 gmapping 只需要三个小工具 📚 本系列导航：1. SLAM是什么：盲人摸象与边走边画 → 2. 机器人眼中的世界：传感器与栅格地图 → 3. 粒子滤波：一千个分身猜位置 → 4. RBPF：把鸡蛋问题拆开 → 5. gmapping的两大改进 → 6. 源码走读：一帧激光的旅程 → 7. 实战：跑起来与调参 → 8. 从理解到实现：迷你gmapping → 9. 局限与进阶：gmapping之外的世界   别怕，这一篇只有三个概念：概率、条件概率、贝叶斯。全程用”出门要不要带伞”讲清楚，看完你就能读懂 gmapping 的所有公式。     一、概率 &#x3D; 置信度（你有多相信一件事）机器人不是全知的。它不知道自己在哪，只能”猜”–猜的过程，数学上用概率描述。 $$P(\text{下雨}) &#x3D; 0.7$$ 读法：”下雨这件事，我信七成。”  概率是 0~1 之间的数：0 &#x3D; 完全不信，1 &#x3D; 完全确定； 机器人对”我在哪”的答案从来不是一个点，而是一个分布（哪里都有可能，只是可能性不同）。   SLAM 的本质：...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/08/16/12-SLAM/0.%20%E5%9F%BA%E6%9C%AC%E6%95%B0%E5%AD%A6/" title="0. 基本数学：三个小工具"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-16</div><div class="info-item-2">0. 基本数学：三个小工具</div></div><div class="info-2"><div class="info-item-1">0. 基本数学：看懂 gmapping 只需要三个小工具 📚 本系列导航：1. SLAM是什么：盲人摸象与边走边画 → 2. 机器人眼中的世界：传感器与栅格地图 → 3. 粒子滤波：一千个分身猜位置 → 4. RBPF：把鸡蛋问题拆开 → 5. gmapping的两大改进 → 6. 源码走读：一帧激光的旅程 → 7. 实战：跑起来与调参 → 8. 从理解到实现：迷你gmapping → 9. 局限与进阶：gmapping之外的世界   别怕，这一篇只有三个概念：概率、条件概率、贝叶斯。全程用”出门要不要带伞”讲清楚，看完你就能读懂 gmapping 的所有公式。     一、概率 &#x3D; 置信度（你有多相信一件事）机器人不是全知的。它不知道自己在哪，只能”猜”–猜的过程，数学上用概率描述。 $$P(\text{下雨}) &#x3D; 0.7$$ 读法：”下雨这件事，我信七成。”  概率是 0~1 之间的数：0 &#x3D; 完全不信，1 &#x3D; 完全确定； 机器人对”我在哪”的答案从来不是一个点，而是一个分布（哪里都有可能，只是可能性不同）。   SLAM 的本质：...</div></div></div></a><a class="pagination-related" href="/2026/08/16/12-SLAM/2.%20%E6%9C%BA%E5%99%A8%E4%BA%BA%E7%9C%BC%E4%B8%AD%E7%9A%84%E4%B8%96%E7%95%8C%EF%BC%9A%E4%BC%A0%E6%84%9F%E5%99%A8%E4%B8%8E%E6%A0%85%E6%A0%BC%E5%9C%B0%E5%9B%BE/" title="2. 机器人眼中的世界：传感器与栅格地图"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-16</div><div class="info-item-2">2. 机器人眼中的世界：传感器与栅格地图</div></div><div class="info-2"><div class="info-item-1">2. 机器人眼中的世界：传感器与栅格地图 上一篇：1. SLAM是什么：盲人摸象与边走边画 ｜ 下一篇：3. 粒子滤波：一千个分身猜位置   gmapping 只吃两种数据：激光（”我看到什么”）和里程计（”我动了多少”）。这一篇讲清楚这两种数据长什么样、各有什么脾气，以及最终要画出的栅格地图是什么。     一、激光雷达：机器人的一圈”声呐”1.1 数据长什么样2D 激光雷达（如 RPLIDAR、思岚 S2）水平旋转，每转一圈打出几百束激光，返回一个距离数组： 123angles: [-90°, -89.5°, ..., +89.5°]   (均匀分布 360°/N 份)ranges: [2.13, 2.10, 1.05, inf, ..., 1.87]         ↑前方墙   ↑桌腿   ↑没打到东西(超量程)  一帧激光 &#x3D; N 个 (角度, 距离) 对，从雷达中心向外呈放射状的一圈点。 1.2 关键参数   参数 含义 对 gmapping 的影响    频率 每秒扫几圈（典型 5~12 Hz） gmapping 依赖里程计先验，5Hz 也够用（Hecto...</div></div></div></a><a class="pagination-related" href="/2026/08/16/12-SLAM/3.%20%E7%B2%92%E5%AD%90%E6%BB%A4%E6%B3%A2%EF%BC%9A%E4%B8%80%E5%8D%83%E4%B8%AA%E5%88%86%E8%BA%AB%E7%8C%9C%E4%BD%8D%E7%BD%AE/" title="3. 粒子滤波：一千个分身猜位置"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-16</div><div class="info-item-2">3. 粒子滤波：一千个分身猜位置</div></div><div class="info-2"><div class="info-item-1">3. 粒子滤波：用一千个”分身”猜位置 上一篇：2. 机器人眼中的世界：传感器与栅格地图 ｜ 下一篇：4. RBPF：把鸡蛋问题拆开   gmapping 的”滤波”两个字，指的就是粒子滤波。这一篇不出现任何 SLAM 公式，只讲清楚一件事：为什么撒一把随机点，就能算出一个概率分布。     一、核心思想：算不出来的分布，就”撒豆子”采样出来回到 0. 基本数学：机器人对”我在哪”的答案是一个概率分布。理想的分布长这样（真实位置附近可能性高）： $$P(x) &#x3D; \text{某个极其复杂、写不出解析式的函数}$$ 问题：这个函数在计算机里根本没法直接表示和计算（里程计误差+激光匹配，非高斯、非线性、多维）。 粒子滤波的暴力解法：管它什么函数，撒 N 个随机样本点（粒子），用这堆点的密度来近似分布： 12345678910flowchart LR    subgraph hard[&quot;无法计算的真实分布&quot;]        A[&quot;🗺️ 复杂概率云&lt;br/&gt;(真值附近高, 其他地方低)&quot;]    end    subgrap...</div></div></div></a><a class="pagination-related" href="/2026/08/16/12-SLAM/4.%20RBPF%EF%BC%9A%E6%8A%8A%E9%B8%A1%E8%9B%8B%E9%97%AE%E9%A2%98%E6%8B%86%E5%BC%80/" title="4. RBPF：把鸡蛋问题拆开"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-16</div><div class="info-item-2">4. RBPF：把鸡蛋问题拆开</div></div><div class="info-2"><div class="info-item-1">4. RBPF：把”鸡生蛋”拆成两个小问题 上一篇：3. 粒子滤波：一千个分身猜位置 ｜ 下一篇：5. gmapping的两大改进   RBPF &#x3D; Rao-Blackwellized Particle Filter（Rao-Blackwellized 粒子滤波），gmapping 的全称招牌。听起来唬人，其实思想在第 0 篇的链式法则里已经全部讲完了。这一篇把那行公式逐符号拆开，并补上”每个粒子怎么建图”。     一、那个 SLAM 公式，逐符号拆解gmapping 求解的目标（论文里的第一个公式）： $$P(x_{1:t}, m \mid z_{1:t}, u_{1:t-1})$$ 先看懂每个符号（都是纸老虎）：    符号 人话    $x_{1:t}$ 轨迹：从第 1 时刻到现在的全部位姿 $x_1, x_2, …, x_t$（每个位姿 &#x3D; $x, y, \theta$）   $m$ 地图（栅格地图）   $z_{1:t}$ 观测：到目前所有激光帧（z &#x3D; 激光 LaserScan）   $u_{1:t-1}$ 控制量&#x2F;运动：里程...</div></div></div></a><a class="pagination-related" href="/2026/08/16/12-SLAM/5.%20gmapping%E7%9A%84%E4%B8%A4%E5%A4%A7%E6%94%B9%E8%BF%9B/" title="5. gmapping的两大改进"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-16</div><div class="info-item-2">5. gmapping的两大改进</div></div><div class="info-2"><div class="info-item-1">5. gmapping 的两大改进：粒子生得更准，死得更慢 上一篇：4. RBPF：把鸡蛋问题拆开 ｜ 下一篇：6. 源码走读：一帧激光的旅程   朴素 RBPF 有两个坑（第 4 篇结尾）：粒子撒不准 + 重采样太勤。gmapping 论文就干了两件事：改进提议分布（撒得准）+ 自适应重采样（死得慢）。这两件事让它用 30 个粒子干出了别人 3000 个粒子的活。     一、改进一：提议分布–先对齐，再撒粒子1.1 先搞懂”提议分布”是什么（60 秒版）回顾 3. 粒子滤波：一千个分身猜位置：预测阶段粒子从某个分布里采样，这个”从哪撒”的分布就叫提议分布（proposal distribution），记作 $q(x)$。 理想情况：直接从目标分布（真实的后验，”我到底在哪”的真实概率云）撒粒子–但算不出来（第 3 篇说过）。 所以只能找个好算又尽量接近目标的替身 $q(x)$，再靠权重修正两者差距：  权重的本质 &#x3D; 目标分布与提议分布的不一致程度。提议分布越接近目标，需要的权重修正越小，粒子利用效率越高。  1.2 朴素做法烂在哪朴素 RBPF 的提议分布只信里程...</div></div></div></a><a class="pagination-related" href="/2026/08/16/12-SLAM/6.%20%E6%BA%90%E7%A0%81%E8%B5%B0%E8%AF%BB%EF%BC%9A%E4%B8%80%E5%B8%A7%E6%BF%80%E5%85%89%E7%9A%84%E6%97%85%E7%A8%8B/" title="6. 源码走读：一帧激光的旅程"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-16</div><div class="info-item-2">6. 源码走读：一帧激光的旅程</div></div><div class="info-2"><div class="info-item-1">6. 源码走读：一帧激光数据的完整旅程 上一篇：5. gmapping的两大改进 ｜ 下一篇：7. 实战：跑起来与调参   原理懂了，现在把 第 5 篇 的算法图对号入座到真实代码。gmapping 分两层：外层 ROS 壳（slam_gmapping 包）+ 内核算法库（openslam_gmapping）。     一、代码地图1234567891011121314slam_gmapping/            ← ROS 壳: 订阅话题、格式转换、发 TF 和地图├── main.cpp              入口├── slam_gmapping.cpp     startLiveSlam / laserCallback / addScan / updateMap└── ...openslam_gmapping/        ← 算法内核: RBPF 全在这├── gridfastslam/│   ├── gridslamprocessor.&#123;h,cpp&#125;   ⭐ GridSlamProcessor::processScan() 核心循环│ ...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=TechCraft&amp;backgroundColor=b6e3f4" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Wang Tao</div><div class="author-info-description">🤖 机器人与自动驾驶
+👁️ 计算机视觉 (2D/3D检测·分割)
+🔬 深度学习算法
+📡 点云处理
+🧠 大模型技术</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">62</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">84</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">12</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/TechCraft0"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/TechCraft0" target="_blank" title="fab fa-github"><i class="GitHub"></i></a><a class="social-icon" href="mailto:wangtao@example.com" target="_blank" title="fas fa-envelope"><i class="Email"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客！这里记录了我的技术学习笔记和项目经验。欢迎一起交流学习！✨</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-SLAM-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9A%E4%B8%80%E4%B8%AA%E2%80%9D%E9%B8%A1%E7%94%9F%E8%9B%8B%E2%80%9D%E7%9A%84%E6%95%85%E4%BA%8B"><span class="toc-number">1.</span> <span class="toc-text">1. SLAM 是什么：一个”鸡生蛋”的故事</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%85%88%E8%AE%B2%E4%B8%AA%E6%95%85%E4%BA%8B%EF%BC%9A%E8%92%99%E7%9C%BC%E6%8E%A2%E7%B4%A2%E5%8A%9E%E5%85%AC%E6%A5%BC"><span class="toc-number">1.1.</span> <span class="toc-text">一、先讲个故事：蒙眼探索办公楼</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81SLAM-%E4%B8%A4%E4%B8%AA%E5%AD%97%E7%9A%84%E7%B2%BE%E7%A1%AE%E5%AE%9A%E4%B9%89"><span class="toc-number">1.2.</span> <span class="toc-text">二、SLAM 两个字的精确定义</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81SLAM-%E9%97%A8%E6%B4%BE%E5%9C%B0%E5%9B%BE%EF%BC%9Agmapping-%E7%AB%99%E5%9C%A8%E5%93%AA"><span class="toc-number">1.3.</span> <span class="toc-text">三、SLAM 门派地图：gmapping 站在哪</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E6%8C%89%E4%BC%A0%E6%84%9F%E5%99%A8%E5%88%86"><span class="toc-number">1.3.1.</span> <span class="toc-text">3.1 按传感器分</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E6%8C%89%E5%90%8E%E7%AB%AF%E8%A7%A3%E6%B3%95%E5%88%86%EF%BC%88%E6%9B%B4%E5%85%B3%E9%94%AE%EF%BC%81%EF%BC%89"><span class="toc-number">1.3.2.</span> <span class="toc-text">3.2 按后端解法分（更关键！）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-gmapping-%E7%9A%84%E6%B1%9F%E6%B9%96%E5%9C%B0%E4%BD%8D"><span class="toc-number">1.3.3.</span> <span class="toc-text">3.3 gmapping 的江湖地位</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81SLAM-%E7%B3%BB%E7%BB%9F%E7%9A%84%E9%80%9A%E7%94%A8%E6%B5%81%E6%B0%B4%E7%BA%BF%EF%BC%88%E6%89%80%E6%9C%89%E7%AE%97%E6%B3%95%E9%83%BD%E9%95%BF%E8%BF%99%E6%A0%B7%EF%BC%89"><span class="toc-number">1.4.</span> <span class="toc-text">四、SLAM 系统的通用流水线（所有算法都长这样）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%9C%AC%E7%AF%87%E5%B0%8F%E7%BB%93"><span class="toc-number">1.5.</span> <span class="toc-text">五、本篇小结</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/16/12-SLAM/0.%20%E5%9F%BA%E6%9C%AC%E6%95%B0%E5%AD%A6/" title="0. 基本数学：三个小工具">0. 基本数学：三个小工具</a><time datetime="2026-08-15T16:00:00.000Z" title="发表于 2026-08-16 00:00:00">2026-08-16</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/16/12-SLAM/1.%20SLAM%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9A%E7%9B%B2%E4%BA%BA%E6%91%B8%E8%B1%A1%E4%B8%8E%E8%BE%B9%E8%B5%B0%E8%BE%B9%E7%94%BB/" title="1. SLAM是什么：盲人摸象与边走边画">1. SLAM是什么：盲人摸象与边走边画</a><time datetime="2026-08-15T16:00:00.000Z" title="发表于 2026-08-16 00:00:00">2026-08-16</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/16/12-SLAM/2.%20%E6%9C%BA%E5%99%A8%E4%BA%BA%E7%9C%BC%E4%B8%AD%E7%9A%84%E4%B8%96%E7%95%8C%EF%BC%9A%E4%BC%A0%E6%84%9F%E5%99%A8%E4%B8%8E%E6%A0%85%E6%A0%BC%E5%9C%B0%E5%9B%BE/" title="2. 机器人眼中的世界：传感器与栅格地图">2. 机器人眼中的世界：传感器与栅格地图</a><time datetime="2026-08-15T16:00:00.000Z" title="发表于 2026-08-16 00:00:00">2026-08-16</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/16/12-SLAM/3.%20%E7%B2%92%E5%AD%90%E6%BB%A4%E6%B3%A2%EF%BC%9A%E4%B8%80%E5%8D%83%E4%B8%AA%E5%88%86%E8%BA%AB%E7%8C%9C%E4%BD%8D%E7%BD%AE/" title="3. 粒子滤波：一千个分身猜位置">3. 粒子滤波：一千个分身猜位置</a><time datetime="2026-08-15T16:00:00.000Z" title="发表于 2026-08-16 00:00:00">2026-08-16</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/16/12-SLAM/4.%20RBPF%EF%BC%9A%E6%8A%8A%E9%B8%A1%E8%9B%8B%E9%97%AE%E9%A2%98%E6%8B%86%E5%BC%80/" title="4. RBPF：把鸡蛋问题拆开">4. RBPF：把鸡蛋问题拆开</a><time datetime="2026-08-15T16:00:00.000Z" title="发表于 2026-08-16 00:00:00">2026-08-16</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Wang Tao</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"><script>(() => {
+  const loadMathjax = () => {
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+          renderActions: {
+            findScript: [10, doc => {
+              for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+                const display = !!node.type.match(/; *mode=display/)
+                const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+                const text = document.createTextNode('')
+                node.parentNode.replaceChild(text, node)
+                math.start = {node: text, delim: '', n: 0}
+                math.end = {node: text, delim: '', n: 0}
+                doc.math.push(math)
+              }
+            }, '']
+          }
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.startup.document.state(0)
+      MathJax.texReset()
+      MathJax.typesetPromise()
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script><script>(() => {
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+      const mermaidThemeConfig = `%%{init:{ 'theme':'${theme}'}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+      }
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'TechCraft0/loveww.github.io',
+      'data-repo-id': 'R_kgDONQSxxx',
+      'data-category-id': 'DIC_kwDONQSxxx',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script src="/js/background-effects.js"></script><script src="/js/live2d-simple.js"></script><script id="canvas_nest" defer="defer" color="255, 255, 255" opacity="0.8" zIndex="-1" count="120" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-show-text.min.js" data-mobile="false" data-text="前端,后端,算法,AI,Python,C++,JavaScript" data-fontsize="15px" data-random="true" async="async"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>
