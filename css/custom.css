@@ -1,11 +1,11 @@
 /* A quiet, glass-like reading surface over the locally hosted sky illustration. */
 :root {
-  --glass: rgba(255, 255, 255, 0.68);
-  --glass-strong: rgba(255, 255, 255, 0.78);
+  --glass: rgba(255, 255, 255, 0.26);
+  --glass-strong: rgba(255, 255, 255, 0.34);
   --ink: #27323a;
   --muted-ink: #687780;
   --accent: #5d9da5;
-  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.38);
 }
 
 html {
@@ -160,6 +160,15 @@ body {
   -webkit-backdrop-filter: blur(16px) saturate(125%);
 }
 
+/* Butterfly gives the primary page card an opaque white background by default. */
+#content-inner.layout > #page {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 10px 30px rgba(34, 59, 69, 0.08);
+  backdrop-filter: blur(8px) saturate(115%);
+  -webkit-backdrop-filter: blur(8px) saturate(115%);
+}
+
 #recent-posts .recent-post-item,
 #aside-content .card-widget {
   position: relative;
@@ -268,7 +277,7 @@ body {
   margin: 0 auto clamp(20px, 4vh, 48px);
   padding: 20px 30px;
   color: var(--muted-ink);
-  background: rgba(255, 255, 255, 0.72) !important;
+  background: rgba(255, 255, 255, 0.30) !important;
   border: 1px solid var(--glass-border);
   border-top: 1px solid rgba(67, 92, 101, 0.16);
   border-radius: 0 0 16px 16px;
@@ -396,7 +405,7 @@ a {
   padding: 7px 12px;
   border: 1px solid rgba(93, 157, 165, 0.17);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.20);
   color: var(--muted-ink);
   font-size: 0.88rem;
 }
@@ -419,7 +428,7 @@ a {
 .blog-guide .guide-jump a {
   padding: 6px 10px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.18);
   color: var(--ink);
   font-size: 0.9rem;
 }
@@ -500,7 +509,7 @@ a {
   padding: 12px 14px;
   border: 1px solid rgba(67, 92, 101, 0.13);
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.43);
+  background: rgba(255, 255, 255, 0.20);
   color: var(--muted-ink);
   font-size: 0.84rem;
   line-height: 1.55;
@@ -510,7 +519,7 @@ a {
 .blog-guide a.guide-category:hover {
   transform: translateY(-2px);
   border-color: rgba(77, 146, 154, 0.42);
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.34);
   color: var(--muted-ink) !important;
 }
 
