@@ -23,7 +23,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-image: url('/img/sky-meadow-bg.png') !important;
+  background-image: url('/img/sky-meadow-bg.png?v=20260927-layout2') !important;
   background-position: center center;
   background-repeat: no-repeat;
   background-size: cover;
