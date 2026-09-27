@@ -1,202 +1,372 @@
-/* 1. 全局背景优化：深色背景配合动态特效 */
+/* A quiet, glass-like reading surface over the locally hosted sky illustration. */
+:root {
+  --glass: rgba(255, 255, 255, 0.68);
+  --glass-strong: rgba(255, 255, 255, 0.78);
+  --ink: #27323a;
+  --muted-ink: #687780;
+  --accent: #5d9da5;
+  --glass-border: rgba(255, 255, 255, 0.72);
+}
+
+html {
+  min-height: 100%;
+  background: transparent;
+}
+
 body {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    min-height: 100vh;
-    position: relative;
+  min-height: 100vh;
+  color: var(--ink);
+  background: transparent;
 }
 
-/* 2. 顶部大图半透明处理，让背景图更自然 */
-#page-header.full_page {
-    background-color: rgba(0, 0, 0, 0.2) !important;
+#web_bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: url('/img/sky-meadow-bg.png') !important;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
-/* 3. 卡片毛玻璃化：增强透明度和模糊效果 */
-#recent-posts > .recent-post-item,
-#aside-content .card-widget,
-.layout > div:first-child:not(.recent-posts) {
-    background: rgba(255, 255, 255, 0.75) !important;
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-radius: 20px !important;
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2) !important;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+/* Put the site identity and menu in one compact glass header. */
+#page-header.full_page,
+#page-header.not-home-page,
+#page-header.post-bg,
+#page-header.not-top-img {
+  display: flex;
+  flex-direction: column;
+  width: min(1120px, calc(100% - 36px));
+  height: auto;
+  min-height: 0;
+  box-sizing: border-box;
+  margin: clamp(20px, 4vh, 48px) auto 0;
+  margin-bottom: 0;
+  padding: 26px 34px 0;
+  overflow: visible;
+  background: var(--glass-strong) !important;
+  background-image: none !important;
+  border: 1px solid var(--glass-border);
+  border-bottom: 0;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 12px 40px rgba(34, 59, 69, 0.15);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
 }
 
-/* 卡片光影效果 */
-#recent-posts > .recent-post-item::before,
-#aside-content .card-widget::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 15px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+#page-header:not(.not-top-img)::before,
+#page-header #scroll-down {
+  display: none !important;
 }
 
-#recent-posts > .recent-post-item:hover::before,
-#aside-content .card-widget:hover::before {
-    opacity: 1;
+#page-header.full_page #site-info {
+  position: static;
+  order: 0;
+  width: auto;
+  padding: 0 0 18px;
+  text-align: left;
 }
 
-/* 4. 鼠标悬停卡片上浮效果 - 增强版 */
-.recent-post-item:hover {
-    transform: scale(1.05) translateY(-5px);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2) !important;
-    border-color: rgba(255, 255, 255, 0.8) !important;
+#page-header.full_page #site-title {
+  color: var(--ink);
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: left;
+  text-shadow: none;
 }
 
-/* 添加卡片发光效果 */
-.recent-post-item:hover::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 22px;
-    padding: 2px;
-    background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    animation: borderGlow 2s linear infinite;
-    pointer-events: none;
+#page-header.full_page #site-subtitle {
+  margin-top: 4px;
+  color: var(--muted-ink);
+  font-size: 0.9rem;
+  text-align: left;
+  text-shadow: none;
 }
 
-@keyframes borderGlow {
-    0% {
-        filter: hue-rotate(0deg);
-    }
-    100% {
-        filter: hue-rotate(360deg);
-    }
+#page-header #nav,
+#page-header.not-top-img #nav {
+  position: relative;
+  top: auto;
+  order: 1;
+  min-height: 46px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  opacity: 1 !important;
+  color: var(--ink);
+  background: transparent;
+  border-top: 1px solid rgba(67, 92, 101, 0.19);
+  border-bottom: 1px solid rgba(67, 92, 101, 0.19);
+  box-shadow: none;
+  transform: none !important;
 }
 
-/* 5. 分类标签美化 */
-.article-meta__categories {
-    color: #49b1f5 !important;
-    font-weight: bold;
+#page-header #nav a,
+#page-header #nav span.site-page,
+#page-header #nav .site-name,
+#page-header #nav #toggle-menu {
+  color: var(--ink);
+  text-shadow: none;
 }
 
-/* 6. 滚动条美化 */
-::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 5px;
-}
-::-webkit-scrollbar-thumb {
-    background: #49b1f5;
-    border-radius: 5px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #3399cc;
+#page-header #nav a:hover,
+#page-header #nav span.site-page:hover {
+  color: var(--accent);
 }
 
-/* 7. 按钮美化 */
-.button--animated {
-    transition: all 0.3s ease;
-}
-.button--animated:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(73, 177, 245, 0.4);
+#page-header #blog-info .site-name {
+  font-size: 0.96rem;
 }
 
-/* 8. 链接悬停效果 */
-a:hover {
-    color: #49b1f5;
-    text-decoration: none;
-    transition: color 0.3s ease;
+#page-header.not-home-page #page-site-info,
+#page-header.post-bg #post-info {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  width: auto;
+  margin: 20px 0 16px;
+  padding: 0;
+  text-align: left;
+  transform: none;
 }
 
-/* 9. 代码块美化优化 */
-.highlight {
-    border-radius: 8px;
-    overflow: hidden;
-}
-.code-toolbar {
-    position: relative;
-}
-
-/* 10. 侧边栏卡片标题美化 */
-.card-widget .card-info .card-info-social-icons {
-    margin-top: 10px;
-}
-.card-widget .card-info .card-info-social-icons .social-icon {
-    font-size: 1.2rem;
-    margin: 0 5px;
+#page-header.not-home-page #page-site-info h1,
+#page-header.post-bg #post-info .post-title {
+  color: var(--ink);
+  font-size: clamp(1.35rem, 2.5vw, 1.7rem);
+  line-height: 1.45;
+  text-align: left;
+  text-shadow: none;
 }
 
-/* 侧边栏个人描述多行显示 */
-.card-info .card-info-data {
-    flex-wrap: wrap;
-}
-.card-widget .card-info .author-info__description {
-    display: -webkit-box !important;
-    -webkit-box-orient: vertical !important;
-    -webkit-line-clamp: 3 !important; /* 最多显示3行 */
-    overflow: hidden !important;
-    line-height: 1.6 !important;
-    max-height: none !important;
-    white-space: normal !important;
+#page-header.post-bg #post-info .post-meta,
+#page-header.post-bg #post-info .post-title {
+  padding: 0;
 }
 
-/* 11. 页脚渐变背景 */
+/* Continue the same translucent panel through the post list and sidebar. */
+#content-inner.layout {
+  width: min(1120px, calc(100% - 36px));
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 28px 34px 34px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-top: 0;
+  border-bottom: 0;
+  box-shadow: 0 18px 40px rgba(34, 59, 69, 0.12);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+}
+
+#recent-posts .recent-post-item,
+#aside-content .card-widget {
+  position: relative;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#recent-posts .recent-post-item {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  height: auto !important;
+  min-height: 0;
+  overflow: visible;
+  margin-bottom: 30px;
+  padding: 2px 0 20px;
+  border-bottom: 1px solid rgba(67, 92, 101, 0.16) !important;
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+#recent-posts .recent-post-info {
+  order: 1;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+#recent-posts .post_cover {
+  order: 2;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 560px;
+  margin-top: 12px;
+  border-radius: 7px;
+}
+
+#recent-posts .post_cover .post-bg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 560px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+#recent-posts .recent-post-info > .content {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.96rem;
+  line-height: 1.75;
+}
+
+#recent-posts .recent-post-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(93, 157, 165, 0.55) !important;
+}
+
+#recent-posts .article-title,
+#post-info .post-title {
+  color: var(--ink);
+}
+
+#recent-posts .article-title:hover,
+#aside-content a:hover,
+.container a:hover {
+  color: var(--accent) !important;
+}
+
+#recent-posts .post_cover img.post-bg,
+.container img {
+  border-radius: 7px;
+}
+
+#aside-content .card-widget {
+  margin-bottom: 18px;
+  padding: 8px 10px 14px;
+}
+
+#aside-content .item-headline {
+  color: var(--accent);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+#aside-content .card-tag-cloud a {
+  display: inline-block;
+  margin: 2px 3px 2px 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.36);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+#aside-content .card-tag-cloud a:hover {
+  color: #fff !important;
+  background: var(--accent);
+}
+
 #footer {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: min(1120px, calc(100% - 36px));
+  box-sizing: border-box;
+  margin: 0 auto clamp(20px, 4vh, 48px);
+  padding: 20px 30px;
+  color: var(--muted-ink);
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid rgba(67, 92, 101, 0.16);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 18px 40px rgba(34, 59, 69, 0.12);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
 }
 
-/* 12. 标签云美化 */
-.card-tag-cloud a {
-    display: inline-block;
-    padding: 4px 12px;
-    margin: 5px;
-    border-radius: 15px;
-    background: rgba(255, 255, 255, 0.9);
-    transition: all 0.3s ease;
-}
-.card-tag-cloud a:hover {
-    background: #49b1f5;
-    color: white;
-    transform: translateY(-2px);
+#footer a,
+a {
+  transition: color 160ms ease;
 }
 
-/* 13. Live2D 看板娘样式优化 */
-#live2d-widget {
-    cursor: pointer;
-}
-#live2d-widget:hover {
-    transform: scale(1.05);
-    transition: transform 0.3s ease;
+.highlight,
+.code-toolbar {
+  border-radius: 7px;
+  overflow: hidden;
 }
 
-/* 看板娘对话框样式 */
-.live2d-widget-dialog {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(10px) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
-    border: 1px solid rgba(255, 255, 255, 0.5) !important;
-    color: #333 !important;
-    font-size: 14px !important;
-    padding: 10px 15px !important;
-    margin-bottom: 10px !important;
+::-webkit-scrollbar-thumb {
+  background: rgba(93, 157, 165, 0.66);
+  border-radius: 8px;
 }
 
-/* 看板娘容器样式 */
-#live2d-widget-container {
-    z-index: 999 !important;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
-/* 在移动设备上隐藏看板娘 */
-@media (max-width: 768px) {
-    #live2d-widget-container {
-        display: none;
-    }
+@media (max-width: 900px) {
+  #page-header.full_page,
+  #page-header.not-home-page,
+  #page-header.post-bg,
+  #page-header.not-top-img,
+  #content-inner.layout,
+  #footer {
+    width: min(calc(100% - 22px), 720px);
+  }
+
+  #page-header.full_page,
+  #page-header.not-home-page,
+  #page-header.post-bg,
+  #page-header.not-top-img {
+    margin-top: 12px;
+    padding: 22px 22px 0;
+  }
+
+  #content-inner.layout {
+    padding: 22px;
+  }
+
+  #footer {
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  #web_bg {
+    background-position: 64% center;
+  }
+
+  #page-header.full_page,
+  #page-header.not-home-page,
+  #page-header.post-bg,
+  #page-header.not-top-img,
+  #content-inner.layout,
+  #footer {
+    width: calc(100% - 16px);
+  }
+
+  #page-header.full_page,
+  #page-header.not-home-page,
+  #page-header.post-bg,
+  #page-header.not-top-img {
+    padding: 18px 16px 0;
+    border-radius: 12px 12px 0 0;
+  }
+
+  #content-inner.layout {
+    padding: 18px 16px;
+  }
+
+  #footer {
+    border-radius: 0 0 12px 12px;
+  }
+
+  #page-header #nav {
+    min-height: 42px;
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
